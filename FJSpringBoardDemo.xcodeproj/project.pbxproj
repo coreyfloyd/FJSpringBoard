@@ -62,14 +62,14 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */,
-				C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */,
 				C44F5DCD1270D07B007E9850 /* FJSpringBoardCell.h */,
-				C4F6F08B12796E26002048AE /* FJSpringBoardCellItem.h */,
-				C4F6F08C12796E26002048AE /* FJSpringBoardCellItem.m */,
 				C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */,
 				C47A872212700C4700203213 /* FJSpringBoardView.h */,
 				C47A872312700C4700203213 /* FJSpringBoardView.m */,
+				C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */,
+				C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */,
+				C4F6F08B12796E26002048AE /* FJSpringBoardCellItem.h */,
+				C4F6F08C12796E26002048AE /* FJSpringBoardCellItem.m */,
 				1D3623240D0F684500981E51 /* FJSpringBoardDemoAppDelegate.h */,
 				1D3623250D0F684500981E51 /* FJSpringBoardDemoAppDelegate.m */,
 				28D7ACF60DDB3853001CB0EB /* FJSpringBoardDemoViewController.h */,

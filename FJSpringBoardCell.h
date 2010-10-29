@@ -20,12 +20,11 @@ typedef enum  {
 @interface FJSpringBoardCell : NSObject {
 
 }
-+ (id)cellWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
+- (id)initWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
+
 @property(nonatomic, retain, readonly) UIView *contentView;
-@property(nonatomic, assign, readonly) CGSize *contentViewSize;
 
-@property(nonatomic, retain) NSString *reuseIdentifier;
-
+@property(nonatomic, copy, readonly) NSString *reuseIdentifier;
 
 
 @property(nonatomic) FJSpringBoardCellMode mode;
@@ -41,12 +40,16 @@ typedef enum  {
 @property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode
 
 
-
-
 @property(nonatomic) BOOL pulseOnTouchAndHold;
 
 
 @end
+
+
+
+
+
+
 
 
 @interface FJSpringBoardGroupCell : FJSpringBoardCell {

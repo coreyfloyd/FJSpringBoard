@@ -51,6 +51,7 @@ typedef struct {
 @synthesize cellPadding;
 @synthesize cellSize;
 @synthesize layoutDirection;
+@synthesize centerCellsInView;
 
 @synthesize usableBounds;
 @synthesize cellSizeWithPadding;
@@ -75,7 +76,7 @@ typedef struct {
     self.gridViewInsets = UIEdgeInsetsZero;
     self.cellSize = CGSizeZero;
     self.cellPadding = CGSizeZero;
-    
+    self.centerCellsInView = YES;
     self.usableBounds = CGRectZero;
     self.cellSizeWithPadding = CGSizeZero;
     self.layoutDirection = FJSpringBoardLayoutDirectionVertical;
@@ -182,6 +183,16 @@ typedef struct {
     CGFloat x = ([self _horizontalOffsetForPage:position.page]) + self.gridViewInsets.left + (column * self.cellSizeWithPadding.width) + self.cellPadding.width;
     CGFloat y = self.gridViewInsets.top + (row * self.cellSizeWithPadding.height) + self.cellPadding.height; 
     
+    if(self.centerCellsInView){
+        
+        float rowWidth = [self _numberOfCellsPerRow] * self.cellSizeWithPadding.width;
+        float usableWidth = self.usableBounds.size.width;
+        float leftover = usableWidth - rowWidth;
+        float leftOffset = leftover / 2; 
+        x += leftOffset;
+        
+    }
+    
     origin.x = x;
     origin.y = y;
     
@@ -195,7 +206,7 @@ typedef struct {
 - (CellPosition)_positionForCellAtIndex:(NSInteger)index{
     
     CellPosition pos;
-    
+    pos.page = 0;
     NSInteger cellsPerRow = [self _numberOfCellsPerRow];
     
     float row = (float)((float)index / (float)cellsPerRow);
@@ -223,7 +234,7 @@ typedef struct {
 
 - (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
     
-    if(self.layoutDirection = FJSpringBoardLayoutDirectionVertical)
+    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
         return position;
     
     NSInteger page = [self _pageForCellAtPosition:position];
@@ -241,7 +252,7 @@ typedef struct {
 
 - (NSInteger)_pageForCellAtPosition:(CellPosition)position{
     
-    if(self.layoutDirection = FJSpringBoardLayoutDirectionVertical)
+    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
         return 0;
     
     NSInteger index  = [self _indexForPositon:position];
@@ -275,7 +286,55 @@ typedef struct {
 
 }
 
+#pragma mark -
 
-\
+- (CGSize)contentSizeWithCellCount:(NSInteger)count{
+    
+    [self _calculateAdjustedValues];
+
+    CGSize pageSize = self.gridViewBounds.size;
+
+    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical){
+        
+        NSInteger cellsPerRow = [self _numberOfCellsPerRow];
+        float rows = ceilf((float)((float)count / (float)cellsPerRow));
+        CGFloat height = rows * self.cellSizeWithPadding.height;
+        CGSize s = CGSizeMake(pageSize.width, height);
+        return s;
+    }
+    
+    CGFloat width = [self numberOfPagesWithCellCount:count] * self.gridViewBounds.size.width;
+    CGSize s = CGSizeMake(width, pageSize.height);
+    return s;
+    
+}
+
+
+- (NSInteger)numberOfPagesWithCellCount:(NSInteger)count{
+    
+    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
+        return 1;
+    
+    NSInteger perPage = [self numberOfVisibleCells];
+    
+    float pages = ceilf((float)((float)count / (float)perPage));
+    
+    return pages;
+    
+}
+
+- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset{
+    
+    CGRect viewRect;
+    viewRect.origin = offset;
+    viewRect.size = self.gridViewBounds.size;
+    
+    
+    
+    
+}
+
+
+
 
 @end

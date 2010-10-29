@@ -10,32 +10,53 @@
 
 @implementation FJSpringBoardDemoViewController
 
+@synthesize springBoardView;
 
 
-/*
-// The designated initializer. Override to perform setup that is required before the view is loaded.
-- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
-    if ((self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil])) {
-        // Custom initialization
-    }
-    return self;
+- (void)dealloc {
+    
+    [springBoardView release];
+    springBoardView = nil;
+    
+    [super dealloc];
 }
-*/
-
-/*
-// Implement loadView to create a view hierarchy programmatically, without using a nib.
-- (void)loadView {
-}
-*/
 
 
-/*
+
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:self.view.bounds];
+    self.springBoardView.backgroundColor = [UIColor redColor];
+    self.springBoardView.cellSize = CGSizeMake(60, 60);
+    self.springBoardView.cellPadding = CGSizeMake(10, 10);
+    self.springBoardView.gridViewInsets = UIEdgeInsetsMake(15, 10, 15, 10);
+    self.springBoardView.delegate = self;
+    self.springBoardView.dataSource = self;
+    
+    [self.view addSubview:self.springBoardView];
+    
+    [self.springBoardView reloadData];
+    
 }
-*/
 
+- (NSInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
+    
+    return 30;
+    
+}
+
+- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSInteger )index{
+    
+    static NSString* cellID = @"Cell";
+    FJSpringBoardCell* cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(60, 60) reuseIdentifier:cellID];
+    
+    cell.contentView.backgroundColor = [UIColor blueColor];
+    
+    return cell;
+    
+}
 
 /*
 // Override to allow orientations other than the default portrait orientation.
@@ -57,9 +78,5 @@
 	// e.g. self.myOutlet = nil;
 }
 
-
-- (void)dealloc {
-    [super dealloc];
-}
 
 @end

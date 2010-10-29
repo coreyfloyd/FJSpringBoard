@@ -25,16 +25,23 @@ typedef enum  {
 
 @property(nonatomic) FJSpringBoardLayoutDirection layoutDirection;
 
+@property(nonatomic) BOOL centerCellsInView;
 
+//reset all properties
+- (void)reset;
+
+
+
+//indepentent calculations
 - (NSInteger)numberOfVisibleCells;
 - (CGRect)frameForCellAtIndex:(NSInteger)index;
 
-- (CGRect)frameForPage:(NSInteger)page;
-- (CGRect)pageRelativeFrameForCellAtIndex:(NSInteger)index; //
 
 
-//reset all parameters
-- (void)reset;
+//cell count dependent calculations
+- (CGSize)contentSizeWithCellCount:(NSInteger)count;
+- (NSInteger)numberOfPagesWithCellCount:(NSInteger)count; //always returns 1 for vertical layout
 
+- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset;
 
 @end

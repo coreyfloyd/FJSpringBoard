@@ -7,10 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "FJSpringBoardView.h"
 
-@interface FJSpringBoardDemoViewController : UIViewController {
+@interface FJSpringBoardDemoViewController : UIViewController <FJSpringBoardViewDelegate, FJSpringBoardViewDataSource> {
 
+    FJSpringBoardView* springBoardView;
 }
+@property (nonatomic, retain) FJSpringBoardView *springBoardView;
 
 @end
 

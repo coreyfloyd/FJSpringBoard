@@ -10,9 +10,10 @@
 
 #import "FJSpringBoardCell.h"
 
+@class FJSpringBoardLayout;
+
 @protocol FJSpringBoardViewDelegate;
 @protocol FJSpringBoardViewDataSource;
-
 
 typedef enum  {
     FJSpringBoardViewScrollDirectionVertical,
@@ -21,15 +22,24 @@ typedef enum  {
 
 @interface FJSpringBoardView : UIScrollView {
 
+    
+    FJSpringBoardLayout *layout;
+    
+    NSMutableArray *cellItems; //by index
+    
+    NSMutableIndexSet *visibleIndexes; 
+    NSMutableArray *visibleCells; 
+    NSMutableSet *dequeuedCells;
+    
 }
 
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
 
 //view setup
-@property(nonatomic) UIEdgeInsets gridViewPadding;
+@property(nonatomic) UIEdgeInsets gridViewInsets;
 
-@property(nonatomic) UIEdgeInsets cellPadding;
+@property(nonatomic) CGSize cellPadding;
 @property(nonatomic) CGSize cellSize;
 
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
@@ -65,8 +75,8 @@ typedef enum  {
 
 - (CGRect)frameForCellAtIndex:(NSInteger)index;
 
-- (NSArray *)visibleCells;
-- (NSArray *)visibleIndexes;
+@property(nonatomic, retain, readonly) NSMutableArray *visibleCells; 
+@property(nonatomic, retain, readonly) NSMutableIndexSet *visibleIndexes; 
 
 
 - (void)scrollToCellAtIndex:(NSInteger *)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
@@ -86,6 +96,7 @@ typedef enum  {
 
 @protocol FJSpringBoardViewDelegate
 
+@optional
 - (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAtIndex:(NSInteger *)index;
 - (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAndHeldAtIndex:(NSInteger *)index;
 - (void)gridView:(FJSpringBoardView *)gridView cellWasDoubleTappedAtIndex:(NSInteger *)index;
@@ -108,8 +119,9 @@ typedef enum  {
 - (NSInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView;
 - (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSInteger )index;
 
-- (NSArray *)gridView:(FJSpringBoardView *)gridView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSInteger )index;
 
+@optional
+- (NSArray *)gridView:(FJSpringBoardView *)gridView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSInteger )index;
 
 - (BOOL)gridView:(FJSpringBoardView *)gridView canSelectCellAtIndex:(NSInteger )index;
 
