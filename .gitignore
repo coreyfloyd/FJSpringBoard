@@ -1,0 +1,26 @@
+# xcode noise
+[bB]uild/*
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspective
+*.perspectivev3
+
+# xcode 4
+*xcuserdata*
+*.xcuserstate
+*.xcworkspace
+
+# old skool
+.svn
+
+# mercurial
+.hg
+
+# osx noise
+.DS_Store
+profile
+*.moved-aside*
+
+#taskpaper
+*(Autosaved)*
