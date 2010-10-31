@@ -9,24 +9,20 @@
 #import "FJSpringBoardLayout.h"
 
 
-typedef struct {
-    NSInteger page;
-    NSInteger row;
-    NSInteger column;
-} CellPosition;
-
-
-
-
-
 @interface FJSpringBoardLayout()
 
-@property(nonatomic) CGRect usableBounds;
-@property(nonatomic) CGSize cellSizeWithPadding;
+@property(nonatomic, readwrite) NSInteger cellCount;
+@property(nonatomic, readwrite) NSInteger numberOfRows;
+@property (nonatomic) NSInteger cellsPerRow;
+
+@property (nonatomic) CGFloat minimumRowWidth;
+
+
+- (CGSize)_contentSize;
 
 - (NSInteger)_numberOfVisibleRows;
 - (NSInteger)_numberOfCellsPerRow;
-
+- (NSInteger)_numberOfVisibleRowsWithPartials;
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
 - (CGRect)_frameForCellAtPosition:(CellPosition)position;
@@ -46,15 +42,18 @@ typedef struct {
 
 @implementation FJSpringBoardLayout
 
-@synthesize gridViewInsets;
-@synthesize gridViewBounds;
-@synthesize cellPadding;
+@synthesize insets;
+@synthesize springBoardbounds;
 @synthesize cellSize;
 @synthesize layoutDirection;
 @synthesize centerCellsInView;
+@synthesize horizontalCellSpacing;
+@synthesize verticalCellSpacing;
+@synthesize cellCount;
 
-@synthesize usableBounds;
-@synthesize cellSizeWithPadding;
+@synthesize cellsPerRow;
+@synthesize numberOfRows;
+@synthesize minimumRowWidth;
 
 
 #pragma mark -
@@ -72,16 +71,76 @@ typedef struct {
 
 - (void)reset{
     
-    self.gridViewBounds = CGRectZero;
-    self.gridViewInsets = UIEdgeInsetsZero;
+    self.springBoardbounds = CGRectZero;
+    self.insets = UIEdgeInsetsZero;
     self.cellSize = CGSizeZero;
-    self.cellPadding = CGSizeZero;
+    self.horizontalCellSpacing = 0;
+    self.verticalCellSpacing = 0;
     self.centerCellsInView = YES;
-    self.usableBounds = CGRectZero;
-    self.cellSizeWithPadding = CGSizeZero;
-    self.layoutDirection = FJSpringBoardLayoutDirectionVertical;
+    
+    self.cellCount = 0;
+    self.cellsPerRow = 0;
+    self.numberOfRows = 0;
+
     
 }
+
+- (void)updateLayoutWithCellCount:(NSInteger)count{
+    
+    self.cellCount = count;
+    self.minimumRowWidth = [self _rowWidth];
+    self.cellsPerRow = [self _numberOfCellsPerRow];
+    self.numberOfRows = [self _numberOfRows];
+    self.contentSize = [self _contentSize];
+    
+    
+    //TODO: run maths
+    
+}
+
+
+- (NSInteger)_numberOfCellsPerRow{
+    
+    float viewWidth = self.springBoardbounds.size.width;
+    
+    float totalWidth = viewWidth - self.insets.left - self.insets.right;
+    
+    float cellWidth = self.cellSize.width;
+    
+    float count = 0;
+    float totalCellWidth = 0;
+    
+    while (totalCellWidth < totalWidth) {
+        
+        totalCellWidth += cellWidth;
+        count ++;
+        
+        if(totalCellWidth >= totalWidth)
+            break;
+        
+        totalCellWidth += self.horizontalCellSpacing;
+    }
+    
+    
+    return (NSInteger)count;
+    
+}
+
+- (NSInteger)_numberOfRows{
+    
+    float rows = ceilf((float)((float)self.cellCount / (float)self.cellsPerRow));
+    
+    return rows;
+    
+}
+
+- (CGFloat)_rowWidth{
+    
+    return ([self _numberOfCellsPerRow] * self.cellSize.width) + (([self _numberOfCellsPerRow]-1) * self.horizontalCellSpacing);
+    
+}
+
+
 
 #pragma mark -
 #pragma mark Cell Count
@@ -90,7 +149,8 @@ typedef struct {
     
     [self _calculateAdjustedValues];
     
-    NSInteger cellsPerRow = [self _numberOfCellsPerRow];
+    self.cellsPerRow = [self _numberOfCellsPerRow];
+    
     NSInteger visibleRows = [self _numberOfVisibleRows];
     
     NSInteger count = cellsPerRow * visibleRows;
@@ -99,69 +159,81 @@ typedef struct {
     
 }
 
-- (NSInteger)_numberOfCellsPerRow{
-    
-    float totalWidth = self.usableBounds.size.width;
-    float cellWidth = self.cellSizeWithPadding.width;
-    
-    float cellCount = floorf(totalWidth/cellWidth);
-    
-    return (NSInteger)cellCount;
-    
-}
-
 
 - (NSInteger)_numberOfVisibleRows{
     
-    float totalHeight = self.usableBounds.size.height;
+    float totalHeight = self.pageSizeWithInsetsApplied.size.height;
     float cellHeight = self.cellSizeWithPadding.height;
     
-    float cellCount = floorf(totalHeight/cellHeight);
+    float count = floorf(totalHeight/cellHeight);
+    
+    return (NSInteger)count;
+    
+    
+}
+
+- (NSInteger)numberOfVisibleCellsIncludingPartials{
+    
+    [self _calculateAdjustedValues];
+    
+    self.cellsPerRow = [self _numberOfCellsPerRow];
+
+    NSInteger visibleRows = [self _numberOfVisibleRows];
+    
+    NSInteger count = cellsPerRow * visibleRows;
+    
+    return count;
+        
+}
+
+- (NSInteger)_numberOfVisibleRowsWithPartials{
+    
+    float totalHeight = self.pageSizeWithInsetsApplied.size.height;
+    float cellHeight = self.cellSizeWithPadding.height;
+    
+    float cellCount = ceilf(totalHeight/cellHeight);
     
     return (NSInteger)cellCount;
     
     
 }
 
-
 #pragma mark -
-#pragma mark Adjusted Geometry
-
-- (void)_calculateAdjustedValues{
-    
-    self.usableBounds = [self _boundsWithInsetsApplied];
-    self.cellSizeWithPadding = [self _sizeOfCellWithPaddingApplied];
-}
-
-- (CGRect)_boundsWithInsetsApplied{
-    
-    return UIEdgeInsetsInsetRect(self.gridViewBounds, self.gridViewInsets);
-    
-}
-
-- (CGSize)_sizeOfCellWithPaddingApplied{
-    
-    CGSize combinedSize = CGSizeZero;
-    
-    combinedSize.height = self.cellSize.height + (self.cellPadding.height * 2);
-    combinedSize.width = self.cellSize.width + (self.cellPadding.width * 2);
-    
-    return combinedSize;
-    
-}
-
-#pragma mark -
-#pragma mark Frame Calculation
+#pragma mark Frame/Position Calculation
 
 - (CGRect)frameForCellAtIndex:(NSInteger)index{
-    
-    [self _calculateAdjustedValues];
     
     CellPosition position = [self _positionForCellAtIndex:index];
     CGRect frame = [self _frameForCellAtPosition:position];
     
     return frame;
 }
+
+
+- (CellPosition)_positionForCellAtIndex:(NSInteger)index{
+    
+    CellPosition pos;
+    pos.page = 0;
+    NSInteger cellsPerRow = [self _numberOfCellsPerRow];
+    
+    float row = (float)((float)index / (float)cellsPerRow);
+    
+    row = floorf(row);
+    
+    pos.row = (NSInteger)row;
+    
+    int column = index % cellsPerRow;
+    
+    pos.column = (NSInteger)column;
+    
+    pos = [self _pageAdjustedCellPosition:pos];
+    
+    return pos;
+    
+}
+
+
+
 
 - (CGRect)_frameForCellAtPosition:(CellPosition)position{
     
@@ -179,14 +251,15 @@ typedef struct {
     
     int column = position.column;
     int row = position.row;
-
-    CGFloat x = ([self _horizontalOffsetForPage:position.page]) + self.gridViewInsets.left + (column * self.cellSizeWithPadding.width) + self.cellPadding.width;
-    CGFloat y = self.gridViewInsets.top + (row * self.cellSizeWithPadding.height) + self.cellPadding.height; 
+    
+    CGFloat x = ([self _horizontalOffsetForPage:position.page]) + self.insets.left + (column * self.horizontalCellSpacing) + (column * self.cellSize.width);
+    CGFloat y = self.gridViewInsets.top + (row * self.verticalCellSpacing) + (row * self.cellSize.height) + self.cellPadding.height; 
     
     if(self.centerCellsInView){
         
-        float rowWidth = [self _numberOfCellsPerRow] * self.cellSizeWithPadding.width;
-        float usableWidth = self.usableBounds.size.width;
+        float rowWidth = [self _rowWidth];
+        
+        float usableWidth = self.pageSizeWithInsetsApplied.size.width;
         float leftover = usableWidth - rowWidth;
         float leftOffset = leftover / 2; 
         x += leftOffset;
@@ -200,75 +273,34 @@ typedef struct {
     
 }
 
-#pragma mark -
-#pragma mark Position Calculation
-
-- (CellPosition)_positionForCellAtIndex:(NSInteger)index{
-    
-    CellPosition pos;
-    pos.page = 0;
-    NSInteger cellsPerRow = [self _numberOfCellsPerRow];
-    
-    float row = (float)((float)index / (float)cellsPerRow);
-    
-    row = floorf(row);
-        
-    pos.row = (NSInteger)row;
-    
-    int column = index % cellsPerRow;
-    
-    pos.column = (NSInteger)column;
-    
-    pos = [self _pageAdjustedCellPosition:pos];
-
-    return pos;
-    
-}
-
-
 - (NSInteger)_indexForPositon:(CellPosition)position{
     
     return position.row * position.column;
 }
 
 
-- (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
-    
-    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
-        return position;
-    
-    NSInteger page = [self _pageForCellAtPosition:position];
-    position.page = page;
-    
-    NSInteger row = position.row;
-    
-    row = row - (page * [self _numberOfVisibleRows]);
-    
-    position.row = row;
-    
-    return position;
-    
-}
-
-- (NSInteger)_pageForCellAtPosition:(CellPosition)position{
-    
-    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
-        return 0;
-    
-    NSInteger index  = [self _indexForPositon:position];
-    
-    float p = floorf((float)((float)index / (float)[self numberOfVisibleCells]));
-    
-    NSInteger page = (NSInteger)p;
-    
-    return page;
-}
-
 - (CGFloat)_horizontalOffsetForPage:(NSInteger)page{
     
-    return gridViewBounds.size.width * page;
+    return springBoardbounds.size.width * page;
     
 }
+
+- (CGRect)_frameForRow:(NSInteger)row{
+    
+    CGRect f;
+    
+    CGFloat x = self.insets.left;
+    
+    CGFloat y = self.insets.top + (row * self.cellSizeWithPadding.height); 
+    
+    f.origin = CGPointMake(x, y);
+    f.size = CGSizeMake(self.springBoardbounds.size.width, self.cellSizeWithPadding.height) 
+    
+    return f;
+}
+
+
+
 
 
 #pragma mark -
@@ -292,7 +324,7 @@ typedef struct {
     
     [self _calculateAdjustedValues];
 
-    CGSize pageSize = self.gridViewBounds.size;
+    CGSize pageSize = self.springBoardbounds.size;
 
     if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical){
         
@@ -303,7 +335,7 @@ typedef struct {
         return s;
     }
     
-    CGFloat width = [self numberOfPagesWithCellCount:count] * self.gridViewBounds.size.width;
+    CGFloat width = [self numberOfPagesWithCellCount:count] * self.springBoardbounds.size.width;
     CGSize s = CGSizeMake(width, pageSize.height);
     return s;
     
@@ -323,14 +355,62 @@ typedef struct {
     
 }
 
-- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset{
+- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset cellCount:(NSInteger)count{
     
     CGRect viewRect;
     viewRect.origin = offset;
-    viewRect.size = self.gridViewBounds.size;
+    viewRect.size = self.springBoardbounds.size;
     
+    NSInteger numberOfRows = [self _numberOfRowsWithCellCount:count];
     
+    NSMutableIndexSet* rowsInView = [NSMutableIndexSet indexSet];
     
+    for(int row = 0; row < numberOfRows; row++){
+        
+        CGRect rowFrame = [self _frameForRow:row];
+        
+        if(CGRectContainsRect(viewRect, rowFrame)){
+            
+            [rowsInView addIndex:row];
+        }
+    }
+    
+    NSIndexSet* cellIndexes = [self _cellIndexesWithRowIndexes:rowsInView];
+    
+    return cellIndexes;
+}
+
+- (NSIndexSet*)_cellIndexesWithRowIndexes:(NSIndexSet*)rowIndexes{
+    
+    NSMutableIndexSet* cellIndexes = [NSMutableIndexSet indexSet];
+    NSUInteger index = [rowIndexes firstIndex];
+    
+    while(index != NSNotFound){
+        
+        NSIndexSet* cellIndexesForEachRow = [self _cellIndexesInRowAtIndex:index];
+        [cellIndexes addIndexes:cellIndexesForEachRow];
+        
+        index = [rowIndexes indexGreaterThanIndex:index];
+    }
+    
+    return cellIndexes;
+}
+
+- (NSIndexSet*)_cellIndexesInRowAtIndex:(NSInteger)rowIndex{
+    
+    NSInteger numOfCellsInRow = [self _numberOfCellsPerRow];
+        
+    NSInteger numberOfCellsBeforeRow = 0;
+    NSInteger firstIndex = 0;
+    
+    if(rowIndex > 0){
+        numberOfCellsBeforeRow = numOfCellsInRow * (rowIndex - 1);
+        firstIndex += numberOfCellsBeforeRow;
+    }
+    
+    NSRange cellRange = NSMakeRange(firstIndex, numOfCellsInRow);
+    
+    NSIndexSet* cellIndexes = [NSIndexSet indexSetWithIndexesInRange:cellRange];
     
 }
 

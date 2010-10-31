@@ -26,6 +26,21 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
     return s;
 }
 
+BOOL rangesAreContiguous(NSRange first, NSRange second){
+    
+    NSIndexSet* firstIndexes = [NSIndexSet indexSetWithIndexesInRange:first];
+    NSIndexSet* secondIndexes = [NSIndexSet indexSetWithIndexesInRange:second];
+    
+    NSUInteger endOfFirstRange = [firstIndexes lastIndex];
+    NSUInteger beginingOfSecondRange = [secondIndexes firstIndex];
+    
+    if(beginingOfSecondRange - endOfFirstRange == 1)
+        return YES;
+    
+    return NO;
+    
+}
+
 @interface FJSpringBoardCell(Internal)
 
 @property(nonatomic, assign) FJSpringBoardView* springBoardView;
@@ -40,7 +55,7 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
 
 @property(nonatomic, retain) NSMutableArray *cellItems; //by index
 
-@property(nonatomic, retain, readwrite) NSMutableIndexSet *visibleIndexes; 
+@property(nonatomic) NSRange visibleIndexRange; 
 @property(nonatomic, retain, readwrite) NSMutableArray *visibleCells; 
 @property(nonatomic, retain) NSMutableSet *dequeuedCells;
 
@@ -60,7 +75,7 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
 @synthesize allowsDeleteMode;
 @synthesize cellItems;
 @synthesize layout;
-@synthesize visibleIndexes;
+@synthesize visibleIndexRange;
 @synthesize visibleCells;
 @synthesize dequeuedCells;
 
@@ -107,8 +122,8 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
 - (void)_configureLayout{
     
     [self.layout reset];
-    self.layout.gridViewBounds = self.bounds;
-    self.layout.gridViewInsets = self.gridViewInsets;
+    self.layout.springBoardbounds = self.bounds;
+    self.layout.insets = self.gridViewInsets;
     self.layout.cellSize = self.cellSize;
     self.layout.cellPadding = self.cellPadding;
     self.layout.layoutDirection = self.scrollDirection;
@@ -137,7 +152,7 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
     }
     self.visibleCells = visCells;
     
-    self.visibleIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfVisibleCells)];
+    self.visibleIndexRange = NSMakeRange(0, numOfVisibleCells);
     
     self.dequeuedCells = [NSMutableSet setWithCapacity:numOfVisibleCells];
     
@@ -166,9 +181,29 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
         firstIndex++;
     }
     
+}
+
+- (void)_layoutCellsInRange:(NSRange)range{
+    
+    NSInteger firstIndex = [self.visibleIndexes firstIndex];
+    
+    for(FJSpringBoardCell *eachCell in self.visibleCells){
+        
+        CGRect cellFrame = [self.layout frameForCellAtIndex:firstIndex];
+        eachCell.contentView.frame = cellFrame;
+        [self addSubview:eachCell.contentView];
+        firstIndex++;
+    }
+    
     
 }
 
+
+- (NSIndexSet*)visibleIndexes{
+    
+    return [NSIndexSet indexSetWithIndexesInRange:self.visibleIndexes];
+    
+}
 
 
 - (void) setContentOffset:(CGPoint) offset{
@@ -180,6 +215,13 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
 {
 	// Call our super duper method
 	[super setContentOffset: contentOffset animated: animate];
+    
+    NSIndexSet* old = self.visibleIndexes;
+    NSIndexSet* new = [self.layout visibleCellIndexesForContentOffset:contentOffset];
+    
+    NSIndexSet* unloadedIndexes = indexesAdded(old, new);
+    
+    
 	
 	// for long grids, ensure there are visible cells when scrolled to
 	if (!animate)
@@ -191,6 +233,22 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet){
          [self updateForwardCellsForVisibleIndices: newIndices];
          }*/
 	}
+}
+
+- (void)loadCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    
+    
+    NSUInteger index = [indexes firstIndex];
+    
+    while(index != NSNotFound){
+        
+        FJSpringBoardCell* cell = [self.dataSource gridView:self cellAtIndex:i];
+        cell.springBoardView = self;
+        [visCells addObject:cell];
+        
+        index = [indexSet indexGreaterThanIndex:index];
+    }
 }
 
 

@@ -9,39 +9,56 @@
 #import <Foundation/Foundation.h>
 
 
-typedef enum  {
-    FJSpringBoardLayoutDirectionVertical,
-    FJSpringBoardLayoutDirectionHorizontal
-} FJSpringBoardLayoutDirection;
+typedef struct {
+    NSInteger page;
+    NSInteger row;
+    NSInteger column;
+} CellPosition;
+
 
 @interface FJSpringBoardLayout : NSObject {
 
-}
-@property(nonatomic) UIEdgeInsets gridViewInsets;
-@property(nonatomic) CGRect gridViewBounds;
+    CGRect springBoardbounds;
+    CGSize cellSize;
 
-@property(nonatomic) CGSize cellPadding;
+    UIEdgeInsets insets;
+
+    CGFloat horizontalCellSpacing;
+    CGFloat verticalCellSpacing;
+
+    BOOL centerCellsInView;
+    
+    NSInteger cellCount;
+    
+    NSInteger cellsPerRow;
+    CGFloat minimumRowWidth;
+    NSInteger numberOfRows;
+    
+       
+}
+//set these properties to calculate layout
+@property(nonatomic) UIEdgeInsets insets; //default = 0,0,0,0
+@property(nonatomic) CGRect springBoardbounds;
+
 @property(nonatomic) CGSize cellSize;
 
-@property(nonatomic) FJSpringBoardLayoutDirection layoutDirection;
+@property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
+@property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
-@property(nonatomic) BOOL centerCellsInView;
+
+@property(nonatomic) BOOL centerCellsInView; //default = YES
 
 //reset all properties
 - (void)reset;
 
-
-
-//indepentent calculations
-- (NSInteger)numberOfVisibleCells;
 - (CGRect)frameForCellAtIndex:(NSInteger)index;
 
+- (void)updateLayoutWithCellCount:(NSInteger)count;
+@property(nonatomic, readonly) NSInteger cellCount;
+
+@property(nonatomic, readonly) CGSize contentSize;
 
 
-//cell count dependent calculations
-- (CGSize)contentSizeWithCellCount:(NSInteger)count;
-- (NSInteger)numberOfPagesWithCellCount:(NSInteger)count; //always returns 1 for vertical layout
 
-- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset;
 
 @end
