@@ -281,8 +281,6 @@
     [self _dequeueCellsAtIndexes:indexesToRemove];
 
 
-    
-    
     NSRange rangeToLoad = changes.indexRangeToAdd;
 
     NSIndexSet* indexesToLoad = [NSIndexSet indexSetWithIndexesInRange:rangeToLoad];

@@ -51,7 +51,11 @@
 
 - (CGSize)_contentSize{
     
-    CGFloat pageHeight = (self.numberOfRows * self.cellSize.height) + (self.numberOfRows-1 * self.verticalCellSpacing) + self.insets.top + self.insets.bottom;
+    CGFloat cellHeight = (float)self.numberOfRows * self.cellSize.height;
+    CGFloat spacingHeight = (float)(self.numberOfRows-1) * self.verticalCellSpacing;
+    CGFloat insetHeight = self.insets.top + self.insets.bottom;
+    
+    CGFloat pageHeight = (cellHeight + spacingHeight + insetHeight);
     
     CGFloat pageWidth = self.maximumRowWidth;
 
