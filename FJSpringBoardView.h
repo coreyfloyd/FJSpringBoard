@@ -10,6 +10,7 @@
 
 #import "FJSpringBoardCell.h"
 
+@class FJSpringBoardIndexLoader;
 @class FJSpringBoardLayout;
 
 @protocol FJSpringBoardViewDelegate;
@@ -22,15 +23,16 @@ typedef enum  {
 
 @interface FJSpringBoardView : UIScrollView {
 
-    
+    FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
-    
+
     NSMutableArray *cellItems; //by index
     
-    NSMutableIndexSet *visibleIndexes; 
-    NSMutableArray *visibleCells; 
+    NSMutableIndexSet *visibleCellIndexes; 
+    NSMutableArray *cells; 
     NSMutableSet *dequeuedCells;
     
+    BOOL reloading;
 }
 
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
@@ -39,8 +41,10 @@ typedef enum  {
 //view setup
 @property(nonatomic) UIEdgeInsets gridViewInsets;
 
-@property(nonatomic) CGSize cellPadding;
 @property(nonatomic) CGSize cellSize;
+
+@property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
+@property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
 
@@ -52,10 +56,10 @@ typedef enum  {
 
 
 //selection
-- (void)selectCellAtIndex:(NSInteger)index;
+- (void)selectCellAtIndex:(NSUInteger)index;
 - (void)selectCellsAtIndexes:(NSIndexSet*)indexSet;
 
-- (void)deselectCellAtIndex:(NSInteger)index;
+- (void)deselectCellAtIndex:(NSUInteger)index;
 - (void)deselectCellsAtIndexes:(NSIndexSet*)indexSet;
 
 - (NSIndexSet *)indexesForSelectedCells;
@@ -69,17 +73,17 @@ typedef enum  {
 
 
 //cell info
-- (NSInteger)numberOfCells;
-- (FJSpringBoardCell *)cellAtIndex:(NSInteger *)index;
-- (NSInteger *)indexForCell:(FJSpringBoardCell *)cell;
+- (NSUInteger)numberOfCells;
+- (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index;
+- (NSUInteger)indexForCell:(FJSpringBoardCell *)cell;
 
-- (CGRect)frameForCellAtIndex:(NSInteger)index;
+- (CGRect)frameForCellAtIndex:(NSUInteger)index;
 
-@property(nonatomic, retain, readonly) NSMutableArray *visibleCells; 
-@property(nonatomic, retain, readonly) NSMutableIndexSet *visibleIndexes; 
+@property(nonatomic, retain, readonly) NSMutableArray *cells; 
+@property(nonatomic, retain, readonly) NSMutableIndexSet *visibleCellIndexes; 
 
 
-- (void)scrollToCellAtIndex:(NSInteger *)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
+- (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 
 
@@ -97,9 +101,9 @@ typedef enum  {
 @protocol FJSpringBoardViewDelegate
 
 @optional
-- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAtIndex:(NSInteger *)index;
-- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAndHeldAtIndex:(NSInteger *)index;
-- (void)gridView:(FJSpringBoardView *)gridView cellWasDoubleTappedAtIndex:(NSInteger *)index;
+- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAtIndex:(NSUInteger)index;
+- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAndHeldAtIndex:(NSUInteger)index;
+- (void)gridView:(FJSpringBoardView *)gridView cellWasDoubleTappedAtIndex:(NSUInteger)index;
 
 
 - (void)gridViewWillBeginEditing:(FJSpringBoardView *)gridView;
@@ -116,24 +120,24 @@ typedef enum  {
 
 @protocol FJSpringBoardViewDataSource
 
-- (NSInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView;
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSInteger )index;
+- (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView;
+- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSUInteger )index;
 
 
 @optional
-- (NSArray *)gridView:(FJSpringBoardView *)gridView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSInteger )index;
+- (NSArray *)gridView:(FJSpringBoardView *)gridView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSUInteger )index;
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canSelectCellAtIndex:(NSInteger )index;
+- (BOOL)gridView:(FJSpringBoardView *)gridView canSelectCellAtIndex:(NSUInteger )index;
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canMoveCellAtIndex:(NSInteger )index;
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView movableCellForCell:(FJSpringBoardCell*)cell atIndex:(NSInteger )index;
-- (void)gridView:(FJSpringBoardView *)gridView moveCellAtIndex:(NSInteger )fromIndex toIndex:(NSInteger )toIndex;
+- (BOOL)gridView:(FJSpringBoardView *)gridView canMoveCellAtIndex:(NSUInteger )index;
+- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView movableCellForCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger )index;
+- (void)gridView:(FJSpringBoardView *)gridView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canDeleteCellAtIndex:(NSInteger )index;
-- (void)gridView:(FJSpringBoardView *)gridView commitDeletionForCellAtIndex:(NSInteger )index; 
+- (BOOL)gridView:(FJSpringBoardView *)gridView canDeleteCellAtIndex:(NSUInteger )index;
+- (void)gridView:(FJSpringBoardView *)gridView commitDeletionForCellAtIndex:(NSUInteger )index; 
 
 /*
-- (BOOL)gridView:(FJSpringBoardView *)gridView canMultiSelectCellAtIndex:(NSInteger )index;
+- (BOOL)gridView:(FJSpringBoardView *)gridView canMultiSelectCellAtIndex:(NSUInteger )index;
 - (void)gridView:(FJSpringBoardView *)gridView commitMultiSelectActionForCellsAtIndexes:(NSIndexSet *)indexSet; 
 */
 

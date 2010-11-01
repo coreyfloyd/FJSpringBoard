@@ -30,7 +30,8 @@
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:self.view.bounds];
     self.springBoardView.backgroundColor = [UIColor redColor];
     self.springBoardView.cellSize = CGSizeMake(60, 60);
-    self.springBoardView.cellPadding = CGSizeMake(10, 10);
+    self.springBoardView.horizontalCellSpacing = 10;
+    self.springBoardView.verticalCellSpacing = 10;
     self.springBoardView.gridViewInsets = UIEdgeInsetsMake(15, 10, 15, 10);
     self.springBoardView.delegate = self;
     self.springBoardView.dataSource = self;
@@ -41,13 +42,13 @@
     
 }
 
-- (NSInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
+- (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
     
-    return 30;
+    return 60;
     
 }
 
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSInteger )index{
+- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSUInteger )index{
     
     static NSString* cellID = @"Cell";
     FJSpringBoardCell* cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(60, 60) reuseIdentifier:cellID];

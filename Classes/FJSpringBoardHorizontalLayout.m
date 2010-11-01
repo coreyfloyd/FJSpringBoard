@@ -7,34 +7,50 @@
 //
 
 #import "FJSpringBoardHorizontalLayout.h"
+#import "FJSpringBoardUtilities.h"
 
 
+
+@interface FJSpringBoardLayout(horizontalInternal)
+
+@property(nonatomic, readwrite) NSUInteger numberOfRows;
+@property(nonatomic, readwrite) NSUInteger cellsPerRow;
+
+@property (nonatomic) CGFloat minimumRowWidth;
+@property (nonatomic) CGFloat maximumRowWidth;
+
+@property(nonatomic, readwrite) CGSize contentSize;
+
+- (NSUInteger)_indexForPositon:(CellPosition)position;
+
+@end
 
 @interface FJSpringBoardLayout()
 
-@property (nonatomic) NSInteger rowsPerPage;
-@property (nonatomic) NSInteger cellsPerPage;
+@property (nonatomic) NSUInteger rowsPerPage;
+@property (nonatomic) NSUInteger cellsPerPage;
 @property(nonatomic) CGSize pageSize;
 @property(nonatomic) CGSize pageSizeWithInsetsApplied;
 
-- (NSInteger)_numberOfVisibleRows;
-- (NSInteger)_numberOfCellsPerRow;
-- (NSInteger)_numberOfVisibleRowsWithPartials;
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
-- (CGRect)_frameForCellAtPosition:(CellPosition)position;
 
-- (CellPosition)_positionForCellAtIndex:(NSInteger)index;
+- (CellPosition)_positionForCellAtIndex:(NSUInteger)index;
 - (CellPosition)_pageAdjustedCellPosition:(CellPosition)position;
 
-- (CGFloat)_horizontalOffsetForPage:(NSInteger)page;
-- (NSInteger)_pageForCellAtPosition:(CellPosition)position;
+- (CGFloat)_horizontalOffsetForPage:(NSUInteger)page;
+- (NSUInteger)_pageForCellAtPosition:(CellPosition)position;
 
 - (void)_calculateAdjustedValues;
 - (CGRect)_boundsWithInsetsApplied;
 - (CGSize)_sizeOfCellWithPaddingApplied;
 
+- (NSUInteger)_rowsPerPage;
+- (CGSize)_pageSizeWithInsetsApplied;
+- (CGSize)_pageSize;
+- (NSUInteger)_numberOfPages;
 
+- (CGSize)_contentSize;
 @end
 
 
@@ -44,6 +60,8 @@
 @synthesize cellsPerPage;
 @synthesize pageSize;
 @synthesize pageSizeWithInsetsApplied;
+@synthesize pageCount;
+
 
 - (void)reset{
     
@@ -56,19 +74,23 @@
 }
 
 
-- (void)updateLayoutWithCellCount:(NSInteger)count{
-    
-    [super updateLayoutWithCellCount:count];
-       
+- (void)updateLayout{
+     
+    [super updateLayout];
+
     self.pageSize = [self _pageSize];
-    self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied]
+    self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied];
     
+    self.rowsPerPage = [self _rowsPerPage];
+    self.pageCount = [self _numberOfPages];
         
+    self.contentSize = [self _contentSize];
+
 }
 
 
 
-- (CGRect)_pageSize{
+- (CGSize)_pageSize{
     
     CGSize size = self.springBoardbounds.size;
     
@@ -78,107 +100,181 @@
 }
 
 
-- (CGRect)_pageSizeWithInsetsApplied{
+- (CGSize)_pageSizeWithInsetsApplied{
     
     CGRect viewRect = self.springBoardbounds;
     
     viewRect = UIEdgeInsetsInsetRect(viewRect, self.insets);
     
-    CGSize size = self.viewRect.size;
+    CGSize size = viewRect.size;
     
     return size;
     
 }
 
 
-
-
-- (NSInteger)_rowsPerPage{
+- (NSUInteger)_rowsPerPage{
     
-    if(self.layoutDirection = FJSpringBoardLayoutDirectionVertical)
-        return self.numberOfRows;
+    float totalHeight = self.pageSizeWithInsetsApplied.height;
+    float cellHeight = self.cellSize.height;
+    
+    float count = 0;
+    float totalCellHeight = 0;
+    
+    while (totalCellHeight < totalHeight) {
+        
+        totalCellHeight += cellHeight;
+        count ++;
+        
+        if(totalCellHeight >= totalHeight)
+            break;
+        
+        totalCellHeight += self.verticalCellSpacing;
+    }
+    
+    return (NSUInteger)count;
     
 }
 
-- (NSInteger)_cellsPerPage{
+- (NSUInteger)_cellsPerPage{
     
-    if(self.layoutDirection = FJSpringBoardLayoutDirectionVertical)
-        return self.cellCount;
-    
-    
+    return (self.rowsPerPage * self.cellsPerRow);
+        
 }
 
 
 
 - (CGSize)_contentSize{
     
-    CGFloat pageHeight = (self.numberOfRows * self.cellSize.height) + (self.numberOfRows-1 * self.verticalCellSpacing) + self.insets.top + self.insets.bottom;
-
+    CGFloat pageHeight = self.springBoardbounds.size.height;
+    
+    CGFloat width = self.pageCount * self.springBoardbounds.size.width;
+    CGSize s = CGSizeMake(width, pageHeight);
+    return s;
     
 }
 
 
-- (CellPosition)_positionForCellAtIndex:(NSInteger)index{
+
+- (CGPoint)_originForCellAtPosition:(CellPosition)position{
     
-    CellPosition pos;
-    pos.page = 0;
+    CGPoint origin = CGPointZero;
     
-    float row = (float)((float)index / (float)self.cellsPerRow);
+    NSUInteger page = [self _pageForCellAtPosition:position];
     
-    row = floorf(row);
+    CellPosition adjustedPosition = [self _pageAdjustedCellPosition:position];
     
-    pos.row = (NSInteger)row;
+    NSUInteger column = adjustedPosition.column;
+    NSUInteger row = adjustedPosition.row;
     
-    int column = index % self.cellsPerRow;
+    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) + ((float)page * self.pageSize.width);
+    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height); 
     
-    pos.column = (NSInteger)column;
+    if(self.centerCellsInView){
+        
+        float leftover = self.maximumRowWidth - self.minimumRowWidth;
+        float leftOffset = leftover / 2; 
+        x += leftOffset;
+    }
     
-    pos = [self _pageAdjustedCellPosition:pos];
+    origin.x = x;
+    origin.y = y;
     
-    return pos;
-    
+    return origin;
 }
 
 
-- (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
+- (NSUInteger)_pageForCellAtPosition:(CellPosition)position{
     
-    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
-        return position;
+    NSUInteger index = [self _indexForPositon:position];
     
-    NSInteger page = [self _pageForCellAtPosition:position];
-    position.page = page;
+    float p = floorf((float)((float)index / (float)self.cellsPerPage));
     
-    NSInteger row = position.row;
-    
-    row = row - (page * [self _numberOfVisibleRows]);
-    
-    position.row = row;
-    
-    return position;
-    
-}
-
-
-- (NSInteger)_pageForCellAtPosition:(CellPosition)position{
-    
-    if(self.layoutDirection == FJSpringBoardLayoutDirectionVertical)
-        return 0;
-    
-    NSInteger index  = [self _indexForPositon:position];
-    
-    float p = floorf((float)((float)index / (float)[self numberOfVisibleCells]));
-    
-    NSInteger page = (NSInteger)p;
+    NSUInteger page = (NSUInteger)p;
     
     return page;
 }
 
 
 
-- (CGRect)pageRelativeFrameForCellAtIndex:(NSInteger)index{
-    
+- (NSUInteger)_numberOfPages{
+            
+    return ceilf((float)((float)self.cellCount / (float)self.cellsPerPage));
     
 }
+
+
+- (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
+    
+    NSUInteger index = [self _indexForPositon:position];
+
+    NSUInteger page = [self _pageForCellAtPosition:position];
+
+    NSUInteger numberOfCellsBeforePage = 0;
+    
+    if(page > 0){
+        numberOfCellsBeforePage = self.cellsPerPage * (page);
+    }
+    
+    NSUInteger adjustedIndex = index - numberOfCellsBeforePage;
+    
+    CellPosition adjustedPosition = [self _positionForCellAtIndex:adjustedIndex];
+    
+    return adjustedPosition;
+    
+}
+
+
+
+- (NSUInteger)pageForContentOffset:(CGPoint)offset{
+        
+    NSUInteger pageSizeInt = (NSUInteger)self.pageSize.width;
+    
+    NSUInteger offsetInt = (NSUInteger)offset.x;
+
+    if(offsetInt % pageSizeInt != 0)
+        return -1;
+    
+    return (offsetInt / pageSizeInt);
+    
+}
+
+
+
+- (CGRect)frameForPage:(NSUInteger)page{
+    
+    CGRect f = CGRectZero;
+    f.size = self.pageSize;
+    f.origin = CGPointMake([self _horizontalOffsetForPage:page], 0); 
+    
+    return f;
+    
+}
+
+
+- (CGFloat)_horizontalOffsetForPage:(NSUInteger)page{
+    
+    return springBoardbounds.size.width * (float)page;
+    
+}
+
+- (NSIndexSet*)cellIndexesForPage:(NSUInteger)page{
+        
+    NSUInteger numberOfCellsBeforePage = 0;
+    NSUInteger firstIndex = 0;
+    
+    if(page > 0){
+        numberOfCellsBeforePage = self.cellsPerPage * (page);
+        firstIndex += numberOfCellsBeforePage;
+    }
+    
+    NSRange cellRange = NSMakeRange(firstIndex, self.cellsPerPage);
+
+    NSIndexSet* cellIndexes = [NSIndexSet indexSetWithIndexesInRange:cellRange];
+    
+    return cellIndexes;
+}
+
 
 
 @end

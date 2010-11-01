@@ -8,14 +8,6 @@
 
 #import <Foundation/Foundation.h>
 
-
-typedef struct {
-    NSInteger page;
-    NSInteger row;
-    NSInteger column;
-} CellPosition;
-
-
 @interface FJSpringBoardLayout : NSObject {
 
     CGRect springBoardbounds;
@@ -28,11 +20,12 @@ typedef struct {
 
     BOOL centerCellsInView;
     
-    NSInteger cellCount;
+    NSUInteger cellCount;
     
-    NSInteger cellsPerRow;
+    NSUInteger cellsPerRow;
     CGFloat minimumRowWidth;
-    NSInteger numberOfRows;
+    CGFloat maximumRowWidth;
+    NSUInteger numberOfRows;
     
        
 }
@@ -45,16 +38,16 @@ typedef struct {
 @property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
 @property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
-
 @property(nonatomic) BOOL centerCellsInView; //default = YES
+
+@property(nonatomic) NSUInteger cellCount;
 
 //reset all properties
 - (void)reset;
 
-- (CGRect)frameForCellAtIndex:(NSInteger)index;
+- (void)updateLayout;
 
-- (void)updateLayoutWithCellCount:(NSInteger)count;
-@property(nonatomic, readonly) NSInteger cellCount;
+- (CGRect)frameForCellAtIndex:(NSUInteger)index;
 
 @property(nonatomic, readonly) CGSize contentSize;
 

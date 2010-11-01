@@ -7,31 +7,27 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "FJSpringBoardUtilities.h"
 
-
-typedef enum  {
-    FJSpringBoardLayoutDirectionVertical,
-    FJSpringBoardLayoutDirectionHorizontal
-} FJSpringBoardLayoutDirection;
-
-typedef struct {
-    NSRange fullIndexRange;
-    NSRange indexRangeToAdd;
-    NSRange indexRangeToRemove;
-} IndexRangeChanges;
-
+@class FJSpringBoardLayout;
 
 @interface FJSpringBoardIndexLoader : NSObject {
 
-    FJSpringBoardLayoutDirection layoutDirection;
     FJSpringBoardLayout *layout;
+    
+    CGPoint contentOffset;
+    NSIndexSet* currentIndexes;
+    IndexRangeChanges lastChangeSet;
 
 }
-@property(nonatomic) FJSpringBoardLayoutDirection layoutDirection; // default = vertical
 @property (nonatomic, retain) FJSpringBoardLayout *layout;
 
-- (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset;
 
+- (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset;
+@property(nonatomic, readonly) CGPoint contentOffset;
+
+@property(nonatomic, retain, readonly) NSIndexSet *currentIndexes;
+@property(nonatomic, readonly) IndexRangeChanges lastChangeSet;
 
 
 

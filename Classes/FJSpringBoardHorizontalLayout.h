@@ -12,21 +12,20 @@
 
 @interface FJSpringBoardHorizontalLayout : FJSpringBoardLayout {
 
-    NSInteger rowsPerPage;
-    NSInteger cellsPerPage;
+    NSUInteger pageCount;
+
+    NSUInteger rowsPerPage;
+    NSUInteger cellsPerPage;
     
     CGSize pageSize;
     CGSize pageSizeWithInsetsApplied;
-    
 }
+@property (nonatomic) NSUInteger pageCount;
 
+- (NSUInteger)pageForContentOffset:(CGPoint)offset; //returns -1 if not a multiple of the page size
 
-- (CGRect)frameForPage:(NSInteger)page;
+- (NSIndexSet*)cellIndexesForPage:(NSUInteger)page;
 
-- (NSInteger)numberOfPages; 
-
-- (NSIndexSet*)cellIndexesForPage:(NSInteger)page;
-
-- (CGRect)pageRelativeFrameForCellAtIndex:(NSInteger)index;
+- (CGRect)frameForPage:(NSUInteger)page;
 
 @end
