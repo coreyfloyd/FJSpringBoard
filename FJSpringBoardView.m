@@ -38,6 +38,7 @@
 - (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_loadCellItemsAtIndexes:(NSIndexSet*)indexes;
 - (void)_layoutCells;
+- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_updateCells;
 
 @end
@@ -100,10 +101,13 @@
 
 - (void)_configureLayout{
       
-    if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal)
+    if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         self.layout = [[[FJSpringBoardHorizontalLayout alloc] init] autorelease];
-    else
+        self.pagingEnabled = YES;
+    }else{
         self.layout = [[[FJSpringBoardVerticalLayout alloc] init] autorelease];
+        self.pagingEnabled = NO;
+    }
     
     self.indexLoader.layout = self.layout;
     self.layout.springBoardbounds = self.bounds;

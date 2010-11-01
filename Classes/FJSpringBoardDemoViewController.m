@@ -35,6 +35,7 @@
     self.springBoardView.gridViewInsets = UIEdgeInsetsMake(15, 10, 15, 10);
     self.springBoardView.delegate = self;
     self.springBoardView.dataSource = self;
+    self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
     
     [self.view addSubview:self.springBoardView];
     

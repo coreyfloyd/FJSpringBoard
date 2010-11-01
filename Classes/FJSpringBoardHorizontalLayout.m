@@ -49,6 +49,7 @@
 - (CGSize)_pageSizeWithInsetsApplied;
 - (CGSize)_pageSize;
 - (NSUInteger)_numberOfPages;
+- (NSUInteger)_cellsPerPage;
 
 - (CGSize)_contentSize;
 @end
@@ -82,6 +83,7 @@
     self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied];
     
     self.rowsPerPage = [self _rowsPerPage];
+    self.cellsPerPage = [self _cellsPerPage];
     self.pageCount = [self _numberOfPages];
         
     self.contentSize = [self _contentSize];
@@ -209,6 +211,9 @@
     NSUInteger index = [self _indexForPositon:position];
 
     NSUInteger page = [self _pageForCellAtPosition:position];
+    
+    if(page == 0)
+        return position;
 
     NSUInteger numberOfCellsBeforePage = 0;
     
@@ -239,6 +244,29 @@
     
 }
 
+- (NSUInteger)pageToLoadForPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)curretOffset{
+    
+    NSUInteger pageSizeInt = (NSUInteger)self.pageSize.width;
+    
+    float currentXOffset = curretOffset.x;
+    float previousXOffset = previousOffset.x;
+    
+    if(currentXOffset == 0 && previousXOffset == 0){
+        //first load
+        return 0;
+    }
+    
+    float nextPage;
+    if((currentXOffset - previousXOffset) > 0)
+        nextPage = ceilf((float)(currentXOffset / (float)pageSizeInt));
+    else
+        nextPage = floorf((float)(currentXOffset / (float)pageSizeInt));
+
+    NSUInteger pageInt = (NSUInteger)nextPage;
+    
+    return pageInt;
+}
+
 
 
 - (CGRect)frameForPage:(NSUInteger)page{
@@ -260,6 +288,8 @@
 
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page{
         
+    NSUInteger numOfCellsOnPage = self.cellsPerPage;
+
     NSUInteger numberOfCellsBeforePage = 0;
     NSUInteger firstIndex = 0;
     
@@ -268,7 +298,16 @@
         firstIndex += numberOfCellsBeforePage;
     }
     
-    NSRange cellRange = NSMakeRange(firstIndex, self.cellsPerPage);
+    if(firstIndex >= self.cellCount)
+        return nil;
+
+    if(page == self.pageCount-1){
+        
+        numOfCellsOnPage = self.cellCount - numberOfCellsBeforePage;
+        
+    }
+    
+    NSRange cellRange = NSMakeRange(firstIndex, numOfCellsOnPage);
 
     NSIndexSet* cellIndexes = [NSIndexSet indexSetWithIndexesInRange:cellRange];
     

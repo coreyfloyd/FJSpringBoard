@@ -24,6 +24,8 @@
 
 - (NSUInteger)pageForContentOffset:(CGPoint)offset; //returns -1 if not a multiple of the page size
 
+- (NSUInteger)pageToLoadForPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)curretOffset; //returns next logical page
+
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page;
 
 - (CGRect)frameForPage:(NSUInteger)page;
