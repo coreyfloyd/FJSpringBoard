@@ -51,9 +51,21 @@
 - (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSUInteger )index{
     
     static NSString* cellID = @"Cell";
-    FJSpringBoardCell* cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(60, 60) reuseIdentifier:cellID];
+    FJSpringBoardCell* cell = [self.springBoardView dequeueReusableCellWithIdentifier:cellID];
     
-    cell.contentView.backgroundColor = [UIColor blueColor];
+    if(cell == nil){
+     
+        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(60, 60) reuseIdentifier:cellID];
+        
+        cell.contentView.backgroundColor = [UIColor blueColor];
+        
+    }else{
+     
+        cell.contentView.backgroundColor = [UIColor greenColor];
+
+    }
+    
+  
     
     return cell;
     

@@ -269,7 +269,7 @@
     
     if([indexesToRemove count] > 0){
         
-        NSLog([indexesToRemove description]);
+        NSLog(@"removing cells %@", [indexesToRemove description]);
     }
     
     
@@ -290,7 +290,7 @@
     
     if([indexesToLoad count] > 0){
         
-        NSLog([indexesToLoad description]);
+        NSLog(@"loading cells %@", [indexesToLoad description]);
     }
     
     if(!indexesAreContiguous(indexesToLoad)){
@@ -325,6 +325,9 @@
     }];
     
     FJSpringBoardCell* cell = [[[c anyObject] retain] autorelease];
+    
+    if(cell == nil)
+        return nil;
     
     [self.dequeuedCells removeObject:cell];
     
