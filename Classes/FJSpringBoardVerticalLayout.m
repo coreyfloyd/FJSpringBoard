@@ -94,7 +94,8 @@
         
         CGRect rowFrame = [self _frameForRow:row];
         
-        if(CGRectIntersectsRect(viewRect, rowFrame)){
+        if(CGRectIntersectsRect
+           (viewRect, rowFrame)){
             
             [rowsInView addIndex:row];
         }

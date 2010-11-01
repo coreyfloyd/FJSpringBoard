@@ -167,6 +167,7 @@
             ALWAYS_ASSERT;
         }
         
+        [cell.contentView removeFromSuperview];
         [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
         [self.dequeuedCells addObject:cell];
         [cell release];
@@ -209,12 +210,18 @@
 
 - (void)_layoutCells{
     
-    NSUInteger index = [self.visibleCellIndexes firstIndex];
+    [self _layoutCellsAtIndexes:self.visibleCellIndexes];
+    
+}
+
+- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    NSUInteger index = [indexes firstIndex];
     
     while(index != NSNotFound){
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-       
+        
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
             
             ALWAYS_ASSERT;
@@ -224,7 +231,7 @@
         eachCell.contentView.frame = cellFrame;
         [self addSubview:eachCell.contentView];
         
-        index = [self.visibleCellIndexes indexGreaterThanIndex:index];
+        index = [indexes indexGreaterThanIndex:index];
     }
 }
 
@@ -260,6 +267,12 @@
     
     NSIndexSet* indexesToRemove = [NSIndexSet indexSetWithIndexesInRange:rangeToRemove];
     
+    if([indexesToRemove count] > 0){
+        
+        NSLog([indexesToRemove description]);
+    }
+    
+    
     if(!indexesAreContiguous(indexesToRemove)){
         
         ALWAYS_ASSERT;
@@ -274,6 +287,12 @@
 
     NSIndexSet* indexesToLoad = [NSIndexSet indexSetWithIndexesInRange:rangeToLoad];
 
+    
+    if([indexesToLoad count] > 0){
+        
+        NSLog([indexesToLoad description]);
+    }
+    
     if(!indexesAreContiguous(indexesToLoad)){
         
         ALWAYS_ASSERT;
@@ -281,7 +300,7 @@
     
     [self _loadCellsAtIndexes:indexesToLoad];
     
-    
+    [self _layoutCellsAtIndexes:indexesToLoad];
     
     if(!indexesAreContiguous(self.visibleCellIndexes)){
         
