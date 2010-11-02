@@ -190,7 +190,7 @@
 
 - (NSUInteger)_indexForPositon:(CellPosition)position{
     
-    return position.row * position.column;
+    return ((position.row+1) * self.cellsPerRow) - (self.cellsPerRow - position.column);
 }
 
 

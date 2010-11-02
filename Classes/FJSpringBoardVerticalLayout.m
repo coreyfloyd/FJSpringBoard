@@ -112,15 +112,14 @@
     
 }
 
-//TODO: check for signyness
-- (NSInteger)_rowForCellAtIndex:(NSUInteger)index{
+- (NSUInteger)_rowForCellAtIndex:(NSUInteger)index{
         
     float r = floorf((float)((float)index / (float)self.cellsPerRow));
     
-    NSInteger row = (NSInteger)r;
+    NSUInteger row = (NSUInteger)r;
     
     if(row > self.numberOfRows)
-        row = -1;
+        row = NSIntegerMax;
     
     return row;
 }
@@ -136,7 +135,7 @@
     
     NSInteger row = [self _rowForCellAtIndex:first];
     
-    if(row > 0){
+    if(row < NSIntegerMax){
                     
         prePadding = [self _cellIndexesInRowAtIndex:((NSUInteger)(row-1))];
         

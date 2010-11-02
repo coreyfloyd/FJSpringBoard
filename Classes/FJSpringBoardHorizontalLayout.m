@@ -9,6 +9,8 @@
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardUtilities.h"
 
+#define NUMBER_OF_PAGES_TO_PAD 1
+
 
 
 @interface FJSpringBoardLayout(horizontalInternal)
@@ -22,10 +24,11 @@
 @property(nonatomic, readwrite) CGSize contentSize;
 
 - (NSUInteger)_indexForPositon:(CellPosition)position;
+- (CellPosition)_positionForCellAtIndex:(NSUInteger)index;
 
 @end
 
-@interface FJSpringBoardLayout()
+@interface FJSpringBoardHorizontalLayout()
 
 @property (nonatomic) NSUInteger rowsPerPage;
 @property (nonatomic) NSUInteger cellsPerPage;
@@ -35,15 +38,11 @@
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
 
-- (CellPosition)_positionForCellAtIndex:(NSUInteger)index;
 - (CellPosition)_pageAdjustedCellPosition:(CellPosition)position;
 
 - (CGFloat)_horizontalOffsetForPage:(NSUInteger)page;
 - (NSUInteger)_pageForCellAtPosition:(CellPosition)position;
 
-- (void)_calculateAdjustedValues;
-- (CGRect)_boundsWithInsetsApplied;
-- (CGSize)_sizeOfCellWithPaddingApplied;
 
 - (NSUInteger)_rowsPerPage;
 - (CGSize)_pageSizeWithInsetsApplied;
@@ -126,11 +125,11 @@
     while (totalCellHeight < totalHeight) {
         
         totalCellHeight += cellHeight;
-        count ++;
         
         if(totalCellHeight >= totalHeight)
             break;
-        
+
+        count ++;
         totalCellHeight += self.verticalCellSpacing;
     }
     
@@ -169,6 +168,7 @@
     NSUInteger column = adjustedPosition.column;
     NSUInteger row = adjustedPosition.row;
     
+    //TODO: check insets for each page… hmmm
     CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) + ((float)page * self.pageSize.width);
     CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height); 
     
@@ -190,7 +190,12 @@
     
     NSUInteger index = [self _indexForPositon:position];
     
-    float p = floorf((float)((float)index / (float)self.cellsPerPage));
+    if(index == 0)
+        return 0;
+    
+    float p = (float)((float)(index) / (float)self.cellsPerPage);
+    
+    p = floorf(p);
     
     NSUInteger page = (NSUInteger)p;
     
@@ -233,27 +238,38 @@
 
 - (NSUInteger)pageForContentOffset:(CGPoint)offset{
         
-    NSUInteger pageSizeInt = (NSUInteger)self.pageSize.width;
+    float pageWidth = self.pageSize.width;
     
-    NSUInteger offsetInt = (NSUInteger)offset.x;
+    float offsetX = offset.x;
+    
+    float val = offsetX/pageWidth;
 
-    if(offsetInt % pageSizeInt != 0)
-        return -1;
+    val = roundf(val);
     
-    return (offsetInt / pageSizeInt);
+    NSUInteger page = (NSUInteger)val;
+    
+    if(page > self.pageCount){
+        ALWAYS_ASSERT;
+    }
+    
+    if(page < 0){
+        ALWAYS_ASSERT;
+    }
+    
+    return page;
     
 }
 
-- (NSUInteger)pageToLoadForPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)curretOffset{
+- (NSUInteger)nextPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
     
     NSUInteger pageSizeInt = (NSUInteger)self.pageSize.width;
     
-    float currentXOffset = curretOffset.x;
+    float currentXOffset = currentOffset.x;
     float previousXOffset = previousOffset.x;
     
-    if(currentXOffset == 0 && previousXOffset == 0){
-        //first load
-        return 0;
+    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
+        
+        return [self pageForContentOffset:currentOffset];
     }
     
     float nextPage;
@@ -264,7 +280,73 @@
 
     NSUInteger pageInt = (NSUInteger)nextPage;
     
+    if(pageInt > self.pageCount)
+        return pageInt--;
+    
+    if(pageInt < 0)
+        return pageInt++;
+    
     return pageInt;
+}
+
+- (NSUInteger)previousPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
+        
+    float currentXOffset = currentOffset.x;
+    float previousXOffset = previousOffset.x;
+    
+    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
+        
+        return [self pageForContentOffset:currentOffset];
+    }
+    
+    NSUInteger currentPage = [self pageForContentOffset:currentOffset];
+    
+    NSUInteger lastPage = 0;
+    
+    if((currentXOffset - previousXOffset) > 0)
+        lastPage = currentPage - 1;
+    else
+        lastPage = currentPage + 1;
+        
+    if(lastPage > self.pageCount)
+        return lastPage--;
+    
+    if(lastPage < 0)
+        return lastPage++;
+    
+    return lastPage;
+    
+}
+
+- (NSUInteger)removalPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
+    
+        
+    float currentXOffset = currentOffset.x;
+    float previousXOffset = previousOffset.x;
+    
+    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
+        
+        return NSUIntegerMax;
+    }
+    
+    NSUInteger currentPage = [self pageForContentOffset:currentOffset];
+    
+    NSUInteger lastPage = 0;
+    
+    if((currentXOffset - previousXOffset) > 0)
+        lastPage = currentPage - NUMBER_OF_PAGES_TO_PAD - 1;
+    else
+        lastPage = currentPage + NUMBER_OF_PAGES_TO_PAD + 1;
+    
+    if(lastPage > self.pageCount)
+        return NSUIntegerMax;
+    
+    if(lastPage < 0)
+        return NSUIntegerMax;
+    
+    return lastPage;
+    
+    
 }
 
 
@@ -288,6 +370,9 @@
 
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page{
         
+    if(page >= self.pageCount)
+        return nil;
+    
     NSUInteger numOfCellsOnPage = self.cellsPerPage;
 
     NSUInteger numberOfCellsBeforePage = 0;

@@ -18,7 +18,7 @@
 @property(nonatomic, readwrite) IndexRangeChanges lastChangeSet;
 @property(nonatomic, readwrite) CGPoint contentOffset;
 @property(nonatomic, retain, readwrite) NSIndexSet *currentIndexes;
-@property(nonatomic) NSUInteger currentPage;
+@property(nonatomic, retain) NSIndexSet *currentPages;
 
 - (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset;
 - (IndexRangeChanges)verticalChnagesBySettingContentOffset:(CGPoint)offset;
@@ -32,16 +32,30 @@
 @synthesize lastChangeSet;
 @synthesize contentOffset;
 @synthesize currentIndexes;    
-@synthesize currentPage;
+@synthesize currentPages;
+
+
 
 - (void) dealloc
 {
     
     [layout release];
     layout = nil;
+    [currentPages release];
+    currentPages = nil;
     [currentIndexes release];
     currentIndexes = nil;
     [super dealloc];
+}
+
+- (id) init
+{
+    self = [super init];
+    if (self != nil) {
+        self.currentPages = [NSMutableIndexSet indexSet];
+        self.currentIndexes = [NSMutableIndexSet indexSet];
+    }
+    return self;
 }
 
 
@@ -105,88 +119,127 @@
     
     FJSpringBoardHorizontalLayout* hor = (FJSpringBoardHorizontalLayout*)self.layout;
     
-    NSUInteger nextPage = [hor pageToLoadForPreviousContentOffset:self.contentOffset currentContentOffset:offset];
+    NSUInteger currentPage = [hor pageForContentOffset:offset];
     
-    BOOL movePositive = (nextPage > self.currentPage ? YES:NO); 
-
-    NSIndexSet* nextPageIndexes = [hor cellIndexesForPage:nextPage];
+    NSUInteger nextPage = [hor nextPageWithPreviousContentOffset:self.contentOffset currentContentOffset:offset];
     
-    NSIndexSet* currentPageIndexes = [hor cellIndexesForPage:self.currentPage];
-
-    NSIndexSet* previousPageIndexes = nil;
+    NSUInteger pageCount = [hor pageCount];
     
-    NSIndexSet* indexesToRemove = nil;
-
-    
-    if(movePositive){
-        
-        if(self.currentPage > 0){
-            
-            previousPageIndexes = [hor cellIndexesForPage:self.currentPage-1];
-            
-        } 
-        
-        if(self.currentPage > 1){
-            
-            indexesToRemove = [hor cellIndexesForPage:self.currentPage-2];
-            
-        }
-        
-    }else{
-        
-        if(hor.pageCount > self.currentPage+1){
-            
-            previousPageIndexes = [hor cellIndexesForPage:self.currentPage+1];
-            
-        } 
-        
-        if(hor.pageCount > self.currentPage+2){
-            
-            indexesToRemove = [hor cellIndexesForPage:self.currentPage+2];
-            
-        }
-        
-    }
-    
-    NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSet];
-    [newIndexes addIndexes:currentPageIndexes];
-    [newIndexes addIndexes:nextPageIndexes];
-    [newIndexes addIndexes:previousPageIndexes];
-    
-    
-    
-    
-    NSIndexSet* addedIndexes = indexesAdded(self.currentIndexes, newIndexes);
-    
-    if([addedIndexes count] == 0){
-        
-        return indexRangeChangesMake(NSMakeRange(0, 0), NSMakeRange(0, 0), NSMakeRange(0, 0));
-        
-    } 
-    
-    if(!indexesAreContiguous(addedIndexes)){
+    if(abs((int)(currentPage-nextPage) > 1)){
         
         ALWAYS_ASSERT;
     }
     
-    NSRange addedRange = rangeWithIndexes(addedIndexes);
     
+    if([self.currentPages count] == 0){
         
+        //first load
+                 
+        if(pageCount > 1)
+            nextPage = 1;
+        
+    }else if(![self.currentPages containsIndex:currentPage]){
+        
+        ALWAYS_ASSERT;
+    }
+       
+       
+    if(nextPage == currentPage){
+        
+        ALWAYS_ASSERT;
+    }
+    
+    NSUInteger previousPage = [hor previousPageWithPreviousContentOffset:self.contentOffset currentContentOffset:offset];
+    
+    //pages
+    NSMutableIndexSet* pages = [NSMutableIndexSet indexSet];
+    [pages addIndex:currentPage];
+    [pages addIndex:nextPage];
+    [pages addIndex:previousPage];
+    
+    NSLog(@"pages to load: %@", [pages description]);
+    
+    
+    //added pages
+    NSIndexSet* newPages = indexesAdded(self.currentPages, pages);
+
+    if([newPages count] == 0){
+        
+        NSLog(@"No new pages");
+
+        IndexRangeChanges c = indexRangeChangesMake(self.lastChangeSet.fullIndexRange, NSMakeRange(0, 0), NSMakeRange(0, 0));
+        self.lastChangeSet = c;
+        self.contentOffset = offset;
+        return self.lastChangeSet;
+        
+    }
+    
+    //added indexes
+    NSMutableIndexSet* addedIndexes = [NSMutableIndexSet indexSet];
+    [newPages enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    
+        NSIndexSet* pIndexes = [hor cellIndexesForPage:idx];
+        [addedIndexes addIndexes:pIndexes];
+    }];
+    
+    if(!indexesAreContiguous(addedIndexes)){
+        
+        ALWAYS_ASSERT;
+    }    
+       
+    NSLog(@"indexes to add: %@", [addedIndexes description]);
+
+    //page to remove
+    NSMutableIndexSet* pagesToRemove = [self.currentPages mutableCopy];
+    [pagesToRemove removeIndexes:pages];
+    
+    //indexes to remove
+    NSMutableIndexSet* indexesToRemove = [NSMutableIndexSet indexSet];
+    [pagesToRemove enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    
+        NSIndexSet* pIndexesToRemove = [hor cellIndexesForPage:idx];
+        [indexesToRemove addIndexes:pIndexesToRemove];
+
+        
+    }];
+    
     if(!indexesAreContiguous(indexesToRemove)){
         
         ALWAYS_ASSERT;
     }
     
+    NSLog(@"indexes to remove: %@", [indexesToRemove description]);
+
+    //total indexes
+    NSIndexSet* currentPageIndexes = [hor cellIndexesForPage:currentPage];
+    NSIndexSet* nextPageIndexes = [hor cellIndexesForPage:nextPage];
+    NSIndexSet* previousPageIndexes = [hor cellIndexesForPage:previousPage];
+    
+    NSMutableIndexSet* totalIndexes = [NSMutableIndexSet indexSet];
+    [totalIndexes addIndexes:currentPageIndexes];
+    [totalIndexes addIndexes:nextPageIndexes];
+    [totalIndexes addIndexes:previousPageIndexes];
+    
+    if(!indexesAreContiguous(totalIndexes)){
+        
+        ALWAYS_ASSERT;
+    }   
+    
+    NSLog(@"total indexes: %@", [totalIndexes description]);
+
+    
+    NSRange addedRange = rangeWithIndexes(addedIndexes);
+    
     NSRange removedRange = rangeWithIndexes(indexesToRemove);
     
-    NSRange totalRange = rangeWithIndexes(newIndexes);
+    NSRange totalRange = rangeWithIndexes(totalIndexes);
     
     IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
     
     self.contentOffset = offset;
-    self.currentPage = [hor pageForContentOffset:offset];
+    self.currentPages = pages;
     self.lastChangeSet = changes;
-    self.currentIndexes = newIndexes;
+    self.currentIndexes = totalIndexes;
     
     return changes;
     

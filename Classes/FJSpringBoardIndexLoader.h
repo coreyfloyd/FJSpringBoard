@@ -16,10 +16,10 @@
     FJSpringBoardLayout *layout;
     
     CGPoint contentOffset;
-    NSIndexSet* currentIndexes;
     IndexRangeChanges lastChangeSet;
     
-    NSUInteger currentPage;
+    NSIndexSet* currentIndexes;
+    NSIndexSet* currentPages;
 
 }
 @property (nonatomic, retain) FJSpringBoardLayout *layout;

@@ -29,7 +29,7 @@
     
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:self.view.bounds];
     self.springBoardView.backgroundColor = [UIColor redColor];
-    self.springBoardView.cellSize = CGSizeMake(60, 60);
+    self.springBoardView.cellSize = CGSizeMake(70, 70);
     self.springBoardView.horizontalCellSpacing = 10;
     self.springBoardView.verticalCellSpacing = 10;
     self.springBoardView.gridViewInsets = UIEdgeInsetsMake(15, 10, 15, 10);
@@ -45,7 +45,7 @@
 
 - (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
     
-    return 60;
+    return 67;
     
 }
 
@@ -56,7 +56,15 @@
     
     if(cell == nil){
      
-        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(60, 60) reuseIdentifier:cellID];
+        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(70, 70) reuseIdentifier:cellID];\
+        
+        UILabel* l = [[UILabel alloc] initWithFrame:cell.contentView.bounds];
+        l.tag = 99;
+        [cell.contentView addSubview:l];
+        l.textColor = [UIColor blackColor];
+        l.backgroundColor = [UIColor clearColor];
+        l.textAlignment = UITextAlignmentCenter;
+        [l release];
         
         cell.contentView.backgroundColor = [UIColor blueColor];
         
@@ -66,8 +74,9 @@
 
     }
     
+    UILabel* l = (UILabel*)[cell.contentView viewWithTag:99];
+    l.text = [NSString stringWithFormat:@"%i", index];
   
-    
     return cell;
     
 }

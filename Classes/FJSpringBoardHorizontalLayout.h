@@ -22,9 +22,14 @@
 }
 @property (nonatomic) NSUInteger pageCount;
 
-- (NSUInteger)pageForContentOffset:(CGPoint)offset; //returns -1 if not a multiple of the page size
+- (NSUInteger)pageForContentOffset:(CGPoint)offset; //rounds
 
-- (NSUInteger)pageToLoadForPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)curretOffset; //returns next logical page
+- (NSUInteger)nextPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns next logical page
+
+- (NSUInteger)previousPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns last logical page
+
+- (NSUInteger)removalPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns page which should be unloaded. returns NSUIntegerMax if no pages should be removed
+
 
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page;
 
