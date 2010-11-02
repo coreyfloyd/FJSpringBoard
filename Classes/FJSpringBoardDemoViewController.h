@@ -18,6 +18,7 @@
 @property(nonatomic) NSUInteger count;
 
 - (IBAction)insert;
+- (IBAction)deleteCells;
 
 @end
 

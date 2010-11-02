@@ -30,6 +30,16 @@
     
 }
 
+
+
+- (IBAction)deleteCells{
+     
+    self.count -= 2;
+    
+    [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    
+}
+
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     [super viewDidLoad];

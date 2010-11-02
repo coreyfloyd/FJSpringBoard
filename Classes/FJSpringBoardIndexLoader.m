@@ -23,6 +23,8 @@
 - (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset;
 - (IndexRangeChanges)verticalChnagesBySettingContentOffset:(CGPoint)offset;
 
+- (IndexRangeChanges)changesByRefreshingHorizontalLayout;
+- (IndexRangeChanges)changesByRefreshingVerticalLayout;
 @end
 
 
@@ -84,7 +86,7 @@
         
     } 
     
-    if(!indexesAreContiguous(addedIndexes)){
+    if(!indexesAreContinuous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }
@@ -95,7 +97,7 @@
     
     NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, newVisibleIndexes);
     
-    if(!indexesAreContiguous(removedIndexes)){
+    if(!indexesAreContinuous(removedIndexes)){
         
         ALWAYS_ASSERT;
     }
@@ -182,7 +184,7 @@
         [addedIndexes addIndexes:pIndexes];
     }];
     
-    if(!indexesAreContiguous(addedIndexes)){
+    if(!indexesAreContinuous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }    
@@ -203,7 +205,7 @@
         
     }];
     
-    if(!indexesAreContiguous(indexesToRemove)){
+    if(!indexesAreContinuous(indexesToRemove)){
         
         ALWAYS_ASSERT;
     }
@@ -220,7 +222,7 @@
     [totalIndexes addIndexes:nextPageIndexes];
     [totalIndexes addIndexes:previousPageIndexes];
     
-    if(!indexesAreContiguous(totalIndexes)){
+    if(!indexesAreContinuous(totalIndexes)){
         
         ALWAYS_ASSERT;
     }   
@@ -240,6 +242,90 @@
     self.currentPages = pages;
     self.lastChangeSet = changes;
     self.currentIndexes = totalIndexes;
+    
+    return changes;
+    
+    
+}
+
+
+- (IndexRangeChanges)changesByRefreshingLayout{
+    
+    
+    if([self.layout isKindOfClass:[FJSpringBoardVerticalLayout class]])
+        return [self changesByRefreshingVerticalLayout];
+    else
+        return [self changesByRefreshingHorizontalLayout];
+    
+    
+}
+
+
+- (IndexRangeChanges)changesByRefreshingVerticalLayout{
+    
+    return indexRangeChangesMake(NSMakeRange(0, 0), NSMakeRange(0, 0), NSMakeRange(0, 0));;
+}
+
+- (IndexRangeChanges)changesByRefreshingHorizontalLayout{
+    
+    FJSpringBoardHorizontalLayout* hor = (FJSpringBoardHorizontalLayout*)self.layout;
+    
+    
+    NSIndexSet* refreshedPages = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [hor pageCount])];
+    
+    NSIndexSet* missingPages = indexesRemoved(self.currentPages, refreshedPages);
+    
+    NSMutableIndexSet* newCurrentPages = [self.currentPages mutableCopy];
+    [newCurrentPages removeIndexes:missingPages]; 
+
+    //added indexes
+    NSMutableIndexSet* refreshedIndexes = [NSMutableIndexSet indexSet];
+    [newCurrentPages enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        NSIndexSet* pIndexes = [hor cellIndexesForPage:idx];
+        [refreshedIndexes addIndexes:pIndexes];
+        
+    }];
+    
+    if(!indexesAreContinuous(refreshedIndexes)){
+        
+        ALWAYS_ASSERT;
+    }    
+    
+    NSLog(@"refreshed page cell indexes: %@", [refreshedIndexes description]);
+    
+    NSIndexSet* addedCellIndexes = indexesAdded(self.currentIndexes, refreshedIndexes);
+    
+    NSIndexSet* removedCellIndexes = indexesRemoved(self.currentPages, refreshedIndexes);
+    
+        
+    if(!indexesAreContinuous(addedCellIndexes)){
+        
+        ALWAYS_ASSERT;
+    }
+   
+    
+    if(!indexesAreContinuous(removedCellIndexes)){
+        
+        ALWAYS_ASSERT;
+    }
+    
+    NSLog(@"indexes to add: %@", [addedCellIndexes description]);
+
+    NSLog(@"indexes to remove: %@", [removedCellIndexes description]);
+    
+    
+    NSRange addedRange = rangeWithIndexes(addedCellIndexes);
+    
+    NSRange removedRange = rangeWithIndexes(removedCellIndexes);
+    
+    NSRange totalRange = rangeWithIndexes(refreshedIndexes);
+    
+    IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
+    
+    self.currentPages = newCurrentPages;
+    self.lastChangeSet = changes;
+    self.currentIndexes = refreshedIndexes;
     
     return changes;
     

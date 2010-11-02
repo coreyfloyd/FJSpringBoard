@@ -10,7 +10,7 @@ BOOL rangesAreContiguous(NSRange first, NSRange second);
 NSRange rangeWithIndexes(NSIndexSet* indexes);
 
 
-BOOL indexesAreContiguous(NSIndexSet* indexes);
+BOOL indexesAreContinuous(NSIndexSet* indexes);
 
 NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet);
 
