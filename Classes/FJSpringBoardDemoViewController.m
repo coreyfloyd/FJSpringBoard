@@ -11,6 +11,7 @@
 @implementation FJSpringBoardDemoViewController
 
 @synthesize springBoardView;
+@synthesize count;
 
 
 - (void)dealloc {
@@ -21,18 +22,29 @@
     [super dealloc];
 }
 
+- (IBAction)insert{
+    
+    self.count += 2;
 
+    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    
+}
 
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:self.view.bounds];
+    self.count = 16;
+    
+    CGRect f = self.view.bounds;
+    f.origin.y += 40;
+    f.size.height -= 40;
+    self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
     self.springBoardView.backgroundColor = [UIColor redColor];
-    self.springBoardView.cellSize = CGSizeMake(70, 70);
-    self.springBoardView.horizontalCellSpacing = 10;
-    self.springBoardView.verticalCellSpacing = 10;
-    self.springBoardView.gridViewInsets = UIEdgeInsetsMake(15, 10, 15, 10);
+    self.springBoardView.cellSize = CGSizeMake(100, 150);
+    self.springBoardView.horizontalCellSpacing = 20;
+    self.springBoardView.verticalCellSpacing = 20;
+    self.springBoardView.springBoardInsets = UIEdgeInsetsMake(15, 10, 15, 10);
     self.springBoardView.delegate = self;
     self.springBoardView.dataSource = self;
     self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
@@ -45,7 +57,7 @@
 
 - (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
     
-    return 67;
+    return self.count;
     
 }
 
@@ -56,7 +68,7 @@
     
     if(cell == nil){
      
-        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(70, 70) reuseIdentifier:cellID];\
+        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(100, 150) reuseIdentifier:cellID];\
         
         UILabel* l = [[UILabel alloc] initWithFrame:cell.contentView.bounds];
         l.tag = 99;

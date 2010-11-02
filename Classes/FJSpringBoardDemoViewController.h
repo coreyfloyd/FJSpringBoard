@@ -12,8 +12,12 @@
 @interface FJSpringBoardDemoViewController : UIViewController <FJSpringBoardViewDelegate, FJSpringBoardViewDataSource> {
 
     FJSpringBoardView* springBoardView;
+    NSUInteger count;
 }
 @property (nonatomic, retain) FJSpringBoardView *springBoardView;
+@property(nonatomic) NSUInteger count;
+
+- (IBAction)insert;
 
 @end
 

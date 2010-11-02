@@ -5,10 +5,11 @@
 typedef enum  {
     FJSpringBoardCellModeNormal,
     FJSpringBoardCellModeSelection,
-    FJSpringBoardCellModeDelete
+    FJSpringBoardCellModeEditing //delete + move
 } FJSpringBoardCellMode;
 
 typedef enum  {
+    FJSpringBoardCellAnimationNone,
     FJSpringBoardCellAnimationFade
 } FJSpringBoardCellAnimation;
 
