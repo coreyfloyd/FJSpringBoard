@@ -26,7 +26,7 @@
     
     self.count += 2;
 
-    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
 
@@ -36,7 +36,7 @@
      
     self.count -= 2;
     
-    [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
 
