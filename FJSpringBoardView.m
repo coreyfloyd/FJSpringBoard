@@ -7,7 +7,6 @@
 //
 
 #import "FJSpringBoardView.h"
-#import "FJSpringBoardCellItem.h"
 #import "FJSpringBoardIndexLoader.h"
 #import "FJSpringBoardVerticalLayout.h"
 #import "FJSpringBoardHorizontalLayout.h"
@@ -26,10 +25,14 @@
 @property(nonatomic, retain) FJSpringBoardIndexLoader *indexLoader;
 @property(nonatomic, retain) FJSpringBoardLayout *layout;
 
-@property(nonatomic, retain) NSMutableArray *cellItems; //by index
-
 @property(nonatomic, retain) NSMutableIndexSet *allIndexes;
 @property(nonatomic, retain, readwrite) NSMutableIndexSet *visibleCellIndexes; //rename to loaded
+@property(nonatomic, retain) NSMutableIndexSet *dirtyIndexes;
+@property(nonatomic, retain) NSMutableIndexSet *indexesNeedingLayout;
+@property(nonatomic, retain) NSMutableIndexSet *indexesToDelete;
+@property(nonatomic, retain) NSMutableIndexSet *selectedIndexes;
+
+
 @property(nonatomic, retain, readwrite) NSMutableArray *cells; 
 @property(nonatomic, retain) NSMutableSet *dequeuedCells;
 
@@ -37,12 +40,15 @@
 
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes;
-- (void)_loadCellItemsAtIndexes:(NSIndexSet*)indexes;
-- (void)_layoutCells;
+- (void)_dequeueCellAtIndex:(NSUInteger)index;
+- (void)_loadCellAtIndex:(NSUInteger)index;
+- (void)_processChanges;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_updateCells;
 - (void)_insertCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_updateLayout;
+- (void)_removeCellsAtIndexes:(NSIndexSet*)indexes;
+- (void)_dequeueCells;
 
 @end
 
@@ -50,22 +56,32 @@
 
 @synthesize dataSource;
 @synthesize delegate;
+
 @synthesize springBoardInsets;
 @synthesize cellSize;
 @synthesize mode;
 @synthesize scrollDirection;
-@synthesize cellItems;
-@synthesize cells;
-@synthesize dequeuedCells;
+
 @synthesize indexLoader;
 @synthesize layout;
+
 @synthesize horizontalCellSpacing;
 @synthesize verticalCellSpacing;
-@synthesize visibleCellIndexes;
-@synthesize reloading;
+
+@synthesize cells;
+@synthesize dequeuedCells;
+
 @synthesize allIndexes;
+@synthesize visibleCellIndexes;
+@synthesize dirtyIndexes;
+@synthesize indexesNeedingLayout;
+@synthesize indexesToDelete;
+@synthesize selectedIndexes;
+
+@synthesize reloading;
 
 
+#pragma mark NSObject
 
 
 - (void)dealloc {    
@@ -75,6 +91,14 @@
     allIndexes = nil;    
     [visibleCellIndexes release];
     visibleCellIndexes = nil;
+    [dirtyIndexes release];
+    dirtyIndexes = nil;
+    [indexesToDelete release];
+    indexesToDelete = nil;
+    [indexesNeedingLayout release];
+    indexesNeedingLayout = nil;
+    [selectedIndexes release];
+    selectedIndexes = nil;    
     [cells release];
     cells = nil;
     [dequeuedCells release];
@@ -85,26 +109,32 @@
     layout = nil;
     [indexLoader release];
     indexLoader = nil;
-    [cellItems release];
-    cellItems = nil;
     [super dealloc];
     
 }
 
+#pragma mark UIView
 
 - (id)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
-        // Initialization code
+
         self.indexLoader = [[[FJSpringBoardIndexLoader alloc] init] autorelease];
+        
         self.visibleCellIndexes = [NSMutableIndexSet indexSet];
         self.allIndexes = [NSMutableIndexSet indexSet];
+        self.dirtyIndexes = [NSMutableIndexSet indexSet];
+        self.indexesNeedingLayout = [NSMutableIndexSet indexSet];
+        self.selectedIndexes = [NSMutableIndexSet indexSet];
+        self.indexesToDelete = [NSMutableIndexSet indexSet];
         self.cells = [NSMutableArray array];
         self.dequeuedCells = [NSMutableSet set];
-        self.cellItems = [NSMutableArray array];
+        
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
     }
     return self;
 }
+
+#pragma mark configure layout
 
 - (void)_configureLayout{
       
@@ -138,6 +168,26 @@
 }
 
 
+#pragma mark -
+#pragma mark UIScrollView
+
+- (void)setContentOffset:(CGPoint)offset{
+    
+	[super setContentOffset: offset];
+    [self _updateCells];
+}
+
+- (void)setContentOffset:(CGPoint)offset animated:(BOOL)animate{
+    
+	[super setContentOffset: offset animated: animate];    
+    [self _updateCells];
+    
+}
+
+
+
+#pragma mark -
+#pragma mark Reload
 
 - (void)reloadData{
     
@@ -146,38 +196,146 @@
     
     self.reloading = YES;
     
+    
     NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
     
-    [self _configureLayout];
-        
+    [self _dequeueCellsAtIndexes:self.visibleCellIndexes];
+    self.cells = nullArrayOfSize([self.allIndexes count]);
+
+    [self _configureLayout]; //triggers _updateCells
     
+    /*
     IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
     
     NSRange rangeToLoad = changes.fullIndexRange;
         
-    [self _dequeueCellsAtIndexes:self.visibleCellIndexes];
     
-    self.cells = nullArrayOfSize(self.layout.cellCount);
     
     NSIndexSet* indexes = [NSIndexSet indexSetWithIndexesInRange:rangeToLoad];
     
     [self _loadCellsAtIndexes:indexes];
-    
-    [self _loadCellItemsAtIndexes:indexes];      
-    
+        
     self.visibleCellIndexes = [NSMutableIndexSet indexSet];
     [self.visibleCellIndexes addIndexes:indexes];
     
     [self _layoutCells];
+    */
     
     self.reloading = NO;
 }
 
+
+- (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    [self.dirtyIndexes addIndexes:indexSet];
+    
+    [self _processChanges];
+    
+}
+
+- (void)_updateCells{
+    
+    if(indexLoader == nil)
+        return;
+    
+    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
+    
+    NSRange rangeToRemove = changes.indexRangeToRemove;
+    
+    NSRange rangeToLoad = changes.indexRangeToAdd;
+    
+    NSRange fullRange = changes.fullIndexRange;
+    NSMutableIndexSet* newIndexes = [NSIndexSet indexSetWithIndexesInRange:fullRange];
+    
+    if(!indexesAreContinuous(self.visibleCellIndexes)){
+        
+        ALWAYS_ASSERT;
+    }
+    
+    //check maths, newI == oldI - removed + added
+    self.visibleCellIndexes = newIndexes;    
+    
+    [self.indexesToDelete addIndexesInRange:rangeToRemove];
+    
+    [self.dirtyIndexes addIndexesInRange:rangeToLoad];
+    
+    [self.indexesNeedingLayout addIndexesInRange:rangeToLoad];
+    
+    [self _processChanges];
+    
+    
+    /*
+    [self _loadCellsAtIndexes:indexesToLoad];
+    
+    [self _layoutCellsAtIndexes:indexesToLoad];
+    
+    if(!indexesAreContinuous(self.visibleCellIndexes)){
+        
+        ALWAYS_ASSERT;
+    }
+    */
+}
+
+
+
+- (void)_processChanges{
+    
+    [self _dequeueCells];
+    
+    [self _layoutCellsAtIndexes:self.indexesNeedingLayout];
+    
+}
+
+
 #pragma mark -
+#pragma mark Layout Cells
 
 
-#pragma mark - Load unload cells
+- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    NSUInteger index = [indexes firstIndex];
+    
+    while(index != NSNotFound){
+        
+        if(![self.visibleCellIndexes containsIndex:index]){
+         
+            ALWAYS_ASSERT;
+        }
+        
+        if([self.dirtyIndexes containsIndex:index]){
+            
+            [self _loadCellAtIndex:index];
+            [self.dirtyIndexes removeIndex:index];
+            
+        }
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        if([NSNull null] == (NSNull*)eachCell){
+            
+            ALWAYS_ASSERT;
+        }
+        
+        CGRect cellFrame = [self.layout frameForCellAtIndex:index];
+        eachCell.contentView.frame = cellFrame;
+        [self addSubview:eachCell.contentView];
+        
+        [self.indexesNeedingLayout removeIndex:index];
+        
+        index = [indexes indexGreaterThanIndex:index];
+    }
+}
+
+
+
+#pragma mark -
+#pragma mark Load cells
+
+- (void)_loadCells{
+    
+    [self _loadCellsAtIndexes:self.visibleCellIndexes];
+}
 
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -185,15 +343,33 @@
 
     while(index != NSNotFound){
         
-        FJSpringBoardCell* cell = [self.dataSource gridView:self cellAtIndex:index];
-        cell.springBoardView = self;
-        [self.cells replaceObjectAtIndex:index withObject:cell];
-
+        [self _loadCellAtIndex:index];
+        
         index = [indexes indexGreaterThanIndex:index];
     }
 }
 
+- (void)_loadCellAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* cell = [self.dataSource gridView:self cellAtIndex:index];
+    [cell retain];
+    
+    cell.springBoardView = self;
+    [self _dequeueCellAtIndex:index];
+    
+    [self.cells replaceObjectAtIndex:index withObject:cell];
+    [cell release];
+    
+}
 
+#pragma mark -
+#pragma mark Dequeue Cells
+
+- (void)_dequeueCells{
+    
+    [self _dequeueCellsAtIndexes:self.indexesToDelete];
+    
+}
 
 - (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -201,20 +377,86 @@
     
     while(index != NSNotFound){
         
-        FJSpringBoardCell* cell = [[self.cells objectAtIndex:index] retain];
-        
-        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
-            
-            ALWAYS_ASSERT;
-        }
-        
-        [cell.contentView removeFromSuperview];
-        [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
-        [self.dequeuedCells addObject:cell];
-        [cell release];
+        [self _dequeueCellAtIndex:index];
         
         index = [indexes indexGreaterThanIndex:index];
     }
+}
+
+
+- (void)_dequeueCellAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    
+    if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+        
+        return;
+    }
+    [self.dequeuedCells addObject:cell];
+
+    [cell.contentView removeFromSuperview];
+    [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
+    
+    [self.indexesToDelete removeIndex:index];
+    
+}
+
+
+- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier{
+    
+    if([self.dequeuedCells count] == 0)
+        return nil;
+    
+    NSSet* c = [self.dequeuedCells objectsWithOptions:NSEnumerationConcurrent passingTest:^(id obj, BOOL *stop) {
+        
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+        if([cell.reuseIdentifier isEqualToString:identifier]){
+            *stop = YES;
+            return YES;
+        }
+        
+        return NO;
+        
+    }];
+    
+    FJSpringBoardCell* cell = [[[c anyObject] retain] autorelease];
+    
+    if(cell == nil)
+        return nil;
+    
+    [self.dequeuedCells removeObject:cell];
+    
+    return cell;
+    
+}
+
+
+
+#pragma mark -
+#pragma mark Insert / Delete Cells
+
+
+- (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    NSUInteger firstIndex = [indexSet firstIndex];
+    
+    if(firstIndex > [self.allIndexes lastIndex] + 1){
+        
+        ALWAYS_ASSERT;
+    } 
+    
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
+    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
+    [self _updateLayout];
+    
+    NSIndexSet* indexesToMove = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
+    
+    NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([indexesToMove count] + [indexSet count]))];
+    
+    [self _insertCellsAtIndexes:indexSet];
+    
+    [self _layoutCellsAtIndexes:indexesToRelayout];
+    
     
 }
 
@@ -244,6 +486,60 @@
 }
 
 
+- (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    NSIndexSet* idxs = [indexSet indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        return [self.allIndexes containsIndex:idx];
+        
+    }];
+    
+    if([idxs count] != [indexSet count]){
+        
+        ALWAYS_ASSERT;
+    }   
+    
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
+    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
+    [self _updateLayout];
+    
+    
+    IndexRangeChanges c = [self.indexLoader changesByRefreshingLayout];
+    NSRange newVisIndexRange = c.fullIndexRange;
+    
+    self.visibleCellIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:newVisIndexRange];        
+    
+    NSMutableIndexSet* all = [self.allIndexes mutableCopy];
+    NSUInteger firstIndex = [indexSet firstIndex];
+    
+    [all removeIndexesInRange:NSMakeRange(0, firstIndex)];
+    
+    NSIndexSet* indexesToMove = [all indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        return [self.visibleCellIndexes containsIndex:idx];
+        
+    }];
+    
+    NSMutableIndexSet* indexesToLoad = [indexesToMove mutableCopy];
+    [indexesToLoad removeIndexesInRange:NSMakeRange([indexesToLoad lastIndex]-[indexSet count], [indexSet count])];
+    
+    NSLog(@"indexesToRemove: %@", [indexSet description]);
+    NSLog(@"indexesToLoad: %@", [indexesToLoad description]);
+    NSLog(@"indexesToLayout: %@", [indexesToMove description]);
+    
+    
+    [self _removeCellsAtIndexes:indexSet];
+    
+    [self _loadCellsAtIndexes:indexesToLoad];
+    
+    [self _layoutCellsAtIndexes:indexesToMove];
+    
+    NSLog(@"visibleIndexes: %@", self.visibleCellIndexes);
+    NSLog(@"allIndexes: %@", self.allIndexes);
+    
+    
+}
+
 
 - (void)_removeCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -269,245 +565,65 @@
     
 }
 
-#pragma mark -
-#pragma mark Items
 
-- (void)_loadCellItemsAtIndexes:(NSIndexSet*)indexes{
+- (NSUInteger)numberOfCells{
     
-    NSUInteger index = [indexes firstIndex];
-    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    while(index != NSNotFound){
-        
-        FJSpringBoardCellItem* item = [[FJSpringBoardCellItem alloc] init];
-        [items addObject:item];
-        
-        index = [indexes indexGreaterThanIndex:index];
-    }
-    
-    [self.cellItems addObjectsFromArray:items];    
-
-}
-
-- (void)_layoutCells{
-    
-    [self _layoutCellsAtIndexes:self.visibleCellIndexes];
-    
-}
-
-- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    NSUInteger index = [indexes firstIndex];
-    
-    while(index != NSNotFound){
-        
-        if(![self.visibleCellIndexes containsIndex:index])
-            return;
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        
-        if(eachCell == (FJSpringBoardCell*)[NSNull null]){
-            
-            ALWAYS_ASSERT;
-        }
-        
-        CGRect cellFrame = [self.layout frameForCellAtIndex:index];
-        eachCell.contentView.frame = cellFrame;
-        [self addSubview:eachCell.contentView];
-        
-        index = [indexes indexGreaterThanIndex:index];
-    }
-}
-
-
-#pragma mark -
-
-- (void)setContentOffset:(CGPoint)offset{
-    
-	[super setContentOffset: offset];
-    [self _updateCells];
-}
-
-- (void)setContentOffset:(CGPoint)offset animated:(BOOL)animate{
-    
-	[super setContentOffset: offset animated: animate];    
-    [self _updateCells];
-    
-}
-
-- (void)_updateCells{
-        
-    if(self.visibleCellIndexes == nil)
-        return;
-    
-    if(self.reloading)
-        return;
-    
-    if(!indexesAreContinuous(self.visibleCellIndexes)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
-    
-    NSRange rangeToRemove = changes.indexRangeToRemove;
-    
-    NSIndexSet* indexesToRemove = [NSIndexSet indexSetWithIndexesInRange:rangeToRemove];
-    
-    if([indexesToRemove count] > 0){
-        
-        NSLog(@"removing cells %@", [indexesToRemove description]);
-    }
-    
-    
-    if(!indexesAreContinuous(indexesToRemove)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    [self _dequeueCellsAtIndexes:indexesToRemove];
-
-
-    NSRange rangeToLoad = changes.indexRangeToAdd;
-
-    NSIndexSet* indexesToLoad = [NSIndexSet indexSetWithIndexesInRange:rangeToLoad];
-
-    
-    if([indexesToLoad count] > 0){
-        
-        NSLog(@"loading cells %@", [indexesToLoad description]);
-    }
-    
-    if(!indexesAreContinuous(indexesToLoad)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    NSRange fullRange = changes.fullIndexRange;
-    NSMutableIndexSet* newIndexes = [NSIndexSet indexSetWithIndexesInRange:fullRange];
-    
-    self.visibleCellIndexes = newIndexes;
-    
-    [self _loadCellsAtIndexes:indexesToLoad];
-    
-    [self _layoutCellsAtIndexes:indexesToLoad];
-    
-    if(!indexesAreContinuous(self.visibleCellIndexes)){
-        
-        ALWAYS_ASSERT;
-    }
+    return [self.allIndexes count];
     
 }
 
 
-- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier{
+- (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index{
     
-    NSSet* c = [self.dequeuedCells objectsWithOptions:NSEnumerationConcurrent passingTest:^(id obj, BOOL *stop) {
-        
-        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
-        if([cell.reuseIdentifier isEqualToString:identifier]){
-            *stop = YES;
-            return YES;
-        }
-        
-        return NO;
-        
-    }];
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
     
-    FJSpringBoardCell* cell = [[[c anyObject] retain] autorelease];
-    
-    if(cell == nil)
+    if([NSNull null] == (NSNull*)cell)
         return nil;
     
-    [self.dequeuedCells removeObject:cell];
-    
     return cell;
+}
+
+
+- (NSUInteger)indexForCell:(FJSpringBoardCell *)cell{
+    
+    NSUInteger i = [self.cells indexOfObject:cell];
+    
+    return i;
     
 }
 
+- (CGRect)frameForCellAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    
+    if([NSNull null] == (NSNull*)cell){
+        
+       return [self.layout frameForCellAtIndex:index];
+        
+    }
+    
+    return cell.contentView.frame;
+    
+}
 
 #pragma mark -
-#pragma mark Reload
 
-- (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+- (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated{
+        
+    CGRect f =  [self frameForCellAtIndex:index];
     
-    [self _dequeueCellsAtIndexes:indexSet];
-    
-    [self _loadCellsAtIndexes:indexSet];
-    
-    [self _layoutCellsAtIndexes:indexSet];
+    //TODO: support scroll positions?
+    [self scrollRectToVisible:f animated:animated];
     
 }
-
 
 #pragma mark -
-#pragma mark Insertion and Removal
+#pragma mark Selection
 
-- (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+- (NSIndexSet *)indexesForSelectedCells{
     
-    NSUInteger firstIndex = [indexSet firstIndex];
-
-    if(firstIndex > [self.allIndexes lastIndex] + 1){
-        
-        ALWAYS_ASSERT;
-    } 
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
-    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
-    [self _updateLayout];
-
-    NSIndexSet* indexesToMove = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
-        
-    NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([indexesToMove count] + [indexSet count]))];
-    
-    [self _insertCellsAtIndexes:indexSet];
-        
-    [self _layoutCellsAtIndexes:indexesToRelayout];
-    
-    
+    return [self.selectedIndexes copy];
 }
-
-- (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
-        
-    NSIndexSet* idxs = [indexSet indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
-    
-        return [self.allIndexes containsIndex:idx];
-    
-    }];
-       
-    if([idxs count] != [indexSet count]){
-        
-        ALWAYS_ASSERT;
-    }   
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
-    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
-    [self _updateLayout];
-
-    
-
-    //update visible indexes by removing cell indexes that no longer exist (last indexes)
-    
-    IndexRangeChanges c = [self.indexLoader changesByRefreshingLayout];
-    NSRange newVisIndexRange = c.fullIndexRange;
-    NSIndexSet* indexesToLoad = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange((newVisIndexRange.length)-[indexSet count], [indexSet count])];
-    self.visibleCellIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:newVisIndexRange];        
-    
-    
-    NSUInteger firstIndex = [indexSet firstIndex];
-    NSIndexSet* indexesToMove = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
-    
-    
-    [self _removeCellsAtIndexes:indexSet];
-
-    [self _loadCellsAtIndexes:indexesToLoad];
-    
-    [self _layoutCellsAtIndexes:indexesToMove];
-    
-    
-}
-
-
 
 
 

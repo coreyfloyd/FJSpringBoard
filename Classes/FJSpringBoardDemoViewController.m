@@ -78,7 +78,7 @@
     
     if(cell == nil){
      
-        cell = [[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(100, 150) reuseIdentifier:cellID];\
+        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(100, 150) reuseIdentifier:cellID] autorelease];
         
         UILabel* l = [[UILabel alloc] initWithFrame:cell.contentView.bounds];
         l.tag = 99;

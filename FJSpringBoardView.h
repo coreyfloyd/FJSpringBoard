@@ -23,13 +23,26 @@ typedef enum  {
 
 @interface FJSpringBoardView : UIScrollView {
 
+    UIEdgeInsets springBoardInsets;
+    
+    CGSize cellSize;
+
+    CGFloat horizontalCellSpacing; 
+    CGFloat verticalCellSpacing; 
+    
+    FJSpringBoardViewScrollDirection scrollDirection;
+    
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
-
-    NSMutableArray *cellItems; //by index
     
     NSMutableIndexSet *allIndexes;
+    
     NSMutableIndexSet *visibleCellIndexes; 
+    NSMutableIndexSet *dirtyIndexes;
+    NSMutableIndexSet *indexesNeedingLayout;
+    NSMutableIndexSet *indexesToDelete;
+    NSMutableIndexSet *selectedIndexes;
+    
     NSMutableArray *cells; 
     NSMutableSet *dequeuedCells;
     
@@ -37,7 +50,7 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
 }
-
+//delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
 
@@ -50,10 +63,6 @@ typedef enum  {
 @property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
-
-//mode
-@property(nonatomic) FJSpringBoardCellMode mode;
-
 
 
 //cell loading
@@ -73,7 +82,7 @@ typedef enum  {
 @property(nonatomic, retain, readonly) NSMutableArray *cells; 
 @property(nonatomic, retain, readonly) NSMutableIndexSet *visibleCellIndexes; 
 
-
+//scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 //index sets must be continuous
@@ -81,13 +90,18 @@ typedef enum  {
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
 
+//mode
+@property(nonatomic) FJSpringBoardCellMode mode;
+
 
 //Selection, these only work in Selection Mode
+/*
 - (void)selectCellAtIndex:(NSUInteger)index;
 - (void)selectCellsAtIndexes:(NSIndexSet*)indexSet;
 
 - (void)deselectCellAtIndex:(NSUInteger)index;
 - (void)deselectCellsAtIndexes:(NSIndexSet*)indexSet;
+*/
 
 - (NSIndexSet *)indexesForSelectedCells;
 
