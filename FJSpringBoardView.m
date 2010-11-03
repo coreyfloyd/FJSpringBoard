@@ -12,6 +12,11 @@
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
 
+
+#define DELETE_ANIMATION_DURATION 0.8
+#define INSERT_ANIMATION_DURATION 0.8
+#define LAYOUT_ANIMATION_DURATION 0.25
+
 @interface FJSpringBoardCell(Internal)
 
 @property(nonatomic, assign) FJSpringBoardView* springBoardView;
@@ -295,12 +300,19 @@
     
     [self _dequeueCellsAtIndexes:[self.indexesToDequeue copy]];
     
+    
+    float layoutDelay = 0;
+    if([self.indexesToDelete count] > 0)
+        layoutDelay = DELETE_ANIMATION_DURATION;
+    
     [self _removeCellsAtIndexes:[self.indexesToDelete copy]];
     
     if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
         
         [UIView beginAnimations:@"layoutCells" context:nil];
-        [UIView setAnimationDuration:0.25];
+        [UIView setAnimationDuration:LAYOUT_ANIMATION_DURATION];
+        [UIView setAnimationDelay:layoutDelay];
+        
     }
     
     [self _layoutCellsAtIndexes:[self.indexesNeedingLayout copy]];
@@ -406,7 +418,7 @@
         [self _setCellContentViewsAtIndexes:indexes toAlpha:0];
         
         [UIView beginAnimations:@"insertCells" context:nil];
-        [UIView setAnimationDuration:1];
+        [UIView setAnimationDuration:INSERT_ANIMATION_DURATION];
         
         [self _setCellContentViewsAtIndexes:indexes toAlpha:1];
 
@@ -432,7 +444,7 @@
                 
         NSArray* cellsToRemove = [self.cells objectsAtIndexes:indexes];
 
-        [UIView animateWithDuration:0.75 
+        [UIView animateWithDuration:DELETE_ANIMATION_DURATION 
                               delay:0 
                             options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut) 
                          animations:^(void) {
