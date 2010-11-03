@@ -19,7 +19,7 @@
     IndexRangeChanges lastChangeSet;
     
     NSIndexSet* currentIndexes;
-    NSIndexSet* currentPages;
+    NSMutableIndexSet* currentPages;
 
 }
 @property (nonatomic, retain) FJSpringBoardLayout *layout;
@@ -27,7 +27,6 @@
 - (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset;
 @property(nonatomic, readonly) CGPoint contentOffset;
 
-- (IndexRangeChanges)changesByRefreshingLayout;
 
 @property(nonatomic, retain, readonly) NSIndexSet *currentIndexes;
 @property(nonatomic, readonly) IndexRangeChanges lastChangeSet;

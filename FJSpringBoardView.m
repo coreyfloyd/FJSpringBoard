@@ -456,7 +456,6 @@
 
     [self _insertNullsAtIndexes:indexSet];
     [self.dirtyIndexes addIndexes:indexSet];
-    [self.indexesNeedingLayout addIndexes:indexSet];
     
     NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
     [self.indexesNeedingLayout addIndexes:indexesToRelayout];

@@ -11,14 +11,33 @@
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
 
-#define NUMBER_OF_PAGES_TO_PAD 1
+#define MAX_PAGES 3
+
+NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIndexSet* indexes){
+    
+    __block NSUInteger answer = start;
+    __block int largestDiff = 0;
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    
+        int diff = abs((int)((int)start - (int)idx));
+        
+        if(diff > largestDiff){
+            largestDiff = diff;
+            answer = idx;
+        }
+        
+    }];
+    
+    return answer;
+}
 
 @interface FJSpringBoardIndexLoader()
 
 @property(nonatomic, readwrite) IndexRangeChanges lastChangeSet;
 @property(nonatomic, readwrite) CGPoint contentOffset;
 @property(nonatomic, retain, readwrite) NSIndexSet *currentIndexes;
-@property(nonatomic, retain) NSIndexSet *currentPages;
+@property(nonatomic, retain) NSMutableIndexSet *currentPages;
 
 - (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset;
 - (IndexRangeChanges)verticalChnagesBySettingContentOffset:(CGPoint)offset;
@@ -127,108 +146,87 @@
     
     NSUInteger pageCount = [hor pageCount];
     
+    
     if(abs((int)(currentPage-nextPage) > 1)){
         
         ALWAYS_ASSERT;
     }
     
+    if([self.currentPages count] > 0 && ![self.currentPages containsIndex:currentPage]){
+        
+        ALWAYS_ASSERT;
+    }
     
     if([self.currentPages count] == 0){
         
         //first load
-                 
         if(pageCount > 1)
             nextPage = 1;
         
-    }else if(![self.currentPages containsIndex:currentPage]){
-        
-        ALWAYS_ASSERT;
-    }
-       
-       
-    if(nextPage == currentPage){
-        
-        //ALWAYS_ASSERT;
-    }
-    
-    NSUInteger previousPage = [hor previousPageWithPreviousContentOffset:self.contentOffset currentContentOffset:offset];
-    
-    //pages
-    NSMutableIndexSet* pages = [NSMutableIndexSet indexSet];
-    [pages addIndex:currentPage];
-    [pages addIndex:nextPage];
-    [pages addIndex:previousPage];
-    
-    //NSLog(@"pages to load: %@", [pages description]);
-    
-    
-    //added pages
-    NSIndexSet* newPages = indexesAdded(self.currentPages, pages);
+    }   
 
-    if([newPages count] == 0){
-        
-        //NSLog(@"No new pages");
-
-        IndexRangeChanges c = indexRangeChangesMake(self.lastChangeSet.fullIndexRange, NSMakeRange(0, 0), NSMakeRange(0, 0));
-        self.lastChangeSet = c;
-        self.contentOffset = offset;
-        return self.lastChangeSet;
-        
-    }
-    
-    //added indexes
     NSMutableIndexSet* addedIndexes = [NSMutableIndexSet indexSet];
-    [newPages enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+
+    //current page
+    if(![self.currentPages containsIndex:currentPage]){
+        
+        NSIndexSet* pIndexes = [hor cellIndexesForPage:currentPage];
+        [addedIndexes addIndexes:pIndexes];
+    }
+    
+    
+    [self.currentPages addIndex:currentPage];
+    
+
+    //added pages
+    if(![self.currentPages containsIndex:nextPage]){
+        
+        NSIndexSet* pIndexes = [hor cellIndexesForPage:nextPage];
+        [addedIndexes addIndexes:pIndexes];
+    }
+    
+    [self.currentPages addIndex:nextPage];
+
+    
+    //removed pages
+    NSMutableIndexSet* indexesToRemove = [NSMutableIndexSet indexSet];
+    if([self.currentPages count] > MAX_PAGES){
+        
+        NSUInteger pageToKill = indexWithLargestAbsoluteValueFromStartignIndex(currentPage, self.currentPages);
+        [indexesToRemove addIndexes:[hor cellIndexesForPage:pageToKill]];
+        [self.currentPages removeIndex:pageToKill];
+        
+    }
+
+    //total indexes
+    NSMutableIndexSet* totalIndexes = [NSMutableIndexSet indexSet];
+    [self.currentPages enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
         NSIndexSet* pIndexes = [hor cellIndexesForPage:idx];
-        [addedIndexes addIndexes:pIndexes];
+        [totalIndexes addIndexes:pIndexes];
+    
     }];
     
     if([addedIndexes count] > 0 && !indexesAreContinuous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }    
-       
-    //NSLog(@"indexes to add: %@", [addedIndexes description]);
-
-    //page to remove
-    NSMutableIndexSet* pagesToRemove = [self.currentPages mutableCopy];
-    [pagesToRemove removeIndexes:pages];
-    
-    //indexes to remove
-    NSMutableIndexSet* indexesToRemove = [NSMutableIndexSet indexSet];
-    [pagesToRemove enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    
-        NSIndexSet* pIndexesToRemove = [hor cellIndexesForPage:idx];
-        [indexesToRemove addIndexes:pIndexesToRemove];
-
-        
-    }];
     
     if([indexesToRemove count] > 0 && !indexesAreContinuous(indexesToRemove)){
         
         ALWAYS_ASSERT;
     }
     
-    //NSLog(@"indexes to remove: %@", [indexesToRemove description]);
-
-    //total indexes
-    NSIndexSet* currentPageIndexes = [hor cellIndexesForPage:currentPage];
-    NSIndexSet* nextPageIndexes = [hor cellIndexesForPage:nextPage];
-    NSIndexSet* previousPageIndexes = [hor cellIndexesForPage:previousPage];
-    
-    NSMutableIndexSet* totalIndexes = [NSMutableIndexSet indexSet];
-    [totalIndexes addIndexes:currentPageIndexes];
-    [totalIndexes addIndexes:nextPageIndexes];
-    [totalIndexes addIndexes:previousPageIndexes];
-    
-    if(!indexesAreContinuous(totalIndexes)){
+    if([addedIndexes count] > 0 && !indexesAreContinuous(totalIndexes)){
         
         ALWAYS_ASSERT;
     }   
     
     //NSLog(@"total indexes: %@", [totalIndexes description]);
-
+    //NSLog(@"pages to load: %@", [pages description]);
+    //NSLog(@"indexes to add: %@", [addedIndexes description]);
+    //NSLog(@"indexes to remove: %@", [indexesToRemove description]);
+    
     
     NSRange addedRange = rangeWithIndexes(addedIndexes);
     
@@ -239,7 +237,6 @@
     IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
     
     self.contentOffset = offset;
-    self.currentPages = pages;
     self.lastChangeSet = changes;
     self.currentIndexes = totalIndexes;
     
