@@ -45,10 +45,10 @@
 - (void)_processChanges;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_updateCells;
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_updateLayout;
 - (void)_removeCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_dequeueCells;
+- (void)_insertNullsAtIndexes:(NSIndexSet*)indexes;
 
 @end
 
@@ -196,7 +196,6 @@
     
     self.reloading = YES;
     
-    
     NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
     
@@ -204,23 +203,6 @@
     self.cells = nullArrayOfSize([self.allIndexes count]);
 
     [self _configureLayout]; //triggers _updateCells
-    
-    /*
-    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
-    
-    NSRange rangeToLoad = changes.fullIndexRange;
-        
-    
-    
-    NSIndexSet* indexes = [NSIndexSet indexSetWithIndexesInRange:rangeToLoad];
-    
-    [self _loadCellsAtIndexes:indexes];
-        
-    self.visibleCellIndexes = [NSMutableIndexSet indexSet];
-    [self.visibleCellIndexes addIndexes:indexes];
-    
-    [self _layoutCells];
-    */
     
     self.reloading = NO;
 }
@@ -300,7 +282,7 @@
         
         if(![self.visibleCellIndexes containsIndex:index]){
          
-            ALWAYS_ASSERT;
+            return;
         }
         
         if([self.dirtyIndexes containsIndex:index]){
@@ -312,9 +294,10 @@
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
-        if([NSNull null] == (NSNull*)eachCell){
+        if([eachCell isKindOfClass:[NSNull class]]){
             
             ALWAYS_ASSERT;
+            return;
         }
         
         CGRect cellFrame = [self.layout frameForCellAtIndex:index];
@@ -447,42 +430,23 @@
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
-    [self _updateLayout];
+
+    [self _insertNullsAtIndexes:indexSet];
+    [self.dirtyIndexes addIndexes:indexSet];
+    [self.indexesNeedingLayout addIndexes:indexSet];
     
-    NSIndexSet* indexesToMove = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
+    NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
+    [self.indexesNeedingLayout addIndexes:indexesToRelayout];
     
-    NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([indexesToMove count] + [indexSet count]))];
-    
-    [self _insertCellsAtIndexes:indexSet];
-    
-    [self _layoutCellsAtIndexes:indexesToRelayout];
-    
-    
+    [self _updateLayout]; //triggers update
+            
 }
 
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
+- (void)_insertNullsAtIndexes:(NSIndexSet*)indexes{
     
-    NSUInteger index = [indexes firstIndex];
+    NSArray* nulls = nullArrayOfSize([indexes count]);
     
-    NSMutableArray* newCells = [NSMutableArray array];
-    
-    while(index != NSNotFound){
-        
-        FJSpringBoardCell* cell = (FJSpringBoardCell*)[NSNull null];
-        
-        if([self.visibleCellIndexes containsIndex:index]){
-            
-            cell = [self.dataSource gridView:self cellAtIndex:index];
-            cell.springBoardView = self;
-        }
-        
-        [newCells addObject:cell];
-        
-        index = [indexes indexGreaterThanIndex:index];
-    }
-    
-    [self.cells insertObjects:newCells atIndexes:indexes];
-    
+    [self.cells insertObjects:nulls atIndexes:indexes];
 }
 
 
