@@ -1,10 +1,4 @@
-//
-//  FJGridViewViewController.m
-//  FJGridView
-//
-//  Created by Corey Floyd on 10/21/10.
-//  Copyright 2010 Flying Jalapeño. All rights reserved.
-//
+
 
 #import "FJSpringBoardDemoViewController.h"
 
@@ -65,13 +59,13 @@
     
 }
 
-- (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView{
+- (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView{
     
     return self.count;
     
 }
 
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSUInteger )index{
+- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index{
     
     static NSString* cellID = @"Cell";
     FJSpringBoardCell* cell = [self.springBoardView dequeueReusableCellWithIdentifier:cellID];

@@ -1,10 +1,3 @@
-//
-//  FJGridView.m
-//  FJGridView
-//
-//  Created by Corey Floyd on 10/21/10.
-//  Copyright 2010 Flying Jalapeño. All rights reserved.
-//
 
 #import "FJSpringBoardView.h"
 #import "FJSpringBoardIndexLoader.h"
@@ -13,9 +6,9 @@
 #import "FJSpringBoardLayout.h"
 
 
-#define DELETE_ANIMATION_DURATION 0.8
-#define INSERT_ANIMATION_DURATION 0.8
-#define LAYOUT_ANIMATION_DURATION 0.25
+#define DELETE_ANIMATION_DURATION 1
+#define INSERT_ANIMATION_DURATION 1
+#define LAYOUT_ANIMATION_DURATION 2
 
 @interface FJSpringBoardCell(Internal)
 
@@ -229,7 +222,7 @@
 
 - (void)reloadData{
     
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
     
     [self _dequeueCellsAtIndexes:self.visibleCellIndexes];
@@ -386,7 +379,7 @@
 
 - (void)_loadCellAtIndex:(NSUInteger)index{
     
-    FJSpringBoardCell* cell = [self.dataSource gridView:self cellAtIndex:index];
+    FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:index];
     [cell retain];
     
     cell.springBoardView = self;
@@ -620,7 +613,7 @@
     
     self.layoutAnimation = animation;
 
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
 
     [self.indexesToInsert addIndexes:indexSet];
@@ -655,7 +648,7 @@
     
     self.layoutAnimation = animation;
     
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
     
     [self.indexesToDelete addIndexes:indexSet];

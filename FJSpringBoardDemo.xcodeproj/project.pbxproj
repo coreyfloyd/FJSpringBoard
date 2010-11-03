@@ -73,21 +73,9 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				C47A3452127F189A003889CA /* MacroUtilities.h */,
-				C47A34FB127F3141003889CA /* FJSpringBoard.h */,
-				C47A350C127F33EE003889CA /* FJSpringBoardUtilities.h */,
-				C47A350D127F33EE003889CA /* FJSpringBoardUtilities.m */,
-				C47A872212700C4700203213 /* FJSpringBoardView.h */,
-				C47A872312700C4700203213 /* FJSpringBoardView.m */,
-				C44F5DCD1270D07B007E9850 /* FJSpringBoardCell.h */,
-				C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */,
-				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
-				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
-				C47A3414127E575C003889CA /* Layout */,
-				1D3623240D0F684500981E51 /* FJSpringBoardDemoAppDelegate.h */,
-				1D3623250D0F684500981E51 /* FJSpringBoardDemoAppDelegate.m */,
-				28D7ACF60DDB3853001CB0EB /* FJSpringBoardDemoViewController.h */,
-				28D7ACF70DDB3853001CB0EB /* FJSpringBoardDemoViewController.m */,
+				C47A3F8F1281F016003889CA /* Demo */,
+				C47A3F901281F024003889CA /* Dependencies */,
+				C47A3F911281F035003889CA /* FJSpringBoard */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -152,6 +140,42 @@
 				C4F08558127CD2EE00F8BDBC /* FJSpringBoardHorizontalLayout.m */,
 			);
 			name = Layout;
+			sourceTree = "<group>";
+		};
+		C47A3F8F1281F016003889CA /* Demo */ = {
+			isa = PBXGroup;
+			children = (
+				1D3623240D0F684500981E51 /* FJSpringBoardDemoAppDelegate.h */,
+				1D3623250D0F684500981E51 /* FJSpringBoardDemoAppDelegate.m */,
+				28D7ACF60DDB3853001CB0EB /* FJSpringBoardDemoViewController.h */,
+				28D7ACF70DDB3853001CB0EB /* FJSpringBoardDemoViewController.m */,
+			);
+			name = Demo;
+			sourceTree = "<group>";
+		};
+		C47A3F901281F024003889CA /* Dependencies */ = {
+			isa = PBXGroup;
+			children = (
+				C47A3452127F189A003889CA /* MacroUtilities.h */,
+			);
+			name = Dependencies;
+			sourceTree = "<group>";
+		};
+		C47A3F911281F035003889CA /* FJSpringBoard */ = {
+			isa = PBXGroup;
+			children = (
+				C47A34FB127F3141003889CA /* FJSpringBoard.h */,
+				C47A350C127F33EE003889CA /* FJSpringBoardUtilities.h */,
+				C47A350D127F33EE003889CA /* FJSpringBoardUtilities.m */,
+				C47A872212700C4700203213 /* FJSpringBoardView.h */,
+				C47A872312700C4700203213 /* FJSpringBoardView.m */,
+				C44F5DCD1270D07B007E9850 /* FJSpringBoardCell.h */,
+				C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */,
+				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
+				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
+				C47A3414127E575C003889CA /* Layout */,
+			);
+			name = FJSpringBoard;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

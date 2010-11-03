@@ -1,10 +1,4 @@
-//
-//  FJGridView.h
-//  FJGridView
-//
-//  Created by Corey Floyd on 10/21/10.
-//  Copyright 2010 Flying Jalapeño. All rights reserved.
-//
+
 
 #import <UIKit/UIKit.h>
 
@@ -120,9 +114,9 @@ typedef enum  {
 @protocol FJSpringBoardViewDelegate
 
 @optional
-- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail
-- (void)gridView:(FJSpringBoardView *)gridView cellWasTappedAndHeldAtIndex:(NSUInteger)index; //use to set delete mode
-- (void)gridView:(FJSpringBoardView *)gridView cellWasDoubleTappedAtIndex:(NSUInteger)index; //have some fun!
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAndHeldAtIndex:(NSUInteger)index; //use to set delete mode
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index; //have some fun!
 
 
 @end
@@ -131,27 +125,27 @@ typedef enum  {
 
 @protocol FJSpringBoardViewDataSource
 
-- (NSUInteger)numberOfCellsInGridView:(FJSpringBoardView *)gridView;
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView cellAtIndex:(NSUInteger )index;
+- (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView;
+- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index;
 
 
 @optional
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canSelectCellAtIndex:(NSUInteger )index; 
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canMoveCellAtIndex:(NSUInteger )index;
-- (FJSpringBoardCell *)gridView:(FJSpringBoardView *)gridView movableCellForCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger )index;
-- (void)gridView:(FJSpringBoardView *)gridView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
-
-
-- (NSArray *)gridView:(FJSpringBoardView *)gridView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSUInteger )index;
-
-- (void)gridView:(FJSpringBoardView *)gridView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
-- (void)gridView:(FJSpringBoardView *)gridView commitAddingCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
+- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView movableCellForCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger )index;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
 
-- (BOOL)gridView:(FJSpringBoardView *)gridView canDeleteCellAtIndex:(NSUInteger )index;
-- (void)gridView:(FJSpringBoardView *)gridView commitDeletionForCellAtIndex:(NSUInteger )index; 
+- (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSUInteger )index;
+
+- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
+
+
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index; 
 
 
 @end
