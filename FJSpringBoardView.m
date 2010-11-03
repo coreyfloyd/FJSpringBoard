@@ -193,6 +193,21 @@
     
 }
 
+- (void)setContentSize:(CGSize)size{
+    
+    if(!CGSizeEqualToSize(size, self.contentSize)){
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+           
+            [self flashScrollIndicators];
+
+        });
+    }
+    
+    [super setContentSize:size];
+    
+}
+
 
 
 #pragma mark -
@@ -264,11 +279,11 @@
 
 - (void)_processChanges{
     
-    [self _dequeueCellsAtIndexes:self.indexesToDequeue];
+    [self _dequeueCellsAtIndexes:[self.indexesToDequeue copy]];
     
-    [self _removeCellsAtIndexes:self.indexesToDelete];
+    [self _removeCellsAtIndexes:[self.indexesToDelete copy]];
     
-    [self _layoutCellsAtIndexes:self.indexesNeedingLayout];
+    [self _layoutCellsAtIndexes:[self.indexesNeedingLayout copy]];
     
 }
 
@@ -279,24 +294,21 @@
 
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
     
-    NSUInteger index = [indexes firstIndex];
     
-    while(index != NSNotFound){
-        
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+    
         if(![self.visibleCellIndexes containsIndex:index]){
-         
+            
             return;
         }
         
         if([self.dirtyIndexes containsIndex:index]){
             
             [self _loadCellAtIndex:index];
-            [self.dirtyIndexes removeIndex:index];
             
         }
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        
         
         if([eachCell isEqual:[NSNull null]]){
             
@@ -309,9 +321,10 @@
         [self addSubview:eachCell.contentView];
         
         [self.indexesNeedingLayout removeIndex:index];
-        
-        index = [indexes indexGreaterThanIndex:index];
-    }
+                
+    
+    }];
+    
 }
 
 
@@ -326,14 +339,12 @@
 
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes{
     
-    NSUInteger index = [indexes firstIndex];
-
-    while(index != NSNotFound){
-        
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+       
         [self _loadCellAtIndex:index];
-        
-        index = [indexes indexGreaterThanIndex:index];
-    }
+
+    }];
+
 }
 
 - (void)_loadCellAtIndex:(NSUInteger)index{
@@ -346,6 +357,9 @@
     
     [self.cells replaceObjectAtIndex:index withObject:cell];
     [cell release];
+    
+    [self.dirtyIndexes removeIndex:index];
+
     
 }
 
@@ -374,16 +388,12 @@
     if([indexes count] == 0)
         return;
     
-    NSUInteger index = [indexes firstIndex];
-    
-    while(index != NSNotFound){
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
         [self _dequeueCellAtIndex:index];
         
-        [self.indexesToDequeue removeIndex:index];
-
-        index = [indexes indexGreaterThanIndex:index];        
-    }
+        [self.indexesToDequeue removeIndex:index];        
+    }];
     
     if([self.indexesToDequeue count] > 0){
         

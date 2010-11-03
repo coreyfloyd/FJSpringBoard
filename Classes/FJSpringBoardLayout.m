@@ -211,16 +211,15 @@
 - (NSIndexSet*)_cellIndexesWithRowIndexes:(NSIndexSet*)rowIndexes{
     
     NSMutableIndexSet* cellIndexes = [NSMutableIndexSet indexSet];
-    NSUInteger index = [rowIndexes firstIndex];
     
-    while(index != NSNotFound){
-        
+    [rowIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+    
         NSIndexSet* cellIndexesForEachRow = [self _cellIndexesInRowAtIndex:index];
         [cellIndexes addIndexes:cellIndexesForEachRow];
-        
-        index = [rowIndexes indexGreaterThanIndex:index];
-    }
+
     
+    }];
+        
     return cellIndexes;
 }
 

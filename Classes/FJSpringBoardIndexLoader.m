@@ -146,6 +146,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
     NSUInteger pageCount = [hor pageCount];
     
+    NSIndexSet* pageIndexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, pageCount)];
     
     if(abs((int)(currentPage-nextPage) > 1)){
         
@@ -165,35 +166,25 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         
     }   
 
-    NSMutableIndexSet* addedIndexes = [NSMutableIndexSet indexSet];
-
-    //current page
-    if(![self.currentPages containsIndex:currentPage]){
-        
-        NSIndexSet* pIndexes = [hor cellIndexesForPage:currentPage];
-        [addedIndexes addIndexes:pIndexes];
-    }
-    
+   
     
     [self.currentPages addIndex:currentPage];
-    
-
-    //added pages
-    if(![self.currentPages containsIndex:nextPage]){
-        
-        NSIndexSet* pIndexes = [hor cellIndexesForPage:nextPage];
-        [addedIndexes addIndexes:pIndexes];
-    }
-    
     [self.currentPages addIndex:nextPage];
-
     
+    NSUInteger rightPage = currentPage+1;
+    NSUInteger leftPage = currentPage-1;
+    
+    if([pageIndexes containsIndex:leftPage])
+        [self.currentPages addIndex:leftPage];
+    
+    if([pageIndexes containsIndex:rightPage])
+        [self.currentPages addIndex:rightPage];
+
+         
     //removed pages
-    NSMutableIndexSet* indexesToRemove = [NSMutableIndexSet indexSet];
     if([self.currentPages count] > MAX_PAGES){
         
         NSUInteger pageToKill = indexWithLargestAbsoluteValueFromStartignIndex(currentPage, self.currentPages);
-        [indexesToRemove addIndexes:[hor cellIndexesForPage:pageToKill]];
         [self.currentPages removeIndex:pageToKill];
         
     }
@@ -207,12 +198,16 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
     }];
     
+    NSIndexSet* addedIndexes = indexesAdded(self.currentIndexes, totalIndexes);
+    NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, totalIndexes);
+
+    
     if([addedIndexes count] > 0 && !indexesAreContinuous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }    
     
-    if([indexesToRemove count] > 0 && !indexesAreContinuous(indexesToRemove)){
+    if([removedIndexes count] > 0 && !indexesAreContinuous(removedIndexes)){
         
         ALWAYS_ASSERT;
     }
@@ -227,10 +222,11 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     //NSLog(@"indexes to add: %@", [addedIndexes description]);
     //NSLog(@"indexes to remove: %@", [indexesToRemove description]);
     
+      
     
     NSRange addedRange = rangeWithIndexes(addedIndexes);
     
-    NSRange removedRange = rangeWithIndexes(indexesToRemove);
+    NSRange removedRange = rangeWithIndexes(removedIndexes);
     
     NSRange totalRange = rangeWithIndexes(totalIndexes);
     
