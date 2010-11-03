@@ -148,7 +148,7 @@
        
     if(nextPage == currentPage){
         
-        ALWAYS_ASSERT;
+        //ALWAYS_ASSERT;
     }
     
     NSUInteger previousPage = [hor previousPageWithPreviousContentOffset:self.contentOffset currentContentOffset:offset];
@@ -159,7 +159,7 @@
     [pages addIndex:nextPage];
     [pages addIndex:previousPage];
     
-    NSLog(@"pages to load: %@", [pages description]);
+    //NSLog(@"pages to load: %@", [pages description]);
     
     
     //added pages
@@ -167,7 +167,7 @@
 
     if([newPages count] == 0){
         
-        NSLog(@"No new pages");
+        //NSLog(@"No new pages");
 
         IndexRangeChanges c = indexRangeChangesMake(self.lastChangeSet.fullIndexRange, NSMakeRange(0, 0), NSMakeRange(0, 0));
         self.lastChangeSet = c;
@@ -184,12 +184,12 @@
         [addedIndexes addIndexes:pIndexes];
     }];
     
-    if(!indexesAreContinuous(addedIndexes)){
+    if([addedIndexes count] > 0 && !indexesAreContinuous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }    
        
-    NSLog(@"indexes to add: %@", [addedIndexes description]);
+    //NSLog(@"indexes to add: %@", [addedIndexes description]);
 
     //page to remove
     NSMutableIndexSet* pagesToRemove = [self.currentPages mutableCopy];
@@ -205,12 +205,12 @@
         
     }];
     
-    if(!indexesAreContinuous(indexesToRemove)){
+    if([indexesToRemove count] > 0 && !indexesAreContinuous(indexesToRemove)){
         
         ALWAYS_ASSERT;
     }
     
-    NSLog(@"indexes to remove: %@", [indexesToRemove description]);
+    //NSLog(@"indexes to remove: %@", [indexesToRemove description]);
 
     //total indexes
     NSIndexSet* currentPageIndexes = [hor cellIndexesForPage:currentPage];
@@ -227,7 +227,7 @@
         ALWAYS_ASSERT;
     }   
     
-    NSLog(@"total indexes: %@", [totalIndexes description]);
+    //NSLog(@"total indexes: %@", [totalIndexes description]);
 
     
     NSRange addedRange = rangeWithIndexes(addedIndexes);
@@ -292,7 +292,7 @@
         ALWAYS_ASSERT;
     }    
     
-    NSLog(@"refreshed page cell indexes: %@", [refreshedIndexes description]);
+    //NSLog(@"refreshed page cell indexes: %@", [refreshedIndexes description]);
     
     NSIndexSet* addedCellIndexes = indexesAdded(self.currentIndexes, refreshedIndexes);
     
@@ -310,9 +310,9 @@
         ALWAYS_ASSERT;
     }
     
-    NSLog(@"indexes to add: %@", [addedCellIndexes description]);
+    //NSLog(@"indexes to add: %@", [addedCellIndexes description]);
 
-    NSLog(@"indexes to remove: %@", [removedCellIndexes description]);
+    //NSLog(@"indexes to remove: %@", [removedCellIndexes description]);
     
     
     NSRange addedRange = rangeWithIndexes(addedCellIndexes);

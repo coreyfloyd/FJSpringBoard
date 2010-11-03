@@ -40,13 +40,14 @@ typedef enum  {
     NSMutableIndexSet *visibleCellIndexes; 
     NSMutableIndexSet *dirtyIndexes;
     NSMutableIndexSet *indexesNeedingLayout;
+    NSMutableIndexSet *indexesToDequeue;
     NSMutableIndexSet *indexesToDelete;
     NSMutableIndexSet *selectedIndexes;
     
     NSMutableArray *cells; 
     NSMutableSet *dequeuedCells;
     
-    BOOL reloading;
+    BOOL layoutIsDirty;
     
     FJSpringBoardCellMode mode;
 }
