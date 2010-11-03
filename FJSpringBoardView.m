@@ -297,7 +297,6 @@
     
     [self _removeCellsAtIndexes:[self.indexesToDelete copy]];
     
-    
     if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
         
         [UIView beginAnimations:@"layoutCells" context:nil];
@@ -419,10 +418,92 @@
     
 }
 
+
+#pragma mark -
+#pragma mark Remove Cells
+
+- (void)_removeCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    if([indexes count] == 0)
+        return;
+    
+    
+    if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
+                
+        NSArray* cellsToRemove = [self.cells objectsAtIndexes:indexes];
+
+        [UIView animateWithDuration:0.75 
+                              delay:0 
+                            options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut) 
+                         animations:^(void) {
+                         
+                             [cellsToRemove enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                             
+                                 FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+                                 
+                                 if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+                                     
+                                     return;
+                                 }                                 
+                                 cell.contentView.alpha = 0;
+                                 
+                             }];
+                             
+                         } 
+                         completion:^(BOOL finished) {
+                         
+                             [cellsToRemove enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                                 
+                                 FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+                                 
+                                 if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+                                     
+                                     return;
+                                 }
+                                 
+                                 [cell.contentView removeFromSuperview];
+                                 [self.dequeuedCells addObject:cell];
+ 
+                             }];
+                             
+                         }];
+        
+        
+        [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+            
+            FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+            
+            if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+                
+                return;
+            }
+            
+            [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
+            
+            [self.indexesToDequeue removeIndex:index];        
+        }];
+        
+        
+        
+    }else{
+        
+        [self _dequeueCellsAtIndexes:indexes];
+        
+    }
+    
+    [self.cells removeObjectsAtIndexes:indexes];
+    
+    [self.indexesToDelete removeIndexes:indexes];
+
+}
+
+#pragma mark -
+#pragma mark Cell Animation
+
 - (void)_setCellContentViewsAtIndexes:(NSIndexSet*)indexes toAlpha:(float)alphaValue{
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-       
+        
         if(![self.visibleCellIndexes containsIndex:index]){
             
             return;
@@ -437,27 +518,11 @@
         }
         
         eachCell.contentView.alpha = alphaValue;
-                
+        
     }];
     
 }
 
-
-#pragma mark -
-#pragma mark Remove Cells
-
-- (void)_removeCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    if([indexes count] == 0)
-        return;
-    
-    [self _dequeueCellsAtIndexes:indexes];
-    
-    [self.cells removeObjectsAtIndexes:indexes];
-    
-    [self.indexesToDelete removeIndexes:indexes];
-
-}
 
 #pragma mark -
 #pragma mark Dequeue Cells
