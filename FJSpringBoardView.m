@@ -32,12 +32,15 @@
 @property(nonatomic, retain) NSMutableIndexSet *indexesToDelete;
 @property(nonatomic, retain) NSMutableIndexSet *indexesToDequeue;
 @property(nonatomic, retain) NSMutableIndexSet *selectedIndexes;
+@property(nonatomic, retain) NSMutableIndexSet *indexesToInsert;
 
 
 @property(nonatomic, retain, readwrite) NSMutableArray *cells; 
 @property(nonatomic, retain) NSMutableSet *dequeuedCells;
 
 @property(nonatomic) BOOL layoutIsDirty;
+
+@property(nonatomic) FJSpringBoardCellAnimation layoutAnimation;
 
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes;
@@ -49,7 +52,8 @@
 - (void)_updateLayout;
 - (void)_removeCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_insertNullsAtIndexes:(NSIndexSet*)indexes;
-
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes;
+- (void)_setCellContentViewsAtIndexes:(NSIndexSet*)indexes toAlpha:(float)alphaValue;
 @end
 
 @implementation FJSpringBoardView
@@ -78,8 +82,10 @@
 @synthesize indexesToDelete;
 @synthesize indexesToDequeue;
 @synthesize selectedIndexes;
+@synthesize indexesToInsert;
 
 @synthesize layoutIsDirty;
+@synthesize layoutAnimation;
 
 
 #pragma mark NSObject
@@ -90,6 +96,8 @@
     delegate = nil;
     [allIndexes release];
     allIndexes = nil; 
+    [indexesToInsert release];
+    indexesToInsert = nil;
     [indexesToDequeue release];
     indexesToDequeue = nil;    
     [visibleCellIndexes release];
@@ -128,6 +136,7 @@
         self.dirtyIndexes = [NSMutableIndexSet indexSet];
         self.indexesNeedingLayout = [NSMutableIndexSet indexSet];
         self.selectedIndexes = [NSMutableIndexSet indexSet];
+        self.indexesToInsert = [NSMutableIndexSet indexSet];
         self.indexesToDelete = [NSMutableIndexSet indexSet];
         self.indexesToDequeue = [NSMutableIndexSet indexSet];
         self.cells = [NSMutableArray array];
@@ -269,8 +278,11 @@
     if([indexesNeedingLayout count] > 0)
         NSLog(@"Indexes to Layout: %@", indexesNeedingLayout);
     
+       
     [self _processChanges];
+   
     
+    self.layoutAnimation = FJSpringBoardCellAnimationNone;
     self.layoutIsDirty = NO;
 
 }
@@ -279,12 +291,26 @@
 
 - (void)_processChanges{
     
+    [self _insertCellsAtIndexes:[self.indexesToInsert copy]];
+    
     [self _dequeueCellsAtIndexes:[self.indexesToDequeue copy]];
     
     [self _removeCellsAtIndexes:[self.indexesToDelete copy]];
     
+    
+    if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
+        
+        [UIView beginAnimations:@"layoutCells" context:nil];
+        [UIView setAnimationDuration:0.25];
+    }
+    
     [self _layoutCellsAtIndexes:[self.indexesNeedingLayout copy]];
     
+    if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
+        
+        [UIView commitAnimations];
+
+    }
 }
 
 
@@ -362,6 +388,60 @@
 
     
 }
+
+
+#pragma mark -
+#pragma mark Insert Cells
+
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    if([indexes count] == 0)
+        return;
+    
+    [self _insertNullsAtIndexes:indexes];
+    
+    [self _layoutCellsAtIndexes:indexes];
+        
+    if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
+        
+        [self _setCellContentViewsAtIndexes:indexes toAlpha:0];
+        
+        [UIView beginAnimations:@"insertCells" context:nil];
+        [UIView setAnimationDuration:1];
+        
+        [self _setCellContentViewsAtIndexes:indexes toAlpha:1];
+
+        [UIView commitAnimations];
+
+    }
+    
+    [self.indexesToInsert removeIndexes:indexes];
+    
+}
+
+- (void)_setCellContentViewsAtIndexes:(NSIndexSet*)indexes toAlpha:(float)alphaValue{
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+       
+        if(![self.visibleCellIndexes containsIndex:index]){
+            
+            return;
+        }
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        if([eachCell isEqual:[NSNull null]]){
+            
+            return;
+            
+        }
+        
+        eachCell.contentView.alpha = alphaValue;
+                
+    }];
+    
+}
+
 
 #pragma mark -
 #pragma mark Remove Cells
@@ -461,11 +541,12 @@
         ALWAYS_ASSERT;
     } 
     
+    self.layoutAnimation = animation;
+
     NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
 
-    [self _insertNullsAtIndexes:indexSet];
-    [self.dirtyIndexes addIndexes:indexSet];
+    [self.indexesToInsert addIndexes:indexSet];
     
     NSIndexSet* indexesToRelayout = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstIndex, ([self.allIndexes count] - firstIndex))];
     [self.indexesNeedingLayout addIndexes:indexesToRelayout];
@@ -494,6 +575,8 @@
         
         ALWAYS_ASSERT;
     }   
+    
+    self.layoutAnimation = animation;
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInGridView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];

@@ -38,16 +38,23 @@ typedef enum  {
     NSMutableIndexSet *allIndexes;
     
     NSMutableIndexSet *visibleCellIndexes; 
-    NSMutableIndexSet *dirtyIndexes;
+    
     NSMutableIndexSet *indexesNeedingLayout;
+
+    NSMutableIndexSet *dirtyIndexes;
     NSMutableIndexSet *indexesToDequeue;
+    
+    NSMutableIndexSet *indexesToInsert;
     NSMutableIndexSet *indexesToDelete;
+    
     NSMutableIndexSet *selectedIndexes;
     
     NSMutableArray *cells; 
     NSMutableSet *dequeuedCells;
     
     BOOL layoutIsDirty;
+    
+    FJSpringBoardCellAnimation layoutAnimation;
     
     FJSpringBoardCellMode mode;
 }
