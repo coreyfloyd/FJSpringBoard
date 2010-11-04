@@ -73,7 +73,6 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_unloadCellsAtIndexes:(NSIndexSet*)indexes;
 
 - (void)_insertCellsAtIndexes:(NSIndexSet*)indexes;
-- (void)_insertNullsAtIndexes:(NSIndexSet*)indexes;
 
 - (void)_deleteCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes;
@@ -228,9 +227,7 @@ float nanosecondsWithSeconds(float seconds){
     
     self.doubleTapped = YES;
     [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
-    
-    //[NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(resetDoubleTapTimer:) userInfo:nil repeats:NO];
-    
+        
     if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
         
         [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
@@ -571,7 +568,7 @@ float nanosecondsWithSeconds(float seconds){
 
 
 #pragma mark -
-#pragma mark Queue cells
+#pragma mark Queue / Dequeue cells
 
 
 - (void)_queueCellsAtIndexes:(NSIndexSet*)indexes{
@@ -588,6 +585,30 @@ float nanosecondsWithSeconds(float seconds){
     [self.indexesToQueue removeIndexes:indexes];
     
 }
+
+
+- (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    if([indexes count] == 0)
+        return;
+    
+    [self _removeCellsFromViewAtIndexes:indexes];
+    
+    [self _unloadCellsAtIndexes:indexes];
+    
+    [self.indexesToDequeue removeIndexes:indexes];        
+    
+    if([self.indexesToDequeue count] > 0){
+        
+        ALWAYS_ASSERT;
+    }
+}
+
+
+
+
+#pragma mark -
+#pragma mark Load / Unload Cells
 
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -608,6 +629,35 @@ float nanosecondsWithSeconds(float seconds){
 
 }
 
+
+- (void)_unloadCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+        
+        
+        if(![self.allIndexes containsIndex:index]){
+            
+            return;
+        }
+        
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
+            
+            return;
+        }
+        
+        [self.dequeuedCells addObject:eachCell];
+        [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
+        
+        
+    }];
+    
+}
+
+#pragma mark -
+#pragma mark layout / remove cells from view
 
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -634,26 +684,33 @@ float nanosecondsWithSeconds(float seconds){
 
 
 
-#pragma mark -
-#pragma mark Dequeue Cells
-
-
-- (void)_dequeueCellsAtIndexes:(NSIndexSet*)indexes{
+- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes{
     
-    if([indexes count] == 0)
-        return;
+    __block NSUInteger positionIndex = [positionIndexes firstIndex];
     
-    [self _removeCellsFromViewAtIndexes:indexes];
-    
-    [self _unloadCellsAtIndexes:indexes];
-    
-    [self.indexesToDequeue removeIndexes:indexes];        
-
-    if([self.indexesToDequeue count] > 0){
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        ALWAYS_ASSERT;
-    }
+        if(![self.queuedCellIndexes containsIndex:index]){
+            
+            return;
+        }
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
+        RECTLOG(eachCell.contentView.frame);
+        CGRect cellFrame = [self.layout frameForCellAtIndex:positionIndex];
+        eachCell.contentView.frame = cellFrame;
+        RECTLOG(eachCell.contentView.frame);
+        
+        [self addSubview:eachCell.contentView];
+        
+        positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
+        
+    }];
 }
+
+
 
 - (void)_removeCellsFromViewAtIndexes:(NSIndexSet*)indexes{
     
@@ -678,32 +735,6 @@ float nanosecondsWithSeconds(float seconds){
         [eachCell.contentView removeFromSuperview];
         [eachCell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
         RECTLOG(eachCell.contentView.frame);
-        
-    }];
-    
-}
-
-- (void)_unloadCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        
-        if(![self.allIndexes containsIndex:index]){
-            
-            return;
-        }
-        
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        
-        if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
-            
-            return;
-        }
-        
-        [self.dequeuedCells addObject:eachCell];
-        [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
-
         
     }];
     
@@ -761,6 +792,10 @@ float nanosecondsWithSeconds(float seconds){
 //3 situations, indexset in vis range, indexset > vis range, indexset < vis range
 
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    if([indexSet count] == 0)
+        return;
+    
     
     NSUInteger firstIndex = [indexSet firstIndex];
     
@@ -835,64 +870,14 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (void)_insertNullsAtIndexes:(NSIndexSet*)indexes{
-    
-    NSArray* nulls = nullArrayOfSize([indexes count]);
-    
-    [self.cells insertObjects:nulls atIndexes:indexes];
-}
-
-
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    if([indexes count] == 0)
-        return;
-    
-    //make room in the array
-    [self _insertNullsAtIndexes:indexes];
-    
-    //load
-    [self _loadCellsAtIndexes:indexes];
-    
-    //add to view
-    [self _layoutCellsAtIndexes:indexes];
-    
-    //update indexset
-    [self.indexesToInsert removeIndexes:indexes];
-
-    if(self.layoutAnimation == FJSpringBoardCellAnimationNone)
-        return;
-    
-    //fade in
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        eachCell.contentView.alpha = 0;
-        
-        [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
-                              delay:0 
-                            options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
-                         animations:^(void) {
-                             
-                             eachCell.contentView.alpha = 1;
-                             
-                         } completion:^(BOOL finished) {
-                             
-                             
-                             
-                             
-                         }];
-        
-        
-    }];
-    
-}
-
-
 #pragma mark -
 #pragma mark Delete Cells
 
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    if([indexSet count] == 0)
+        return;
+    
     
     NSIndexSet* idxs = [indexSet indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
@@ -980,33 +965,51 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes{
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
     
-    __block NSUInteger positionIndex = [positionIndexes firstIndex];
+    if([indexes count] == 0)
+        return;
     
+    //make room in the array
+    NSArray* nulls = nullArrayOfSize([indexes count]);
+    [self.cells insertObjects:nulls atIndexes:indexes];    
+    
+    //load
+    [self _loadCellsAtIndexes:indexes];
+    
+    //add to view
+    [self _layoutCellsAtIndexes:indexes];
+    
+    //update indexset
+    [self.indexesToInsert removeIndexes:indexes];
+    
+    if(self.layoutAnimation == FJSpringBoardCellAnimationNone)
+        return;
+    
+    //fade in
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.queuedCellIndexes containsIndex:index]){
-            
-            return;
-        }
-        
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        eachCell.contentView.alpha = 0;
         
-        NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
-        RECTLOG(eachCell.contentView.frame);
-        CGRect cellFrame = [self.layout frameForCellAtIndex:positionIndex];
-        eachCell.contentView.frame = cellFrame;
-        RECTLOG(eachCell.contentView.frame);
+        [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
+                              delay:0 
+                            options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
+                         animations:^(void) {
+                             
+                             eachCell.contentView.alpha = 1;
+                             
+                         } completion:^(BOOL finished) {
+                             
+                             
+                             
+                             
+                         }];
         
-        [self addSubview:eachCell.contentView];
-        
-        positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
         
     }];
+    
 }
-
-
 
 
 
