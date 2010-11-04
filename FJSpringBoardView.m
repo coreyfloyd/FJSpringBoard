@@ -671,6 +671,8 @@ float nanosecondsWithSeconds(float seconds){
             return;
         }
         
+        eachCell.mode = self.mode;
+
         NSLog(@"Laying Out Cell %i", index);
         RECTLOG(eachCell.contentView.frame);
         CGRect cellFrame = [self.layout frameForCellAtIndex:index];
@@ -696,6 +698,7 @@ float nanosecondsWithSeconds(float seconds){
         }
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        eachCell.mode = self.mode;
         
         NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
         RECTLOG(eachCell.contentView.frame);
@@ -734,6 +737,7 @@ float nanosecondsWithSeconds(float seconds){
         
         [eachCell.contentView removeFromSuperview];
         [eachCell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
+        eachCell.mode = FJSpringBoardCellModeNormal;
         RECTLOG(eachCell.contentView.frame);
         
     }];

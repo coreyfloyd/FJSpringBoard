@@ -23,12 +23,11 @@
  
  balance all copies with releases
  
+ get touch to entire close button or change to image and use the view
+ 
+ 
  @todo
-  
- editing mode
- 
- shake animation
- 
+    
  drag and drop reorder
 
  drag and drop and make a folder

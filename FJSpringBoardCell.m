@@ -76,6 +76,10 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     
 }  
 
+- (void)delete{
+    NSLog(@"deleted!");
+}
+
 
 - (void)setMode:(FJSpringBoardCellMode)aMode{
     
@@ -89,14 +93,35 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     if(oldMode == FJSpringBoardCellModeEditing){
         
         [self _stopWiggle];
+        [self _removeDeleteButton];
     }
     
     
     if(mode == FJSpringBoardCellModeEditing){
                 
         [self _startWiggle];
+        [self _addDeleteButton];
     }
     
+}
+
+- (void)_addDeleteButton{
+    
+    UIButton* b  = [UIButton buttonWithType:UIButtonTypeCustom];
+    b.tag = 1001;
+    b.frame = CGRectMake(0, 0, 30, 30);
+    b.center = self.contentView.bounds.origin;
+    [b setImage:[UIImage imageNamed:@"close.png"] forState:UIControlStateNormal];
+    [b addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
+    self.contentView.clipsToBounds = NO;
+    [self.contentView addSubview:b];
+    
+}
+
+- (void)_removeDeleteButton{
+    
+    [[self.contentView viewWithTag:1001] removeFromSuperview];
+    self.contentView.clipsToBounds = YES;
 }
 
 - (void)_startWiggle{
