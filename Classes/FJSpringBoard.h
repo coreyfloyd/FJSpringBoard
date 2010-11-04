@@ -24,9 +24,7 @@
  balance all copies with releases
  
  @todo
- 
- cancel touches / scrolling during animations
- 
+  
  editing mode
  
  shake animation

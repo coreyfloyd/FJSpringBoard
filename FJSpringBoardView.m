@@ -1078,6 +1078,37 @@ float nanosecondsWithSeconds(float seconds){
 
 
 #pragma mark -
+#pragma mark Mode
+
+
+- (void)setMode:(FJSpringBoardCellMode)aMode{
+    
+    if(mode == aMode)
+        return;
+    
+    //FJSpringBoardCellMode oldMode = mode;
+    
+    mode = aMode;
+    
+    [self.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+
+        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+            
+            return;
+        }
+        
+        cell.mode = mode;
+        
+    }];
+    
+}
+
+
+
+
+#pragma mark -
 #pragma mark Selection
 
 - (NSIndexSet *)indexesForSelectedCells{

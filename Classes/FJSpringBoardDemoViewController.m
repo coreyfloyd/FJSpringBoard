@@ -107,7 +107,7 @@
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index{
     
     NSLog(@"cell double tapped at index: %i", index);
-    self.count --;
+    self.count--;
     [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
@@ -115,6 +115,7 @@
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAndHeldAtIndex:(NSUInteger)index{
     
     NSLog(@"cell tapped and held at index: %i", index);
+    self.springBoardView.mode = FJSpringBoardCellModeEditing;
     
     
 }
