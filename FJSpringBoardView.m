@@ -57,6 +57,8 @@ float nanosecondsWithSeconds(float seconds){
 
 
 @property(nonatomic) BOOL doubleTapped;
+@property(nonatomic) BOOL longTapped;
+
 
 - (void)_configureLayout;
 - (void)_updateLayout;
@@ -111,8 +113,7 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize layoutAnimation;
 
 @synthesize doubleTapped;
-
-
+@synthesize longTapped;
 
 
 #pragma mark -
@@ -205,25 +206,11 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-- (void)didLongTap:(UILongPressGestureRecognizer*)g{
-    
-    CGPoint p = [g locationInView:self];
-
-    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
-    
-    if(indexOfCell == NSUIntegerMax)
-        return;
-
-    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAndHeldAtIndex:)])
-        [delegate springBoardView:self cellWasTappedAndHeldAtIndex:indexOfCell];
-    
-}
-
 
 
 - (void)didDoubleTap:(UITapGestureRecognizer*)g{
     
-    if(doubleTapped == YES){
+    if(doubleTapped){
      
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setDoubleTapped:) object:[NSNumber numberWithBool:NO]];
         
@@ -239,14 +226,43 @@ float nanosecondsWithSeconds(float seconds){
     if(indexOfCell == NSUIntegerMax)
         return;
     
+    self.doubleTapped = YES;
+    [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
+    
     if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
         
-        self.doubleTapped = YES;
         [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
         
-        [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
         
     }
+    
+}
+
+
+
+- (void)didLongTap:(UILongPressGestureRecognizer*)g{
+    
+    if(self.longTapped){
+        
+        if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled){
+            
+            self.longTapped = NO;
+        }
+        
+        return;
+    }
+    
+    CGPoint p = [g locationInView:self];
+    
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+    
+    self.longTapped = YES;
+
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAndHeldAtIndex:)])
+        [delegate springBoardView:self cellWasTappedAndHeldAtIndex:indexOfCell];
     
 }
 

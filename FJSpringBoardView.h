@@ -47,6 +47,7 @@ typedef enum  {
     BOOL layoutIsDirty;
 
     BOOL doubleTapped;
+    BOOL longTapped;
 
     FJSpringBoardCellAnimation layoutAnimation;
     
