@@ -38,7 +38,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.count = 16;
+    self.count = 12;
     
     CGRect f = self.view.bounds;
     f.origin.y += 40;

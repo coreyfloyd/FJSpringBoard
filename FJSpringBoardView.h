@@ -31,11 +31,11 @@ typedef enum  {
     
     NSMutableIndexSet *allIndexes;
     
-    NSMutableIndexSet *visibleCellIndexes; 
+    NSMutableIndexSet *queuedCellIndexes; 
     
     NSMutableIndexSet *indexesNeedingLayout;
 
-    NSMutableIndexSet *dirtyIndexes;
+    NSMutableIndexSet *indexesToQueue;
     NSMutableIndexSet *indexesToDequeue;
     
     NSMutableIndexSet *indexesToInsert;
@@ -56,7 +56,7 @@ typedef enum  {
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
 
-//view setup
+//view setup, Call reload after changing to update the layout
 @property(nonatomic) UIEdgeInsets springBoardInsets;
 
 @property(nonatomic) CGSize cellSize;
@@ -64,28 +64,29 @@ typedef enum  {
 @property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
 @property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
-@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
+@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection; 
 
-
-//cell loading
-- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier;
-
+//reload
 - (void)reloadData;
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
+
+
+//yes, like a UITableView
+- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier;
 
 
 //cell info
 - (NSUInteger)numberOfCells;
 - (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index;
 - (NSUInteger)indexForCell:(FJSpringBoardCell *)cell;
-
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 
 @property(nonatomic, retain, readonly) NSMutableArray *cells; 
-@property(nonatomic, retain, readonly) NSMutableIndexSet *visibleCellIndexes; 
+@property(nonatomic, retain, readonly) NSMutableIndexSet *queuedCellIndexes; 
 
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
+
 
 //index sets must be continuous
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;

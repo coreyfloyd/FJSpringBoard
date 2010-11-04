@@ -3,6 +3,16 @@
 #import "FJSpringBoardUtilities.h"
 
 
+NSIndexSet* continuousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
+    
+    NSUInteger length = last-first + 1;
+    NSIndexSet* indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(first, length)];
+    
+    return indexes;
+    
+}
+
+
 NSIndexSet* indexesAdded(NSIndexSet* oldSet, NSIndexSet* newSet){
     
     NSMutableIndexSet* s = [newSet mutableCopy];
