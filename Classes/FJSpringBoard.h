@@ -15,16 +15,21 @@
 
 /*
 
-
+ @bugs
+ 
  Dangling cell left sometimes. (usually cell 7?)
  
  cells that move into range after adding indexes are not loaded (fixed?)
  
  balance all copies with releases
  
+ @todo
+ 
  cancel touches / scrolling during animations
  
  editing mode
+ 
+ shake animation
  
  drag and drop reorder
 

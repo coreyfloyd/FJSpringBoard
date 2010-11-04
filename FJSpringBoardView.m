@@ -804,6 +804,7 @@ float nanosecondsWithSeconds(float seconds){
         ALWAYS_ASSERT;
     } 
     
+    
     self.layoutAnimation = animation;
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
@@ -870,6 +871,58 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
+
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    if([indexes count] == 0)
+        return;
+    
+    self.userInteractionEnabled = NO; 
+
+    //make room in the array
+    NSArray* nulls = nullArrayOfSize([indexes count]);
+    [self.cells insertObjects:nulls atIndexes:indexes];    
+    
+    //load
+    [self _loadCellsAtIndexes:indexes];
+    
+    //add to view
+    [self _layoutCellsAtIndexes:indexes];
+    
+    //update indexset
+    [self.indexesToInsert removeIndexes:indexes];
+    
+    if(self.layoutAnimation == FJSpringBoardCellAnimationNone)
+        return;
+    
+    //fade in
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        eachCell.contentView.alpha = 0;
+        
+        [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
+                              delay:0 
+                            options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
+                         animations:^(void) {
+                             
+                             eachCell.contentView.alpha = 1;
+                             
+                         } completion:^(BOOL finished) {
+                             
+                             
+                             self.userInteractionEnabled = YES;
+
+                             
+                         }];
+        
+        
+    }];
+    
+}
+
+
+
 #pragma mark -
 #pragma mark Delete Cells
 
@@ -890,6 +943,7 @@ float nanosecondsWithSeconds(float seconds){
         ALWAYS_ASSERT;
     }   
     
+
     self.layoutAnimation = animation;
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
@@ -965,60 +1019,13 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    if([indexes count] == 0)
-        return;
-    
-    //make room in the array
-    NSArray* nulls = nullArrayOfSize([indexes count]);
-    [self.cells insertObjects:nulls atIndexes:indexes];    
-    
-    //load
-    [self _loadCellsAtIndexes:indexes];
-    
-    //add to view
-    [self _layoutCellsAtIndexes:indexes];
-    
-    //update indexset
-    [self.indexesToInsert removeIndexes:indexes];
-    
-    if(self.layoutAnimation == FJSpringBoardCellAnimationNone)
-        return;
-    
-    //fade in
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        eachCell.contentView.alpha = 0;
-        
-        [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
-                              delay:0 
-                            options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
-                         animations:^(void) {
-                             
-                             eachCell.contentView.alpha = 1;
-                             
-                         } completion:^(BOOL finished) {
-                             
-                             
-                             
-                             
-                         }];
-        
-        
-    }];
-    
-}
-
-
-
 - (void)_deleteCellsAtIndexes:(NSIndexSet*)indexes{
     
     if([indexes count] == 0)
         return;
     
-    
+    self.userInteractionEnabled = NO;
+
     NSArray* cellsToRemove = [self.cells objectsAtIndexes:indexes];
     
     [UIView animateWithDuration:DELETE_ANIMATION_DURATION 
@@ -1056,6 +1063,9 @@ float nanosecondsWithSeconds(float seconds){
                              cell.contentView.alpha = 1;
                              
                          }];
+                         
+                         self.userInteractionEnabled = YES;
+
                          
                      }];
     
