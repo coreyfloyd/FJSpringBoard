@@ -5,6 +5,9 @@
 
 NSIndexSet* continuousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
     
+    if(last < first)
+        return nil;
+    
     NSUInteger length = last-first + 1;
     NSIndexSet* indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(first, length)];
     
