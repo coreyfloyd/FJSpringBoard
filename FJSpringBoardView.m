@@ -516,12 +516,7 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_removeCellsFromViewAtIndexes:(NSIndexSet*)indexes{
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        if(![self.queuedCellIndexes containsIndex:index]){
-            
-            return;
-        }
-        
+               
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
@@ -544,10 +539,8 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.queuedCellIndexes containsIndex:index]){
-            
+        if(![self.allIndexes containsIndex:index])
             return;
-        }
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
@@ -559,7 +552,6 @@ float nanosecondsWithSeconds(float seconds){
         [self.dequeuedCells addObject:eachCell];
         [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
 
-        
     }];
     
 }
@@ -753,12 +745,15 @@ float nanosecondsWithSeconds(float seconds){
     startIndex = MAX([self.queuedCellIndexes lastIndex] + 1 - [indexSet count], [indexSet firstIndex]);
     NSUInteger length = [indexSet count];
     NSIndexSet* toQueue = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(startIndex, length)];
+    
+    //remove indexes not on screen
     toQueue  = [toQueue indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
     
         return [self.queuedCellIndexes containsIndex:idx];
     
     }];
     
+    //remove non-existent indexes
     toQueue = [toQueue indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
         return [self.allIndexes containsIndex:idx];
@@ -768,17 +763,25 @@ float nanosecondsWithSeconds(float seconds){
     
     [self.indexesToQueue addIndexes:toQueue];
     
-    NSIndexSet* previousIndexPositionsForIndexesToQueue = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange([self.queuedCellIndexes lastIndex] + 1, length)];
+    //get pre-animation indexes for cells to be added to screen
+    NSMutableIndexSet* previousIndexPositionsForIndexesToQueue = [NSMutableIndexSet indexSet]; 
+    [toQueue enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
+        NSUInteger newIndex = idx + [indexSet count];
+        [previousIndexPositionsForIndexesToQueue addIndex:newIndex];
+        
+    }];
+      
+    //delete cells
     [self _deleteCellsAtIndexes:[self.indexesToDelete copy]];
 
     //add new cells
     [self _loadCellsAtIndexes:[self.indexesToQueue copy]];
 
-    //place at pre-animation indexes
+    //place new cells at pre-animation indexes
     [self _layoutCellsAtIndexes:[self.indexesToQueue copy] inIndexPositions:previousIndexPositionsForIndexesToQueue];
     
-    //animate
+    //animate cells to new positions
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
                         options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  

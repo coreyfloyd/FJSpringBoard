@@ -92,6 +92,7 @@
     
     UILabel* l = (UILabel*)[cell.contentView viewWithTag:99];
     l.text = [NSString stringWithFormat:@"%i", index];
+    cell.contentView.tag = index;
   
     return cell;
     
