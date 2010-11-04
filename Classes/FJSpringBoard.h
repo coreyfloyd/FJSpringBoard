@@ -18,7 +18,7 @@
 
  Dangling cell left sometimes. (usually cell 7?)
  
- cells that move into range after adding indexes are not loaded
+ cells that move into range after adding indexes are not loaded (fixed?)
  
  balance all copies with releases
 

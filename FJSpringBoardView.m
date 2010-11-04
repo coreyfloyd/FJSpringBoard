@@ -46,10 +46,6 @@ float nanosecondsWithSeconds(float seconds){
 
 @property(nonatomic, retain) NSMutableIndexSet *indexesNeedingLayout; //indexes that have moved
 
-
-
-
-
 @property(nonatomic, retain) NSMutableIndexSet *selectedIndexes;
 
 @property(nonatomic, retain, readwrite) NSMutableArray *cells; 
@@ -58,6 +54,9 @@ float nanosecondsWithSeconds(float seconds){
 @property(nonatomic) BOOL layoutIsDirty;
 
 @property(nonatomic) FJSpringBoardCellAnimation layoutAnimation;
+
+
+@property(nonatomic) BOOL doubleTapped;
 
 - (void)_configureLayout;
 - (void)_updateLayout;
@@ -76,6 +75,8 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_deleteCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes;
+
+- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point;
 
 @end
 
@@ -108,6 +109,10 @@ float nanosecondsWithSeconds(float seconds){
 
 @synthesize layoutIsDirty;
 @synthesize layoutAnimation;
+
+@synthesize doubleTapped;
+
+
 
 
 #pragma mark -
@@ -162,10 +167,123 @@ float nanosecondsWithSeconds(float seconds){
         self.dequeuedCells = [NSMutableSet set];
         
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
+        
+        UITapGestureRecognizer* d = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
+        d.numberOfTapsRequired = 2;
+        [self addGestureRecognizer:d];
+        
+        UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
+        [t requireGestureRecognizerToFail:d];
+        [self addGestureRecognizer:t];
+        
+        UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongTap:)];
+        [self addGestureRecognizer:l];
+        
+       
+        
     }
     return self;
 }
 
+
+#pragma mark -
+#pragma mark Touches
+
+- (void)didSingleTap:(UITapGestureRecognizer*)g{
+    
+    CGPoint p = [g locationInView:self];
+    
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAtIndex:)])
+        [delegate springBoardView:self cellWasTappedAtIndex:indexOfCell];
+    
+    
+    
+}
+
+- (void)didLongTap:(UILongPressGestureRecognizer*)g{
+    
+    CGPoint p = [g locationInView:self];
+
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAndHeldAtIndex:)])
+        [delegate springBoardView:self cellWasTappedAndHeldAtIndex:indexOfCell];
+    
+}
+
+
+
+- (void)didDoubleTap:(UITapGestureRecognizer*)g{
+    
+    if(doubleTapped == YES){
+     
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setDoubleTapped:) object:[NSNumber numberWithBool:NO]];
+        
+        [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
+        
+        return;
+    }
+    
+    CGPoint p = [g locationInView:self];
+    
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+    
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
+        
+        self.doubleTapped = YES;
+        [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
+        
+        [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
+        
+    }
+    
+}
+
+
+
+- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point{
+    
+    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+    
+        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
+        
+        if([c isEqual:[NSNull null]])
+            return NO;
+    
+        if(CGRectContainsPoint(c.contentView.frame, point)){
+            //TODO: uncomment
+            //*stop = YES;
+            return YES;
+
+        }
+        
+        return NO;
+    
+    }];
+    
+    if([a count] == 0)
+        return NSUIntegerMax;
+    
+    if([a count] > 1){
+        
+        ALWAYS_ASSERT;
+        
+    }
+    
+    return [a firstIndex];
+    
+}
 
 
 #pragma mark -

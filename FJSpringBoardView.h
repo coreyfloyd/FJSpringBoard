@@ -45,7 +45,9 @@ typedef enum  {
     NSMutableSet *dequeuedCells;
     
     BOOL layoutIsDirty;
-    
+
+    BOOL doubleTapped;
+
     FJSpringBoardCellAnimation layoutAnimation;
     
     FJSpringBoardCellMode mode;
@@ -110,7 +112,7 @@ typedef enum  {
 @end
 
 
-@protocol FJSpringBoardViewDelegate
+@protocol FJSpringBoardViewDelegate <NSObject>
 
 @optional
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail
@@ -122,7 +124,7 @@ typedef enum  {
 
 
 
-@protocol FJSpringBoardViewDataSource
+@protocol FJSpringBoardViewDataSource <NSObject>
 
 - (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView;
 - (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index;

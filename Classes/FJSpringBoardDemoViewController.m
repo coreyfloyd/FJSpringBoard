@@ -98,6 +98,23 @@
     
 }
 
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index{
+    
+    NSLog(@"cell tapped at index: %i", index);
+}    
+
+
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAndHeldAtIndex:(NSUInteger)index{
+    
+    NSLog(@"cell tapped and held at index: %i", index);
+    
+}
+
+- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index{
+    
+    NSLog(@"cell double tapped at index: %i", index);
+}
+
 /*
 // Override to allow orientations other than the default portrait orientation.
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
