@@ -472,12 +472,13 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.queuedCellIndexes containsIndex:index]){
-            
-            NSLog(@"Laying out nonvisibe cell!");
-        }
-        
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        if([eachCell isEqual:[NSNull null]]){
+            
+            NSLog(@"Error! attempting to layout unloaded cell.");
+            return;
+        }
         
         NSLog(@"Laying Out Cell %i", index);
         RECTLOG(eachCell.contentView.frame);
@@ -516,7 +517,13 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_removeCellsFromViewAtIndexes:(NSIndexSet*)indexes{
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-               
+        
+        if(![self.allIndexes containsIndex:index]){
+        
+            return;
+        }
+        
+        
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
@@ -539,8 +546,12 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.allIndexes containsIndex:index])
+        
+        if(![self.allIndexes containsIndex:index]){
+            
             return;
+        }
+        
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
@@ -552,6 +563,7 @@ float nanosecondsWithSeconds(float seconds){
         [self.dequeuedCells addObject:eachCell];
         [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
 
+        
     }];
     
 }
@@ -635,6 +647,8 @@ float nanosecondsWithSeconds(float seconds){
     
     //insert new cells
     [self _insertCellsAtIndexes:[self.indexesToInsert copy]];
+    
+    //load cells comming into range??
 
     //move cells out of the way
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
@@ -771,17 +785,16 @@ float nanosecondsWithSeconds(float seconds){
         [previousIndexPositionsForIndexesToQueue addIndex:newIndex];
         
     }];
-      
-    //delete cells
+        
     [self _deleteCellsAtIndexes:[self.indexesToDelete copy]];
 
     //add new cells
     [self _loadCellsAtIndexes:[self.indexesToQueue copy]];
 
-    //place new cells at pre-animation indexes
+    //place at pre-animation indexes
     [self _layoutCellsAtIndexes:[self.indexesToQueue copy] inIndexPositions:previousIndexPositionsForIndexesToQueue];
     
-    //animate cells to new positions
+    //animate
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
                         options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
@@ -875,6 +888,7 @@ float nanosecondsWithSeconds(float seconds){
                              [cell.contentView removeFromSuperview];
                              [cell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
                              [self.dequeuedCells addObject:cell];
+                             cell.contentView.alpha = 1;
                              
                          }];
                          
