@@ -653,7 +653,28 @@ float nanosecondsWithSeconds(float seconds){
     [self _insertCellsAtIndexes:[self.indexesToInsert copy]];
     
     //load cells comming into range??
+    NSMutableIndexSet* unloaded = [indexSet mutableCopy];
+    [unloaded removeIndexes:self.queuedCellIndexes];
+    startIndex = [self.queuedCellIndexes firstIndex];
+    length = [unloaded count];
+    
+    NSIndexSet* toQueue = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(startIndex, length)];
+    
+    //get pre-animation indexes for cells to be added to screen
+    NSMutableIndexSet* previousIndexPositionsForIndexesToQueue = [NSMutableIndexSet indexSet]; 
+    [toQueue enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        NSUInteger newIndex = idx - [indexSet count];
+        [previousIndexPositionsForIndexesToQueue addIndex:newIndex];
+        
+    }];
+    
+    [self.indexesToQueue addIndexes:toQueue];
+    [self _loadCellsAtIndexes:[self.indexesToQueue copy]];
 
+    //place at pre-animation indexes
+    [self _layoutCellsAtIndexes:[self.indexesToQueue copy] inIndexPositions:previousIndexPositionsForIndexesToQueue];
+    
     //move cells out of the way
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
