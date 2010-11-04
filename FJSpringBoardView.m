@@ -33,7 +33,7 @@ float nanosecondsWithSeconds(float seconds){
 
 @property(nonatomic, retain) NSMutableIndexSet *allIndexes;
 
-@property(nonatomic, retain, readwrite) NSMutableIndexSet *queuedCellIndexes; //indexes in view
+@property(nonatomic, retain) NSMutableIndexSet *queuedCellIndexes; 
 
 //used to process changes due to movement
 @property(nonatomic, retain) NSMutableIndexSet *indexesToQueue; 
@@ -99,7 +99,6 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize dequeuedCells;
 
 @synthesize allIndexes;
-@synthesize queuedCellIndexes;
 @synthesize indexesToQueue;
 @synthesize indexesNeedingLayout;
 @synthesize indexesToDelete;
@@ -124,8 +123,6 @@ float nanosecondsWithSeconds(float seconds){
     indexesToInsert = nil;
     [indexesToDequeue release];
     indexesToDequeue = nil;    
-    [queuedCellIndexes release];
-    queuedCellIndexes = nil;
     [indexesToQueue release];
     indexesToQueue = nil;
     [indexesToDelete release];
@@ -138,8 +135,6 @@ float nanosecondsWithSeconds(float seconds){
     cells = nil;
     [dequeuedCells release];
     dequeuedCells = nil;
-    [queuedCellIndexes release];
-    queuedCellIndexes = nil;
     [layout release];
     layout = nil;
     [indexLoader release];
@@ -156,7 +151,6 @@ float nanosecondsWithSeconds(float seconds){
 
         self.indexLoader = [[[FJSpringBoardIndexLoader alloc] init] autorelease];
         
-        self.queuedCellIndexes = [NSMutableIndexSet indexSet];
         self.allIndexes = [NSMutableIndexSet indexSet];
         self.indexesToQueue = [NSMutableIndexSet indexSet];
         self.indexesNeedingLayout = [NSMutableIndexSet indexSet];
@@ -215,6 +209,21 @@ float nanosecondsWithSeconds(float seconds){
     
     return cell.contentView.frame;
     
+}
+
+- (NSIndexSet*)visibleCellIndexes{
+    
+    return self.indexLoader.currentIndexes;   
+}
+
+- (NSMutableIndexSet*)queuedCellIndexes{
+    
+    return self.indexLoader.currentIndexes;
+}
+
+- (void)setQueuedCellIndexes:(NSMutableIndexSet *)indexes{
+    
+    self.indexLoader.currentIndexes = indexes;
 }
 
 
@@ -388,17 +397,12 @@ float nanosecondsWithSeconds(float seconds){
     
     NSRange rangeToLoad = changes.indexRangeToAdd;
     
-    NSRange fullRange = changes.fullIndexRange;
-    NSMutableIndexSet* newIndexes = [NSIndexSet indexSetWithIndexesInRange:fullRange];
-    
     if([self.queuedCellIndexes count] > 0 && !indexesAreContinuous(self.queuedCellIndexes)){
         
         ALWAYS_ASSERT;
     }
     
-    //check maths, newI == oldI - removed + added
-    self.queuedCellIndexes = newIndexes;    
-    
+    //check maths, newI == oldI - removed + added    
     [self.indexesToDequeue addIndexesInRange:rangeToRemove];
     
     [self.indexesToQueue addIndexesInRange:rangeToLoad];

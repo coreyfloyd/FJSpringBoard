@@ -36,7 +36,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 @property(nonatomic, readwrite) IndexRangeChanges lastChangeSet;
 @property(nonatomic, readwrite) CGPoint contentOffset;
-@property(nonatomic, retain, readwrite) NSIndexSet *currentIndexes;
 @property(nonatomic, retain) NSMutableIndexSet *currentPages;
 
 - (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset;
@@ -94,8 +93,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
     FJSpringBoardVerticalLayout* vert = (FJSpringBoardVerticalLayout*)self.layout;
     
-    NSIndexSet* newVisibleIndexes = [vert visibleCellIndexesWithPaddingForContentOffset:offset];
-    
+    NSMutableIndexSet* newVisibleIndexes = [[vert visibleCellIndexesWithPaddingForContentOffset:offset] mutableCopy];
     
     NSIndexSet* addedIndexes = indexesAdded(self.currentIndexes, newVisibleIndexes);
     
@@ -130,6 +128,8 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     self.contentOffset = offset;
     self.lastChangeSet = changes;
     self.currentIndexes = newVisibleIndexes;
+    
+    [newVisibleIndexes release];
     
     return changes;
     

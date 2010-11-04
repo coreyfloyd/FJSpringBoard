@@ -18,7 +18,7 @@
     CGPoint contentOffset;
     IndexRangeChanges lastChangeSet;
     
-    NSIndexSet* currentIndexes;
+    NSMutableIndexSet* currentIndexes;
     NSMutableIndexSet* currentPages;
 
 }
@@ -28,7 +28,7 @@
 @property(nonatomic, readonly) CGPoint contentOffset;
 
 
-@property(nonatomic, retain, readonly) NSIndexSet *currentIndexes;
+@property(nonatomic, retain) NSMutableIndexSet *currentIndexes;
 @property(nonatomic, readonly) IndexRangeChanges lastChangeSet;
 
 

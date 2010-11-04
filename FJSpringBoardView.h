@@ -30,9 +30,7 @@ typedef enum  {
     FJSpringBoardLayout *layout;
     
     NSMutableIndexSet *allIndexes;
-    
-    NSMutableIndexSet *queuedCellIndexes; 
-    
+        
     NSMutableIndexSet *indexesNeedingLayout;
 
     NSMutableIndexSet *indexesToQueue;
@@ -82,7 +80,7 @@ typedef enum  {
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 
 @property(nonatomic, retain, readonly) NSMutableArray *cells; 
-@property(nonatomic, retain, readonly) NSMutableIndexSet *queuedCellIndexes; 
+@property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
 
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
