@@ -212,9 +212,9 @@ float nanosecondsWithSeconds(float seconds){
     
     if(doubleTapped){
      
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(setDoubleTapped:) object:[NSNumber numberWithBool:NO]];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoubleTapped) object:nil];
         
-        [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
+        [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
         
         return;
     }
@@ -227,7 +227,9 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     self.doubleTapped = YES;
-    [self performSelector:@selector(setDoubleTapped:) withObject:[NSNumber numberWithBool:NO] afterDelay:0.5];
+    [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
+    
+    //[NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(resetDoubleTapTimer:) userInfo:nil repeats:NO];
     
     if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
         
@@ -238,6 +240,16 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
+- (void)resetDoubleTapped{
+    
+    self.doubleTapped = NO;
+}
+
+
+- (void)resetDoubleTapTimer:(NSTimer*)timer{
+    
+    self.doubleTapped = NO;
+}
 
 
 - (void)didLongTap:(UILongPressGestureRecognizer*)g{
@@ -541,25 +553,16 @@ float nanosecondsWithSeconds(float seconds){
     
     [self.indexesToQueue addIndexesInRange:rangeToLoad];
     
-    //[self.indexesNeedingLayout addIndexesInRange:rangeToLoad];
-
-    /*
-    if([indexesToDequeue count] > 0)
-        NSLog(@"Indexes to Dequeue %@", indexesToDequeue);
-    if([dirtyIndexes count] > 0)
-        NSLog(@"Indexes to Load: %@", dirtyIndexes);
-    if([indexesNeedingLayout count] > 0)
-        NSLog(@"Indexes to Layout: %@", indexesNeedingLayout);
-    */
-       
-    
     //dequeue cells that are no longer "visible"
     [self _dequeueCellsAtIndexes:[self.indexesToDequeue copy]];
     
     //queue cells that are now visible
     [self _queueCellsAtIndexes:[self.indexesToQueue copy]];
     
-       
+    if([cells count] != [self.allIndexes count]){
+        
+        ALWAYS_ASSERT;
+    }
     
     self.layoutAnimation = FJSpringBoardCellAnimationNone;
     self.layoutIsDirty = NO;
@@ -952,7 +955,7 @@ float nanosecondsWithSeconds(float seconds){
 
     //place at pre-animation indexes
     [self _layoutCellsAtIndexes:[self.indexesToQueue copy] inIndexPositions:previousIndexPositionsForIndexesToQueue];
-    
+        
     //animate
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
@@ -968,7 +971,7 @@ float nanosecondsWithSeconds(float seconds){
                          
                      } completion:^(BOOL finished) {
                          
-                         //update layout, content size, index loader, etc
+                         //update layout, cell count, content size, index loader, etc
                          [self _updateLayout];
 
                      }];
