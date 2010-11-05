@@ -127,7 +127,6 @@ typedef enum  {
 
 @optional
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail?
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAndHeldAtIndex:(NSUInteger)index; //use to set edit mode?
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index; //have some fun!!
 
 

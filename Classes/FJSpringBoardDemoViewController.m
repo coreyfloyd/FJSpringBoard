@@ -138,13 +138,6 @@
     
 }
 
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAndHeldAtIndex:(NSUInteger)index{
-    
-    NSLog(@"cell tapped and held at index: %i", index);
-    self.springBoardView.mode = FJSpringBoardCellModeEditing;
-    
-}
-
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex{
     
     id obj = [[self.model objectAtIndex:fromIndex] retain];
