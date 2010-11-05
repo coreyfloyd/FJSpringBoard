@@ -3,7 +3,7 @@
 #import "FJSpringBoardUtilities.h"
 
 
-NSIndexSet* continuousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
+NSIndexSet* contiguousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
     
     if(last < first)
         return nil;

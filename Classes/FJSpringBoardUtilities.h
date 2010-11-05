@@ -16,7 +16,7 @@ NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet);
 
 NSIndexSet* indexesAdded(NSIndexSet* oldSet, NSIndexSet* newSet);
 
-NSIndexSet* continuousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last);
+NSIndexSet* contiguousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last);
 
 typedef struct {
     NSRange fullIndexRange;
