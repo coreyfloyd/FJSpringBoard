@@ -21,6 +21,8 @@
 		C4A7D9F5128346600097CFBD /* NSObject+Proxy.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */; };
 		C4A7DAA11283569D0097CFBD /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4A7DAA01283569D0097CFBD /* QuartzCore.framework */; };
 		C4A7DAF312835A700097CFBD /* close.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DAF212835A700097CFBD /* close.png */; };
+		C4A7DDB61283FB6C0097CFBD /* FJReorderingIndexMap.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDB51283FB6C0097CFBD /* FJReorderingIndexMap.m */; };
+		C4A7DDE812848EA60097CFBD /* DemoModelObject.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDE712848EA60097CFBD /* DemoModelObject.m */; };
 		C4F082B5127A08CF00F8BDBC /* FJSpringBoardLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */; };
 		C4F08513127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */; };
 		C4F08556127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08555127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m */; };
@@ -53,6 +55,10 @@
 		C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Proxy.m"; sourceTree = "<group>"; };
 		C4A7DAA01283569D0097CFBD /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C4A7DAF212835A700097CFBD /* close.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = close.png; sourceTree = "<group>"; };
+		C4A7DDB41283FB6C0097CFBD /* FJReorderingIndexMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJReorderingIndexMap.h; sourceTree = "<group>"; };
+		C4A7DDB51283FB6C0097CFBD /* FJReorderingIndexMap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJReorderingIndexMap.m; sourceTree = "<group>"; };
+		C4A7DDE612848EA60097CFBD /* DemoModelObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoModelObject.h; sourceTree = "<group>"; };
+		C4A7DDE712848EA60097CFBD /* DemoModelObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoModelObject.m; sourceTree = "<group>"; };
 		C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardLayout.h; sourceTree = "<group>"; };
 		C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardLayout.m; sourceTree = "<group>"; };
 		C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardIndexLoader.h; sourceTree = "<group>"; };
@@ -159,6 +165,8 @@
 				1D3623250D0F684500981E51 /* FJSpringBoardDemoAppDelegate.m */,
 				28D7ACF60DDB3853001CB0EB /* FJSpringBoardDemoViewController.h */,
 				28D7ACF70DDB3853001CB0EB /* FJSpringBoardDemoViewController.m */,
+				C4A7DDE612848EA60097CFBD /* DemoModelObject.h */,
+				C4A7DDE712848EA60097CFBD /* DemoModelObject.m */,
 			);
 			name = Demo;
 			sourceTree = "<group>";
@@ -185,6 +193,8 @@
 				C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */,
 				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
 				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
+				C4A7DDB41283FB6C0097CFBD /* FJReorderingIndexMap.h */,
+				C4A7DDB51283FB6C0097CFBD /* FJReorderingIndexMap.m */,
 				C47A3414127E575C003889CA /* Layout */,
 			);
 			name = FJSpringBoard;
@@ -263,6 +273,8 @@
 				C4F08559127CD2EE00F8BDBC /* FJSpringBoardHorizontalLayout.m in Sources */,
 				C47A350E127F33EE003889CA /* FJSpringBoardUtilities.m in Sources */,
 				C4A7D9F5128346600097CFBD /* NSObject+Proxy.m in Sources */,
+				C4A7DDB61283FB6C0097CFBD /* FJReorderingIndexMap.m in Sources */,
+				C4A7DDE812848EA60097CFBD /* DemoModelObject.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -6,6 +6,7 @@
 
 @class FJSpringBoardIndexLoader;
 @class FJSpringBoardLayout;
+@class FJReorderingIndexMap;
 
 @protocol FJSpringBoardViewDelegate;
 @protocol FJSpringBoardViewDataSource;
@@ -53,11 +54,8 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
-    NSMutableArray *reorderingCells;
+    FJReorderingIndexMap* reorderingIndexMap;
     UIView* reorderingCellView;
-    NSUInteger reorderingCellIndex;
-    NSUInteger reorderingPlaceholderCellIndex;
-
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
@@ -144,12 +142,10 @@ typedef enum  {
 
 
 @optional
+//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
+//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
 
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
-
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
-
 
 - (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSUInteger )index;
 
