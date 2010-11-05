@@ -37,7 +37,7 @@ typedef enum  {
 
 @property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode
 
-@property(nonatomic) BOOL reording;
+@property(nonatomic) BOOL reordering;
 
 @end
 

@@ -25,6 +25,8 @@
  
  get touch to entire close button or change to image and use the view
  
+ compare to NSNotFound not NSUIntegerMax
+ 
  
  @todo
     
@@ -36,6 +38,10 @@
  
  drag and drop on a folder
  
+ 
+ @refactoring
+ 
+ add view behind cell contentview
  
 
 

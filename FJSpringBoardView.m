@@ -4,12 +4,12 @@
 #import "FJSpringBoardVerticalLayout.h"
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
+#import <QuartzCore/QuartzCore.h>
 
-
-#define DELETE_ANIMATION_DURATION 3
-#define INSERT_ANIMATION_DURATION 3
-#define RELOAD_ANIMATION_DURATION 3
-#define LAYOUT_ANIMATION_DURATION 2
+#define DELETE_ANIMATION_DURATION 1
+#define INSERT_ANIMATION_DURATION 1
+#define RELOAD_ANIMATION_DURATION 1
+#define LAYOUT_ANIMATION_DURATION 0.25
 
 
 float nanosecondsWithSeconds(float seconds){
@@ -55,9 +55,14 @@ float nanosecondsWithSeconds(float seconds){
 
 @property(nonatomic) FJSpringBoardCellAnimation layoutAnimation;
 
-
 @property(nonatomic) BOOL doubleTapped;
 @property(nonatomic) BOOL longTapped;
+
+@property(nonatomic, retain) UIView *reorderingCellView;
+@property(nonatomic) NSUInteger reorderingCellIndex;
+@property(nonatomic) BOOL animatingReorder;
+@property(nonatomic) NSUInteger reorderingPlaceholderCellIndex;
+@property(nonatomic, retain) NSMutableArray *reorderingCells; 
 
 
 - (void)_configureLayout;
@@ -78,6 +83,12 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes;
 
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point;
+
+- (UIImage*)_creatImageFromCell:(FJSpringBoardCell*)cell;
+- (void)_makeCellReorderableAtIndex:(NSUInteger)index;
+- (void)_reorderCellForTouchPoint:(CGPoint)point;
+- (void)_reorderCellsWithPlaceHolderIndex:(NSUInteger)index;
+- (void)_completeReorder;
 
 @end
 
@@ -114,6 +125,18 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize doubleTapped;
 @synthesize longTapped;
 
+@synthesize animatingReorder;
+@synthesize reorderingCellView;
+@synthesize reorderingCellIndex;
+@synthesize reorderingPlaceholderCellIndex;
+@synthesize reorderingCells;
+
+
+
+
+
+
+
 
 #pragma mark -
 #pragma mark NSObject
@@ -122,6 +145,10 @@ float nanosecondsWithSeconds(float seconds){
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
+    [reorderingCells release];
+    reorderingCells = nil;
+    [reorderingCellView release];
+    reorderingCellView = nil;    
     [allIndexes release];
     allIndexes = nil; 
     [indexesToInsert release];
@@ -183,131 +210,6 @@ float nanosecondsWithSeconds(float seconds){
         
     }
     return self;
-}
-
-
-#pragma mark -
-#pragma mark Touches
-
-- (void)didSingleTap:(UITapGestureRecognizer*)g{
-    
-    CGPoint p = [g locationInView:self];
-    
-    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
-    
-    if(indexOfCell == NSUIntegerMax)
-        return;
-
-    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAtIndex:)])
-        [delegate springBoardView:self cellWasTappedAtIndex:indexOfCell];
-    
-    
-    
-}
-
-
-
-- (void)didDoubleTap:(UITapGestureRecognizer*)g{
-    
-    if(doubleTapped){
-     
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoubleTapped) object:nil];
-        
-        [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
-        
-        return;
-    }
-    
-    CGPoint p = [g locationInView:self];
-    
-    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
-    
-    if(indexOfCell == NSUIntegerMax)
-        return;
-    
-    self.doubleTapped = YES;
-    [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
-        
-    if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
-        
-        [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
-        
-        
-    }
-    
-}
-
-- (void)resetDoubleTapped{
-    
-    self.doubleTapped = NO;
-}
-
-
-- (void)resetDoubleTapTimer:(NSTimer*)timer{
-    
-    self.doubleTapped = NO;
-}
-
-
-- (void)didLongTap:(UILongPressGestureRecognizer*)g{
-    
-    if(self.longTapped){
-        
-        if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled){
-            
-            self.longTapped = NO;
-        }
-        
-        return;
-    }
-    
-    CGPoint p = [g locationInView:self];
-    
-    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
-    
-    if(indexOfCell == NSUIntegerMax)
-        return;
-    
-    self.longTapped = YES;
-
-    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAndHeldAtIndex:)])
-        [delegate springBoardView:self cellWasTappedAndHeldAtIndex:indexOfCell];
-    
-}
-
-
-
-- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point{
-    
-    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
-    
-        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
-        
-        if([c isEqual:[NSNull null]])
-            return NO;
-    
-        if(CGRectContainsPoint(c.contentView.frame, point)){
-            //TODO: uncomment
-            //*stop = YES;
-            return YES;
-
-        }
-        
-        return NO;
-    
-    }];
-    
-    if([a count] == 0)
-        return NSUIntegerMax;
-    
-    if([a count] > 1){
-        
-        ALWAYS_ASSERT;
-        
-    }
-    
-    return [a firstIndex];
-    
 }
 
 
@@ -663,21 +565,25 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = nil;
+        
+        if(self.reorderingCells)
+            eachCell = [self.reorderingCells objectAtIndex:index];
+        else
+            eachCell = [self.cells objectAtIndex:index];
         
         if([eachCell isEqual:[NSNull null]]){
             
-            NSLog(@"Error! attempting to layout unloaded cell.");
             return;
         }
         
         eachCell.mode = self.mode;
 
-        NSLog(@"Laying Out Cell %i", index);
-        RECTLOG(eachCell.contentView.frame);
+        //NSLog(@"Laying Out Cell %i", index);
+        //RECTLOG(eachCell.contentView.frame);
         CGRect cellFrame = [self.layout frameForCellAtIndex:index];
         eachCell.contentView.frame = cellFrame;
-        RECTLOG(eachCell.contentView.frame);
+        //RECTLOG(eachCell.contentView.frame);
         
         [self addSubview:eachCell.contentView];
     
@@ -700,11 +606,11 @@ float nanosecondsWithSeconds(float seconds){
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         eachCell.mode = self.mode;
         
-        NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
-        RECTLOG(eachCell.contentView.frame);
+        //NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
+        //RECTLOG(eachCell.contentView.frame);
         CGRect cellFrame = [self.layout frameForCellAtIndex:positionIndex];
         eachCell.contentView.frame = cellFrame;
-        RECTLOG(eachCell.contentView.frame);
+        //RECTLOG(eachCell.contentView.frame);
         
         [self addSubview:eachCell.contentView];
         
@@ -1080,7 +986,6 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-
 #pragma mark -
 #pragma mark Mode
 
@@ -1110,6 +1015,346 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
+
+#pragma mark -
+#pragma mark Touches
+
+- (void)didSingleTap:(UITapGestureRecognizer*)g{
+    
+    if(self.mode != FJSpringBoardCellModeNormal)
+        return;
+    
+    CGPoint p = [g locationInView:self];
+    
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+    
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAtIndex:)])
+        [delegate springBoardView:self cellWasTappedAtIndex:indexOfCell];
+    
+    
+    
+}
+
+
+
+- (void)didDoubleTap:(UITapGestureRecognizer*)g{
+    
+    if(self.mode != FJSpringBoardCellModeNormal)
+        return;
+    
+    if(doubleTapped){
+        
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoubleTapped) object:nil];
+        
+        [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
+        
+        return;
+    }
+    
+    CGPoint p = [g locationInView:self];
+    
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+    
+    self.doubleTapped = YES;
+    [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
+    
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
+        
+        [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
+        
+        
+    }
+    
+}
+
+- (void)resetDoubleTapped{
+    
+    self.doubleTapped = NO;
+}
+
+
+- (void)didLongTap:(UILongPressGestureRecognizer*)g{
+    
+    if(self.longTapped){
+        
+        if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled){
+            
+            self.longTapped = NO;
+        }
+        
+        return;
+    }
+    
+    CGPoint p = [g locationInView:self];
+
+    if(self.mode == FJSpringBoardCellModeEditing){
+        
+        
+        if(g.state == UIGestureRecognizerStateBegan){
+            
+            NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+            
+            [self _makeCellReorderableAtIndex:indexOfCell];
+            
+            return;
+        }
+        
+        if(g.state == UIGestureRecognizerStateChanged){
+            
+            self.reorderingCellView.center = p;            
+            [self _reorderCellForTouchPoint:p];
+            
+            return;
+        }
+        
+        if(g.state == UIGestureRecognizerStateEnded){
+            
+            [self _completeReorder];
+            
+            return;
+        }
+        
+        return;
+    }
+    
+    
+
+    NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSUIntegerMax)
+        return;
+    
+    self.longTapped = YES;
+    
+    if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAndHeldAtIndex:)])
+        [delegate springBoardView:self cellWasTappedAndHeldAtIndex:indexOfCell];
+    
+}
+
+
+
+- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point{
+    
+    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
+        
+        if([c isEqual:[NSNull null]])
+            return NO;
+        
+        if(CGRectContainsPoint(c.contentView.frame, point)){
+            //TODO: uncomment
+            //*stop = YES;
+            return YES;
+            
+        }
+        
+        return NO;
+        
+    }];
+    
+    if([a count] == 0)
+        return NSUIntegerMax;
+    
+    if([a count] > 1){
+        
+        ALWAYS_ASSERT;
+        
+    }
+    
+    return [a firstIndex];
+    
+}
+
+#pragma mark -
+#pragma mark reorder
+- (void)_makeCellReorderableAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    
+    if([cell isEqual:[NSNull null]]){
+        
+        ALWAYS_ASSERT;
+    }
+    
+    self.reorderingCellIndex = index;
+    self.reorderingPlaceholderCellIndex = index;
+    self.reorderingCells = [[self.cells mutableCopy] autorelease];
+
+    UIImage* i = [self _creatImageFromCell:cell];
+    UIImageView* iv = [[UIImageView alloc] initWithImage:i];
+    iv.frame = cell.contentView.frame;
+    self.reorderingCellView = iv;
+    
+    [self addSubview:iv];
+    [i release];
+    
+    cell.reordering = YES;
+    
+    [UIView animateWithDuration:0.3 
+                          delay:0.1 
+                        options:(UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction) 
+                     animations:^(void) {
+                     
+                         self.reorderingCellView.alpha = 0.8;
+                         self.reorderingCellView.transform = CGAffineTransformMakeScale(1.2, 1.2);
+                     
+                     } 
+                     
+                     completion:^(BOOL finished) {
+                     
+                     
+                     
+                     }];
+
+}
+
+- (UIImage*)_creatImageFromCell:(FJSpringBoardCell*)cell{
+    
+    UIView* cellView = cell.contentView;
+    
+    UIGraphicsBeginImageContext(cellView.bounds.size);
+    [cellView.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage* viewImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return viewImage;
+    
+}
+
+- (void)_reorderCellForTouchPoint:(CGPoint)point{
+    
+    if(self.animatingReorder)
+        return;
+    
+    CGRect insetRect = CGRectInset(self.reorderingCellView.frame, 
+                                   0.15*self.reorderingCellView.frame.size.width, 
+                                   0.15*self.reorderingCellView.frame.size.height);
+    
+    NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
+    
+    [self.reorderingCells enumerateObjectsAtIndexes:self.queuedCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    
+        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
+        
+        if([c isEqual:[NSNull null]]){
+            
+            ALWAYS_ASSERT;
+            
+        }        
+        
+        CGRect f = c.contentView.frame;
+        if(CGRectIntersectsRect(insetRect, f)){
+            [coveredIndexes addIndex:idx];
+        }
+        
+    }];
+    
+    if ([coveredIndexes firstIndex] == NSNotFound) {
+        return;
+    }
+    
+    //NSLog(@"potential places to move: %@", [coveredIndexes description]);
+    
+    
+    FJSpringBoardCell* c = [self.reorderingCells objectAtIndex:[coveredIndexes firstIndex]];
+    __block NSUInteger bestMatch = [coveredIndexes firstIndex];
+    
+     CGRect intersectRect = CGRectIntersection(insetRect, c.contentView.frame);
+    __block float coveredArea = intersectRect.size.width * intersectRect.size.height;
+    
+    [coveredIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    
+        FJSpringBoardCell* cell = [self.reorderingCells objectAtIndex:idx];
+        CGRect rect = CGRectIntersection(insetRect, cell.contentView.frame);
+        float area = rect.size.width * rect.size.height;
+        
+        if(area > coveredArea){
+            coveredArea = area;
+            bestMatch = idx;
+        }
+        
+    }];
+    
+    [self _reorderCellsWithPlaceHolderIndex:bestMatch];
+    //move cell to new index
+    
+}
+
+
+
+
+- (void)_reorderCellsWithPlaceHolderIndex:(NSUInteger)index{
+    
+    if(self.reorderingPlaceholderCellIndex == index)
+        return;
+    
+    if(index == NSNotFound)
+        return;
+    
+    self.animatingReorder = YES;
+    
+    FJSpringBoardCell* obj = [[self.reorderingCells objectAtIndex:self.reorderingPlaceholderCellIndex] retain];
+    [self.reorderingCells removeObjectAtIndex:self.reorderingPlaceholderCellIndex];
+    [self.reorderingCells insertObject:obj atIndex:index];
+    [obj release];
+
+    NSLog(@"moving from index: %i to suggested index: %i", self.reorderingPlaceholderCellIndex, index);
+
+    NSUInteger startIndex = NSNotFound;
+    NSUInteger lastIndex = NSNotFound;
+    
+    //moving forward
+    if(index > self.reorderingPlaceholderCellIndex){
+        
+        startIndex = self.reorderingPlaceholderCellIndex;
+        lastIndex = index;
+      
+    //backwards    
+    }else{
+        
+        startIndex = index;
+        lastIndex = self.reorderingPlaceholderCellIndex;
+
+    }
+    
+    NSIndexSet* affectedIndexes = continuousIndexSetWithFirstAndLastIndexes(startIndex, lastIndex); 
+        
+    [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
+                          delay:0 
+                        options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
+                     animations:^(void) {
+                         
+                         [self _layoutCellsAtIndexes:affectedIndexes];
+                                                  
+                     } completion:^(BOOL finished) {
+                         
+                         self.animatingReorder = NO;
+                         //update layout, cell count, content size, index loader, etc
+                         [self _updateLayout];
+                         
+                     }];
+    
+    self.reorderingPlaceholderCellIndex = index;
+
+}
+
+
+- (void)_completeReorder{
+    
+    //TODO: animate to new index
+    //TODO: fix opacity and size
+    //TODO: show real cell
+    //TODO: remove
+        
+    
+}
 
 
 #pragma mark -

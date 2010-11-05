@@ -39,7 +39,7 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 @synthesize selected;
 @synthesize deleteImage;
 @synthesize springBoardView;
-@synthesize reording;
+@synthesize reordering;
 
 
 
@@ -154,14 +154,14 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 }
 
 
-- (void)setReording:(BOOL)flag{
+- (void)setReordering:(BOOL)flag{
     
-    if(reording == flag)
+    if(reordering == flag)
         return;
     
-    reording = flag;
+    reordering = flag;
     
-    if(reording){
+    if(reordering){
         
         self.contentView.alpha = 0;
         

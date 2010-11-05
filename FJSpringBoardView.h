@@ -42,7 +42,7 @@ typedef enum  {
     NSMutableIndexSet *selectedIndexes;
     
     NSMutableArray *cells; 
-    NSMutableSet *dequeuedCells;
+    NSMutableSet *dequeuedCells; //reusable cells
     
     BOOL layoutIsDirty;
 
@@ -52,6 +52,11 @@ typedef enum  {
     FJSpringBoardCellAnimation layoutAnimation;
     
     FJSpringBoardCellMode mode;
+    
+    UIView* reorderingCellView;
+    NSUInteger reorderingCellIndex;
+    NSUInteger reorderingPlaceholderCellIndex;
+
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
@@ -136,7 +141,6 @@ typedef enum  {
 - (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
 
 - (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
-- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView movableCellForCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger )index;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
 
