@@ -43,6 +43,13 @@
  
  add view behind cell contentview
  
+ pre-setup delegate detection BOOLs
+ 
+ dont load next page until scroll stops
+ 
+ change center to center and distribute evenly (both vertically and horizontally)
+ 
+ 
 
 
 */

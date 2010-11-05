@@ -11,6 +11,16 @@
 #define RELOAD_ANIMATION_DURATION 1
 #define LAYOUT_ANIMATION_DURATION 0.25
 
+#define EDGE_CUSHION 20.0
+
+typedef enum  {
+    FJSpringBoardViewEdgeNone,
+    FJSpringBoardViewEdgeTop,
+    FJSpringBoardViewEdgeRight,
+    FJSpringBoardViewEdgeBottom,
+    FJSpringBoardViewEdgeLeft
+} FJSpringBoardViewEdge;
+
 
 float nanosecondsWithSeconds(float seconds){
     
@@ -64,6 +74,10 @@ float nanosecondsWithSeconds(float seconds){
 @property(nonatomic) NSUInteger reorderingPlaceholderCellIndex;
 @property(nonatomic, retain) NSMutableArray *reorderingCells; 
 
+@property(nonatomic) BOOL animatingContentOffset;
+@property(nonatomic) CGPoint lastContentOffset;
+
+
 
 - (void)_configureLayout;
 - (void)_updateLayout;
@@ -89,6 +103,9 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_reorderCellForTouchPoint:(CGPoint)point;
 - (void)_reorderCellsWithPlaceHolderIndex:(NSUInteger)index;
 - (void)_completeReorder;
+
+- (BOOL)_scrollSpringBoardWithTouchPoint:(CGPoint)touch;
+- (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch;
 
 @end
 
@@ -131,6 +148,8 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize reorderingPlaceholderCellIndex;
 @synthesize reorderingCells;
 
+@synthesize animatingContentOffset;
+@synthesize lastContentOffset;
 
 
 
@@ -403,13 +422,27 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)setContentOffset:(CGPoint)offset animated:(BOOL)animate{
     
-	[super setContentOffset: offset animated: animate];    
+    self.animatingContentOffset = YES;
+    self.lastContentOffset = self.contentOffset;
+	[super setContentOffset: offset animated: animate];  
+    
+    [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(contentOffsetAnimationCheck:) userInfo:nil repeats:YES];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
         [self _updateIndexes];
         
     });    
+}
+
+- (void)contentOffsetAnimationCheck:(NSTimer*)timer{
+    
+    if(CGPointEqualToPoint(self.contentOffset, self.lastContentOffset)){
+        
+        self.animatingContentOffset = NO;
+        
+        [timer invalidate];
+    }
 }
 
 - (void)setContentSize:(CGSize)size{
@@ -1091,10 +1124,14 @@ float nanosecondsWithSeconds(float seconds){
         return;
     }
     
+    if(self.animatingContentOffset){
+        
+        return;
+    }
+    
     CGPoint p = [g locationInView:self];
 
     if(self.mode == FJSpringBoardCellModeEditing){
-        
         
         if(g.state == UIGestureRecognizerStateBegan){
             
@@ -1107,8 +1144,10 @@ float nanosecondsWithSeconds(float seconds){
         
         if(g.state == UIGestureRecognizerStateChanged){
             
-            self.reorderingCellView.center = p;            
-            [self _reorderCellForTouchPoint:p];
+            self.reorderingCellView.center = p;
+            
+            //if(![self _scrollSpringBoardWithTouchPoint:p])
+                [self _reorderCellForTouchPoint:p];
             
             return;
         }
@@ -1171,6 +1210,113 @@ float nanosecondsWithSeconds(float seconds){
     return [a firstIndex];
     
 }
+
+
+- (BOOL)_scrollSpringBoardWithTouchPoint:(CGPoint)touch{
+    
+    FJSpringBoardViewEdge direction = [self _edgeOfViewAtTouchPoint:touch];
+    
+    if(self.scrollDirection == FJSpringBoardViewScrollDirectionVertical){
+        
+        if(direction == FJSpringBoardViewEdgeTop){
+            
+            
+            
+            
+        }else if(direction == FJSpringBoardViewEdgeBottom){
+         
+            
+            
+        }
+        
+    }else{
+        
+        
+        if(direction == FJSpringBoardViewEdgeLeft){
+            
+            NSUInteger prevPage = [self previousPage];
+            
+            if(prevPage == NSNotFound)
+                return NO;
+           
+            [self scrollToPage:prevPage animated:YES];
+                        
+            
+        }else if(direction == FJSpringBoardViewEdgeRight){
+            
+            NSUInteger nextPage = [self nextPage];
+            
+            if(nextPage == NSNotFound)
+                return NO;
+            
+            [self scrollToPage:nextPage animated:YES];
+            
+        }
+        
+    }
+    
+    __block CGPoint touchPosition = touch;
+
+    __block void (^updateCheck)(void);
+    
+     updateCheck = ^{
+        
+        touchPosition.x += (self.contentOffset.x - self.lastContentOffset.x); 
+        
+        if(self.animatingContentOffset){
+            
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
+                           dispatch_get_main_queue(), 
+                           ^{
+                               updateCheck();
+                           });
+        }
+    };
+    
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
+                   dispatch_get_main_queue(), 
+                   ^{
+                       updateCheck();
+                   });
+    
+    
+    return YES;
+}
+
+
+
+- (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch{
+    
+    CGRect centerFrame = CGRectInset(self.bounds, EDGE_CUSHION, EDGE_CUSHION);
+    
+    if(CGRectContainsPoint(centerFrame, touch))
+        return FJSpringBoardViewEdgeNone;
+    
+    CGRect top = CGRectMake(self.bounds.origin.x+EDGE_CUSHION, 0, self.bounds.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
+    
+    if(CGRectContainsPoint(top, touch))
+        return FJSpringBoardViewEdgeTop;
+    
+    CGRect right = CGRectMake(self.bounds.size.width-EDGE_CUSHION, self.bounds.origin.y+EDGE_CUSHION, EDGE_CUSHION, self.bounds.size.height-(2*EDGE_CUSHION));
+    
+    if(CGRectContainsPoint(right, touch))
+        return FJSpringBoardViewEdgeRight;
+    
+    CGRect bottom = CGRectMake(self.bounds.origin.x+EDGE_CUSHION, self.bounds.size.height-EDGE_CUSHION, self.bounds.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
+    
+    if(CGRectContainsPoint(bottom, touch))
+        return FJSpringBoardViewEdgeBottom;
+    
+    CGRect left = CGRectMake(0, self.bounds.origin.y+EDGE_CUSHION, EDGE_CUSHION, self.bounds.size.height-(2*EDGE_CUSHION));    
+    
+    if(CGRectContainsPoint(left, touch))
+        return FJSpringBoardViewEdgeLeft;
+    
+    
+    return FJSpringBoardViewEdgeNone;
+}
+
 
 #pragma mark -
 #pragma mark reorder
@@ -1348,11 +1494,72 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_completeReorder{
     
+    
     //TODO: animate to new index
     //TODO: fix opacity and size
     //TODO: show real cell
     //TODO: remove
         
+    
+}
+
+
+#pragma mark -
+#pragma mark paging
+
+
+- (NSUInteger)page{
+    
+    if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return NSNotFound;
+    
+    return floorf(self.contentOffset.x/self.bounds.size.width);
+    
+}
+
+- (NSUInteger)nextPage{
+    
+    if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return NSNotFound;
+    
+    FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;
+
+    NSUInteger currentPage = [self page];
+    
+    NSUInteger next = currentPage+1;
+    
+    if(next < l.pageCount){
+        
+        return next;
+    }
+     
+    return NSNotFound;
+    
+}
+
+- (NSUInteger)previousPage{
+    
+    if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return NSNotFound;
+    
+    NSUInteger currentPage = [self page];
+    
+    if(currentPage > 0)
+        return (currentPage--);
+    
+       
+    return NSNotFound;
+    
+}
+
+- (void)scrollToPage:(NSUInteger)page animated:(BOOL)animated{
+    
+    if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return;
+    
+    CGFloat x = page * self.bounds.size.width;
+    
+    [self setContentOffset:CGPointMake(x, 0) animated:animated];
     
 }
 
@@ -1364,7 +1571,6 @@ float nanosecondsWithSeconds(float seconds){
     
     return [self.selectedIndexes copy];
 }
-
 
 
 @end

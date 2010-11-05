@@ -93,6 +93,12 @@ typedef enum  {
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
+//paging, only valid if scrollingDirection == horizontal
+- (NSUInteger)page;
+- (NSUInteger)nextPage;
+- (NSUInteger)previousPage;
+- (void)scrollToPage:(NSUInteger)page animated:(BOOL)animated;
+
 
 //index sets must be continuous
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
