@@ -11,11 +11,11 @@
 
 @interface FJSpringBoardDemoViewController : UIViewController <FJSpringBoardViewDelegate, FJSpringBoardViewDataSource> {
 
+    NSMutableArray* model;
     FJSpringBoardView* springBoardView;
-    NSUInteger count;
 }
+@property(nonatomic, retain) NSMutableArray *model;
 @property (nonatomic, retain) FJSpringBoardView *springBoardView;
-@property(nonatomic) NSUInteger count;
 
 - (IBAction)insert;
 - (IBAction)deleteCells;

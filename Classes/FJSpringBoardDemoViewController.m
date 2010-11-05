@@ -1,15 +1,17 @@
 
 
 #import "FJSpringBoardDemoViewController.h"
+#import "DemoModelObject.h"
 
 @implementation FJSpringBoardDemoViewController
 
+@synthesize model;
 @synthesize springBoardView;
-@synthesize count;
 
 
 - (void)dealloc {
-    
+    [model release];
+    model = nil;
     [springBoardView release];
     springBoardView = nil;
     
@@ -18,18 +20,26 @@
 
 - (IBAction)insert{
     
-    self.count += 2;
-
-    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    DemoModelObject* o;
     
+    o = [[DemoModelObject alloc] init];
+    o.value = [self.model count];
+    [self.model insertObject:o atIndex:4];
+    [o release];
+    o = [[DemoModelObject alloc] init];
+    o.value = [self.model count];
+    [self.model insertObject:o atIndex:5];
+    [o release];
+    
+    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(4, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+
 }
 
 
 
 - (IBAction)deleteCells{
-     
-    self.count -= 2;
     
+    [self.model removeObjectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)]];
     [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
@@ -38,7 +48,17 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.count = 12;
+    NSMutableArray* a = [NSMutableArray arrayWithCapacity:12];
+    for (int i = 0; i < 12; i++) {
+        
+        DemoModelObject* o = [[DemoModelObject alloc] init];
+        o.value = i;
+        [a addObject:o];
+        [o release];
+        
+    }
+    
+    self.model = a;
     
     CGRect f = self.view.bounds;
     f.origin.y += 40;
@@ -61,7 +81,7 @@
 
 - (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView{
     
-    return self.count;
+    return [model count];
     
 }
 
@@ -90,9 +110,10 @@
 
     }
     
+    DemoModelObject* o  = [self.model objectAtIndex:index];
     UILabel* l = (UILabel*)[cell.contentView viewWithTag:99];
-    l.text = [NSString stringWithFormat:@"%i", index];
-    cell.contentView.tag = index;
+    l.text = [NSString stringWithFormat:@"%i", [o value]];
+    cell.contentView.tag = [o value];
   
     return cell;
     
@@ -100,7 +121,7 @@
 
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index{
     
-    self.count--;
+    [self.model removeObjectAtIndex:index];
     NSLog(@"Cell Deleted at Index: %i", index);
     
 }
@@ -122,9 +143,15 @@
     NSLog(@"cell tapped and held at index: %i", index);
     self.springBoardView.mode = FJSpringBoardCellModeEditing;
     
-    
 }
 
+- (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex{
+    
+    id obj = [[self.model objectAtIndex:fromIndex] retain];
+    [self.model removeObjectAtIndex:fromIndex];
+    [self.model insertObject:obj atIndex:toIndex];
+    [obj release];
+}
 
 /*
 // Override to allow orientations other than the default portrait orientation.
