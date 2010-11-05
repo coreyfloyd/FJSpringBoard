@@ -8,6 +8,9 @@ NSIndexSet* continuousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteg
     if(last < first)
         return nil;
     
+    if(first == NSNotFound || last == NSNotFound)
+        return nil;
+    
     NSUInteger length = last-first + 1;
     NSIndexSet* indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(first, length)];
     

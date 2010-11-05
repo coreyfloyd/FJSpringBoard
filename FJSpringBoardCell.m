@@ -22,6 +22,8 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 - (void)_startWiggle;
 - (void)_stopWiggle;
 - (CAAnimation*)_shakeAnimation;
+- (void)_removeDeleteButton;
+- (void)_addDeleteButton;
 
 @end
 
@@ -36,8 +38,8 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 @synthesize glowsOnSelection;
 @synthesize selected;
 @synthesize deleteImage;
-@synthesize pulseOnTouchAndHold;
 @synthesize springBoardView;
+@synthesize reording;
 
 
 
@@ -149,6 +151,25 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     [values addObject:DegreesToNumber(-2)]; // Set the values for the animation
     [animation setValues:values]; return animation;
     
+}
+
+
+- (void)setReording:(BOOL)flag{
+    
+    if(reording == flag)
+        return;
+    
+    reording = flag;
+    
+    if(reording){
+        
+        self.contentView.alpha = 0;
+        
+    }else{
+        
+        self.contentView.alpha = 1;
+
+    }
 }
     
 @end

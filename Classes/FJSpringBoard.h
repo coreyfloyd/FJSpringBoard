@@ -28,7 +28,9 @@
  
  @todo
     
- drag and drop reorder
+ reorder based on position
+ move to index on release
+
 
  drag and drop and make a folder
  

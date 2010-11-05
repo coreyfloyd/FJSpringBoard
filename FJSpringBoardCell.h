@@ -27,9 +27,7 @@ typedef enum  {
 
 @property(nonatomic, copy, readonly) NSString *reuseIdentifier;
 
-
 @property(nonatomic) FJSpringBoardCellMode mode;
-
 
 @property(nonatomic, retain) UIImageView *selectionModeImageView; //shown in selsct mode
 @property(nonatomic, retain) UIImageView *selectedImageView; //shown when selected in select mode
@@ -37,12 +35,9 @@ typedef enum  {
 
 @property(nonatomic) BOOL selected;
 
-
 @property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode
 
-
-@property(nonatomic) BOOL pulseOnTouchAndHold;
-
+@property(nonatomic) BOOL reording;
 
 @end
 
