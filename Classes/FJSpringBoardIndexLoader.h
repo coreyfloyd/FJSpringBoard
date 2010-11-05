@@ -20,6 +20,13 @@
     
     NSMutableIndexSet* currentIndexes;
     NSMutableIndexSet* currentPages;
+    
+    
+    //allIndexes
+    //visibleIndexes
+    //paddedIndexes
+    //loadedIndexes = vis + padded
+    
 
 }
 @property (nonatomic, retain) FJSpringBoardLayout *layout;
