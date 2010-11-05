@@ -53,6 +53,7 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
+    NSMutableArray *reorderingCells;
     UIView* reorderingCellView;
     NSUInteger reorderingCellIndex;
     NSUInteger reorderingPlaceholderCellIndex;

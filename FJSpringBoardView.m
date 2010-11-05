@@ -443,6 +443,8 @@ float nanosecondsWithSeconds(float seconds){
         
         [timer invalidate];
     }
+    
+    self.lastContentOffset = self.contentOffset;
 }
 
 - (void)setContentSize:(CGSize)size{
@@ -1146,7 +1148,7 @@ float nanosecondsWithSeconds(float seconds){
             
             self.reorderingCellView.center = p;
             
-            //if(![self _scrollSpringBoardWithTouchPoint:p])
+            if(![self _scrollSpringBoardWithTouchPoint:p])
                 [self _reorderCellForTouchPoint:p];
             
             return;
@@ -1216,16 +1218,19 @@ float nanosecondsWithSeconds(float seconds){
     
     FJSpringBoardViewEdge direction = [self _edgeOfViewAtTouchPoint:touch];
     
+    if(direction == FJSpringBoardViewEdgeNone)
+        return NO;
+    
     if(self.scrollDirection == FJSpringBoardViewScrollDirectionVertical){
         
         if(direction == FJSpringBoardViewEdgeTop){
             
-            
+            return NO;
             
             
         }else if(direction == FJSpringBoardViewEdgeBottom){
          
-            
+            return NO;
             
         }
         
@@ -1255,14 +1260,16 @@ float nanosecondsWithSeconds(float seconds){
         
     }
     
+    
     __block CGPoint touchPosition = touch;
 
-    __block void (^updateCheck)(void);
+    __block dispatch_block_t updateCheck;
     
      updateCheck = ^{
         
         touchPosition.x += (self.contentOffset.x - self.lastContentOffset.x); 
-        
+         self.reorderingCellView.center = touchPosition;
+
         if(self.animatingContentOffset){
             
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
@@ -1270,9 +1277,13 @@ float nanosecondsWithSeconds(float seconds){
                            ^{
                                updateCheck();
                            });
+        }else{
+            
+            Block_release(updateCheck);
         }
     };
     
+    updateCheck = Block_copy(updateCheck);
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
                    dispatch_get_main_queue(), 
