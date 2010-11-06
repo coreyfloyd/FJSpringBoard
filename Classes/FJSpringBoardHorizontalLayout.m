@@ -13,6 +13,7 @@
 
 
 
+
 @interface FJSpringBoardLayout(horizontalInternal)
 
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
@@ -20,6 +21,8 @@
 
 @property (nonatomic) CGFloat minimumRowWidth;
 @property (nonatomic) CGFloat maximumRowWidth;
+
+@property(nonatomic, readwrite) CGFloat verticalCellSpacing; 
 
 @property(nonatomic, readwrite) CGSize contentSize;
 
@@ -34,7 +37,6 @@
 @property (nonatomic) NSUInteger cellsPerPage;
 @property(nonatomic) CGSize pageSize;
 @property(nonatomic) CGSize pageSizeWithInsetsApplied;
-
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
 
@@ -51,6 +53,9 @@
 - (NSUInteger)_cellsPerPage;
 
 - (CGSize)_contentSize;
+
+- (CGFloat)_verticalSpacing;
+
 @end
 
 
@@ -82,6 +87,10 @@
     self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied];
     
     self.rowsPerPage = [self _rowsPerPage];
+    
+    if(distributeCellsEvenly)
+        self.verticalCellSpacing = [self _verticalSpacing];
+    
     self.cellsPerPage = [self _cellsPerPage];
     self.pageCount = [self _numberOfPages];
         
@@ -119,23 +128,23 @@
     float totalHeight = self.pageSizeWithInsetsApplied.height;
     float cellHeight = self.cellSize.height;
     
-    float count = 0;
-    float totalCellHeight = 0;
+    float count = floorf(totalHeight / cellHeight);
     
-    while (totalCellHeight < totalHeight) {
-        
-        totalCellHeight += cellHeight;
-        
-        if(totalCellHeight >= totalHeight)
-            break;
-
-        count ++;
-        totalCellHeight += self.verticalCellSpacing;
-    }
+    if((totalHeight - (count * cellHeight)) < (10*(count-1)))
+        count--;
     
     return (NSUInteger)count;
     
 }
+
+
+- (CGFloat)_verticalSpacing{
+    
+    float space = (self.pageSizeWithInsetsApplied.height - (self.rowsPerPage * self.cellSize.height) + CELL_INVISIBLE_TOP_MARGIN)/(self.rowsPerPage-1);
+    return space;
+    
+}
+
 
 - (NSUInteger)_cellsPerPage{
     
@@ -169,15 +178,8 @@
     NSUInteger row = adjustedPosition.row;
     
     //TODO: check insets for each page… hmmm
-    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) + ((float)page * self.pageSize.width);
-    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height); 
-    
-    if(self.centerCellsInView){
-        
-        float leftover = self.maximumRowWidth - self.minimumRowWidth;
-        float leftOffset = leftover / 2; 
-        x += leftOffset;
-    }
+    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) + ((float)page * self.pageSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
+    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
     
     origin.x = x;
     origin.y = y;
@@ -188,7 +190,7 @@
 
 - (NSUInteger)_pageForCellAtPosition:(CellPosition)position{
     
-    NSUInteger index = [self _indexForPositon:position];
+    NSUInteger index = position.index;
     
     if(index == 0)
         return 0;
@@ -213,7 +215,7 @@
 
 - (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
     
-    NSUInteger index = [self _indexForPositon:position];
+    NSUInteger index = position.index;
 
     NSUInteger page = [self _pageForCellAtPosition:position];
     

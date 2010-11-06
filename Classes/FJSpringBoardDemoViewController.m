@@ -69,9 +69,7 @@
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
     self.springBoardView.backgroundColor = [UIColor redColor];
     self.springBoardView.cellSize = CGSizeMake(CELL_WIDTH, CELL_HEIGHT);
-    self.springBoardView.horizontalCellSpacing = 20;
-    self.springBoardView.verticalCellSpacing = 20;
-    self.springBoardView.springBoardInsets = UIEdgeInsetsMake(15, 10, 15, 10);
+    self.springBoardView.springBoardInsets = UIEdgeInsetsMake(15, 15, 15, 15);
     self.springBoardView.delegate = self;
     self.springBoardView.dataSource = self;
     self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
@@ -95,21 +93,29 @@
     
     if(cell == nil){
      
-        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
+        cell = [[[FJSpringBoardCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
         
-        UILabel* l = [[UILabel alloc] initWithFrame:cell.contentView.bounds];
+        cell.contentView.backgroundColor = [UIColor blueColor];
+        cell.backgroundView.backgroundColor = [UIColor blueColor];
+        
+        CGRect contentFrame = cell.contentView.bounds;
+
+        UIView* b = [[UIView alloc] initWithFrame:contentFrame];
+        b.backgroundColor = [UIColor blueColor];
+        [cell.contentView addSubview:b];
+        [b release];
+        
+        UILabel* l = [[UILabel alloc] initWithFrame:contentFrame];
         l.tag = 99;
         [cell.contentView addSubview:l];
-        l.textColor = [UIColor blackColor];
-        l.backgroundColor = [UIColor clearColor];
+        l.textColor = [UIColor whiteColor];
+        l.backgroundColor = [UIColor blueColor];
         l.textAlignment = UITextAlignmentCenter;
         [l release];
         
-        cell.contentView.backgroundColor = [UIColor blueColor];
         
     }else{
      
-        cell.contentView.backgroundColor = [UIColor greenColor];
 
     }
     

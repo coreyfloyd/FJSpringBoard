@@ -23,6 +23,8 @@
 		C4A7DAF312835A700097CFBD /* close.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DAF212835A700097CFBD /* close.png */; };
 		C4A7DDB61283FB6C0097CFBD /* FJReorderingIndexMap.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDB51283FB6C0097CFBD /* FJReorderingIndexMap.m */; };
 		C4A7DDE812848EA60097CFBD /* DemoModelObject.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDE712848EA60097CFBD /* DemoModelObject.m */; };
+		C4A7DFBE1285B68F0097CFBD /* checkmark_off.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DFBC1285B68F0097CFBD /* checkmark_off.png */; };
+		C4A7DFBF1285B68F0097CFBD /* clipCheckMark.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DFBD1285B68F0097CFBD /* clipCheckMark.png */; };
 		C4F082B5127A08CF00F8BDBC /* FJSpringBoardLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */; };
 		C4F08513127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */; };
 		C4F08556127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08555127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m */; };
@@ -59,6 +61,8 @@
 		C4A7DDB51283FB6C0097CFBD /* FJReorderingIndexMap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJReorderingIndexMap.m; sourceTree = "<group>"; };
 		C4A7DDE612848EA60097CFBD /* DemoModelObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoModelObject.h; sourceTree = "<group>"; };
 		C4A7DDE712848EA60097CFBD /* DemoModelObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoModelObject.m; sourceTree = "<group>"; };
+		C4A7DFBC1285B68F0097CFBD /* checkmark_off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = checkmark_off.png; sourceTree = "<group>"; };
+		C4A7DFBD1285B68F0097CFBD /* clipCheckMark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = clipCheckMark.png; sourceTree = "<group>"; };
 		C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardLayout.h; sourceTree = "<group>"; };
 		C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardLayout.m; sourceTree = "<group>"; };
 		C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardIndexLoader.h; sourceTree = "<group>"; };
@@ -126,6 +130,8 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				C4A7DFBC1285B68F0097CFBD /* checkmark_off.png */,
+				C4A7DFBD1285B68F0097CFBD /* clipCheckMark.png */,
 				C4A7DAF212835A700097CFBD /* close.png */,
 				2899E5210DE3E06400AC0155 /* FJGridViewViewController.xib */,
 				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
@@ -252,6 +258,8 @@
 				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
 				2899E5220DE3E06400AC0155 /* FJGridViewViewController.xib in Resources */,
 				C4A7DAF312835A700097CFBD /* close.png in Resources */,
+				C4A7DFBE1285B68F0097CFBD /* checkmark_off.png in Resources */,
+				C4A7DFBF1285B68F0097CFBD /* clipCheckMark.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

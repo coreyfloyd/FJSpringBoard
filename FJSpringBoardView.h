@@ -21,9 +21,6 @@ typedef enum  {
     UIEdgeInsets springBoardInsets;
     
     CGSize cellSize;
-
-    CGFloat horizontalCellSpacing; 
-    CGFloat verticalCellSpacing; 
     
     FJSpringBoardViewScrollDirection scrollDirection;
     
@@ -65,9 +62,6 @@ typedef enum  {
 @property(nonatomic) UIEdgeInsets springBoardInsets;
 
 @property(nonatomic) CGSize cellSize;
-
-@property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
-@property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
 
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection; 
 

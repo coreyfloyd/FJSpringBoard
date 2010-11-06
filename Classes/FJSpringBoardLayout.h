@@ -18,7 +18,7 @@
     CGFloat horizontalCellSpacing;
     CGFloat verticalCellSpacing;
 
-    BOOL centerCellsInView;
+    BOOL distributeCellsEvenly;
     
     NSUInteger cellCount;
     
@@ -35,10 +35,7 @@
 
 @property(nonatomic) CGSize cellSize;
 
-@property(nonatomic) CGFloat horizontalCellSpacing; //default = 0
-@property(nonatomic) CGFloat verticalCellSpacing; //defult = 0
-
-@property(nonatomic) BOOL centerCellsInView; //default = YES
+@property(nonatomic) BOOL distributeCellsEvenly; //default = YES
 
 @property(nonatomic) NSUInteger cellCount;
 
@@ -47,7 +44,12 @@
 
 - (void)updateLayout;
 
+
+
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
+
+@property(nonatomic, readonly) CGFloat horizontalCellSpacing; 
+@property(nonatomic, readonly) CGFloat verticalCellSpacing; 
 
 @property(nonatomic, readonly) CGSize contentSize;
 

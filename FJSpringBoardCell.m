@@ -2,6 +2,7 @@
 #import "FJSpringBoardCell.h"
 #import "FJSpringBoardView.h"
 #import <QuartzCore/QuartzCore.h>
+#import "FJSpringBoardUtilities.h"
 
 CGFloat DegreesToRadians(CGFloat degrees) {
     return degrees * M_PI / 180;
@@ -9,6 +10,28 @@ CGFloat DegreesToRadians(CGFloat degrees) {
 
 NSNumber* DegreesToNumber(CGFloat degrees) {
     return [NSNumber numberWithFloat: DegreesToRadians(degrees)];
+}
+
+void recursivelyApplyAnimationToAllSubviewLayers(UIView* view, CAAnimation* animation, NSString* keyPath){
+    
+    [view.layer addAnimation:animation forKey:keyPath];
+
+    for(UIView* each in view.subviews){
+                
+        recursivelyApplyAnimationToAllSubviewLayers(each, animation, keyPath);
+        
+    }
+}
+
+void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyPath){
+    
+    [view.layer removeAnimationForKey:keyPath];
+
+    for(UIView* each in view.subviews){
+        
+        recursivelyRemoveAnimationFromAllSubviewLayers(each, keyPath);
+        
+    }
 }
 
 @interface FJSpringBoardCell()
@@ -21,15 +44,21 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 
 - (void)_startWiggle;
 - (void)_stopWiggle;
-- (CAAnimation*)_shakeAnimation;
+- (CAAnimation*)_wiggleAnimation;
 - (void)_removeDeleteButton;
 - (void)_addDeleteButton;
+- (void)_updateView;
 
 @end
 
 
+static UIImage* _deleteImage = nil;
+static UIColor* _defaultBackgroundColor = nil;
+
 @implementation FJSpringBoardCell
 
+
+@synthesize backgroundView;
 @synthesize contentView;
 @synthesize reuseIdentifier;
 @synthesize mode;
@@ -45,8 +74,8 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 
 - (void) dealloc
 {
-    
-    [springBoardView release];
+    [backgroundView release];
+    backgroundView = nil;
     springBoardView = nil;
     [contentView release];
     contentView = nil;
@@ -61,16 +90,35 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     [super dealloc];
 }
 
-
-- (id)initWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
++ (void)initialize{
     
-    self = [super init];
+    _deleteImage = [UIImage imageNamed:@"close.png"];
+    _defaultBackgroundColor = [UIColor whiteColor];
+    
+}
+
+
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
+    
+    CGRect f;
+    f.origin = CGPointZero;
+    f.size = size;
+    
+    self = [super initWithFrame:f];
     if (self != nil) {
         
-        CGRect f;
-        f.origin = CGPointZero;
-        f.size = size;
+        UIEdgeInsets e = UIEdgeInsetsMake(CELL_INVISIBLE_TOP_MARGIN, CELL_INVISIBLE_LEFT_MARGIN, 0, 0);
+        f = UIEdgeInsetsInsetRect(f, e);
+        
+        self.backgroundColor = [UIColor clearColor];
+        
+        self.backgroundView = [[[UIView alloc] initWithFrame:f] autorelease];
+        self.backgroundView.backgroundColor = _defaultBackgroundColor;
+        [self addSubview:self.backgroundView];
+
         self.contentView = [[[UIView alloc] initWithFrame:f] autorelease];
+        self.contentView.backgroundColor = _defaultBackgroundColor;
+        [self addSubview:self.contentView];
         
         self.reuseIdentifier = identifier;
     }
@@ -87,58 +135,59 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     
     if(mode == aMode)
         return;
-    
-    FJSpringBoardCellMode oldMode = mode;
-    
+        
     mode = aMode;
     
-    if(oldMode == FJSpringBoardCellModeEditing){
-        
-        [self _stopWiggle];
-        [self _removeDeleteButton];
-    }
-    
-    
-    if(mode == FJSpringBoardCellModeEditing){
-                
-        [self _startWiggle];
-        [self _addDeleteButton];
-    }
+    [self _updateView];
     
 }
 
+
+- (void)setReordering:(BOOL)flag{
+    
+    if(reordering == flag)
+        return;
+    
+    reordering = flag;
+    
+    [self _updateView];
+    
+}
+
+
+
 - (void)_addDeleteButton{
+    
+    if(self.deleteImage == nil){
+        
+        self.deleteImage = _deleteImage;
+    }
     
     UIButton* b  = [UIButton buttonWithType:UIButtonTypeCustom];
     b.tag = 1001;
     b.frame = CGRectMake(0, 0, 30, 30);
-    b.center = self.contentView.bounds.origin;
-    [b setImage:[UIImage imageNamed:@"close.png"] forState:UIControlStateNormal];
+    [b setImage:self.deleteImage forState:UIControlStateNormal];
     [b addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
-    self.contentView.clipsToBounds = NO;
-    [self.contentView addSubview:b];
+    [self insertSubview:b aboveSubview:self.contentView];
     
 }
 
 - (void)_removeDeleteButton{
     
     [[self.contentView viewWithTag:1001] removeFromSuperview];
-    self.contentView.clipsToBounds = YES;
 }
 
 - (void)_startWiggle{
-    
-    CAAnimation *wiggle = [self _shakeAnimation];
-	    
-    [self.contentView.layer addAnimation:wiggle forKey:@"wiggle"];
+    CAAnimation *wiggle = [self _wiggleAnimation];
+    recursivelyApplyAnimationToAllSubviewLayers(self, wiggle, @"wiggle");	    
+
 }
 
 - (void)_stopWiggle{
-    
-    [self.contentView.layer removeAnimationForKey:@"wiggle"];
+    recursivelyRemoveAnimationFromAllSubviewLayers(self, @"wiggle");
 }
 
-- (CAAnimation*)_shakeAnimation {
+- (CAAnimation*)_wiggleAnimation {
     CAKeyframeAnimation * animation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.z"]; 
     [animation setDuration:0.2];
     [animation setRepeatCount:10000];
@@ -153,23 +202,31 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
     
 }
 
+- (void)_updateView{
+    
 
-- (void)setReordering:(BOOL)flag{
+    if(mode == FJSpringBoardCellModeEditing){
+        
+        [self _startWiggle];
+        [self _addDeleteButton];
+        
+    }else if(mode == FJSpringBoardCellModeNormal){
+        
+        [self _stopWiggle];
+        [self _removeDeleteButton];
+    }
     
-    if(reordering == flag)
-        return;
-    
-    reordering = flag;
     
     if(reordering){
         
-        self.contentView.alpha = 0;
+        self.alpha = 0;
         
     }else{
         
-        self.contentView.alpha = 1;
-
+        self.alpha = 1;
+        
     }
+    
 }
     
 @end

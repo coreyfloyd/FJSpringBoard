@@ -70,15 +70,8 @@
     int column = position.column;
     int row = position.row;
     
-    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width);
-    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height); 
-    
-    if(self.centerCellsInView){
-                
-        float leftover = self.maximumRowWidth - self.minimumRowWidth;
-        float leftOffset = leftover / 2; 
-        x += leftOffset;
-    }
+    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
+    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
     
     origin.x = x;
     origin.y = y;
@@ -119,7 +112,7 @@
     NSUInteger row = (NSUInteger)r;
     
     if(row > self.numberOfRows)
-        row = NSIntegerMax;
+        row = NSNotFound;
     
     return row;
 }
@@ -135,7 +128,7 @@
     
     NSInteger row = [self _rowForCellAtIndex:first];
     
-    if(row < NSIntegerMax){
+    if(row < NSNotFound){
                     
         prePadding = [self _cellIndexesInRowAtIndex:((NSUInteger)(row-1))];
         

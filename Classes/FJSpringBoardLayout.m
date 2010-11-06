@@ -9,11 +9,13 @@
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
 
-
 @interface FJSpringBoardLayout()
 
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
 @property(nonatomic, readwrite) NSUInteger cellsPerRow;
+
+@property(nonatomic, readwrite) CGFloat horizontalCellSpacing; 
+@property(nonatomic, readwrite) CGFloat verticalCellSpacing; 
 
 @property(nonatomic, readwrite) CGSize contentSize;
 
@@ -37,7 +39,9 @@
 - (CGFloat)_minimumRowWidth;
 - (CGFloat)_maximumRowWidth;
 
-- (NSUInteger)_indexForPositon:(CellPosition)position;
+- (CGFloat)_horizontalSpacing;
+
+
 
 @end
 
@@ -46,7 +50,7 @@
 @synthesize insets;
 @synthesize springBoardbounds;
 @synthesize cellSize;
-@synthesize centerCellsInView;
+@synthesize distributeCellsEvenly;
 @synthesize horizontalCellSpacing;
 @synthesize verticalCellSpacing;
 @synthesize cellCount;
@@ -78,7 +82,7 @@
     self.cellSize = CGSizeZero;
     self.horizontalCellSpacing = 0;
     self.verticalCellSpacing = 0;
-    self.centerCellsInView = YES;
+    self.distributeCellsEvenly = YES;
     
     self.cellCount = 0;
     
@@ -95,6 +99,10 @@
     self.maximumRowWidth = [self _maximumRowWidth];
     self.cellsPerRow = [self _numberOfCellsPerRow];
     self.minimumRowWidth = [self _minimumRowWidth];
+    
+    if(distributeCellsEvenly)
+        self.horizontalCellSpacing = [self _horizontalSpacing];
+    
     self.numberOfRows = [self _numberOfRows];
     
 }
@@ -110,22 +118,11 @@
     
     float totalWidth = self.maximumRowWidth;
     float cellWidth = self.cellSize.width;
-    
-    float count = 0;
-    float totalCellWidth = 0;
-    
-    while (totalCellWidth < totalWidth) {
-        
-        totalCellWidth += cellWidth;
-        
-        if(totalCellWidth >= totalWidth){
-            break;
-        }
-        
-        count++;
 
-        totalCellWidth += self.horizontalCellSpacing;
-    }
+    float count = floorf(totalWidth / cellWidth);
+    
+    if((totalWidth - (count * cellWidth)) < (10*(count-1)))
+       count--;
     
     return (NSUInteger)count;
     
@@ -134,8 +131,15 @@
 
 - (CGFloat)_minimumRowWidth{
     
-    return ((float)self.cellsPerRow * self.cellSize.width) + (((float)self.cellsPerRow-1) * self.horizontalCellSpacing);
+    return ((float)self.cellsPerRow * self.cellSize.width);
 
+}
+
+- (CGFloat)_horizontalSpacing{
+    
+    float space = (self.maximumRowWidth + CELL_INVISIBLE_LEFT_MARGIN - self.minimumRowWidth)/(self.cellsPerRow-1);
+    return space;
+    
 }
 
 - (NSUInteger)_numberOfRows{
@@ -160,6 +164,7 @@
 - (CellPosition)_positionForCellAtIndex:(NSUInteger)index{
     
     CellPosition pos;
+    pos.index = index;
     
     float row = (float)((float)index / (float)self.cellsPerRow);
     row = floorf(row);
@@ -186,11 +191,6 @@
         
     return CGPointZero;
     
-}
-
-- (NSUInteger)_indexForPositon:(CellPosition)position{
-    
-    return ((position.row+1) * self.cellsPerRow) - (self.cellsPerRow - position.column);
 }
 
 

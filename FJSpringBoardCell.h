@@ -18,12 +18,13 @@ typedef enum  {
 } FJSpringBoardCellScrollPosition;
 
 
-@interface FJSpringBoardCell : NSObject {
+@interface FJSpringBoardCell : UIView {
 
 }
-- (id)initWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
 
-@property(nonatomic, retain, readonly) UIView *contentView;
+@property(nonatomic, retain) UIView *backgroundView; //default is plain white background, you can set this to whatever you like
+@property(nonatomic, retain, readonly) UIView *contentView; //add content here
 
 @property(nonatomic, copy, readonly) NSString *reuseIdentifier;
 
@@ -35,7 +36,7 @@ typedef enum  {
 
 @property(nonatomic) BOOL selected;
 
-@property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode
+@property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode, shown as a 30x30 image with origin = self.bounds.origin. place your content accordingly
 
 @property(nonatomic) BOOL reordering;
 

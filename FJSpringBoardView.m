@@ -125,9 +125,6 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize indexLoader;
 @synthesize layout;
 
-@synthesize horizontalCellSpacing;
-@synthesize verticalCellSpacing;
-
 @synthesize cells;
 @synthesize reusableCells;
 
@@ -272,7 +269,7 @@ float nanosecondsWithSeconds(float seconds){
         
     }
     
-    return cell.contentView.frame;
+    return cell.frame;
     
 }
 
@@ -380,8 +377,6 @@ float nanosecondsWithSeconds(float seconds){
     self.layout.springBoardbounds = self.bounds;
     self.layout.insets = self.springBoardInsets;
     self.layout.cellSize = self.cellSize;
-    self.layout.horizontalCellSpacing = self.horizontalCellSpacing;
-    self.layout.verticalCellSpacing = self.verticalCellSpacing;
     
     self.layout.cellCount = [self.allIndexes count];
     
@@ -628,13 +623,13 @@ float nanosecondsWithSeconds(float seconds){
         //NSLog(@"Laying Out Cell %i", index);
         //RECTLOG(eachCell.contentView.frame);
         CGRect cellFrame = [self.layout frameForCellAtIndex:index];
-        eachCell.contentView.frame = cellFrame;
+        eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
         if([self.reorderingCellView superview] == nil)
-            [self addSubview:eachCell.contentView];
+            [self addSubview:eachCell];
         else
-            [self insertSubview:eachCell.contentView belowSubview:self.reorderingCellView];
+            [self insertSubview:eachCell belowSubview:self.reorderingCellView];
     
     }];
 }
@@ -658,13 +653,13 @@ float nanosecondsWithSeconds(float seconds){
         //NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
         //RECTLOG(eachCell.contentView.frame);
         CGRect cellFrame = [self.layout frameForCellAtIndex:positionIndex];
-        eachCell.contentView.frame = cellFrame;
+        eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
         if([self.reorderingCellView superview] == nil)
-            [self addSubview:eachCell.contentView];
+            [self addSubview:eachCell];
         else
-            [self insertSubview:eachCell.contentView belowSubview:self.reorderingCellView];
+            [self insertSubview:eachCell belowSubview:self.reorderingCellView];
         
         positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
         
@@ -691,12 +686,12 @@ float nanosecondsWithSeconds(float seconds){
         }
         
         NSLog(@"Removing Cell From View %i", index);
-        RECTLOG(eachCell.contentView.frame);
+        RECTLOG(eachCell.frame);
         
-        [eachCell.contentView removeFromSuperview];
-        [eachCell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
+        [eachCell removeFromSuperview];
+        [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
         eachCell.mode = FJSpringBoardCellModeNormal;
-        RECTLOG(eachCell.contentView.frame);
+        RECTLOG(eachCell.frame);
         
     }];
     
@@ -725,14 +720,14 @@ float nanosecondsWithSeconds(float seconds){
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
-        eachCell.contentView.alpha = 0;
+        eachCell.alpha = 0;
         
         [UIView animateWithDuration:RELOAD_ANIMATION_DURATION 
                               delay:DELETE_ANIMATION_DURATION 
                             options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
                          animations:^(void) {
                              
-                             eachCell.contentView.alpha = 1;
+                             eachCell.alpha = 1;
                              
                          } completion:^(BOOL finished) {
                              
@@ -876,14 +871,14 @@ float nanosecondsWithSeconds(float seconds){
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        eachCell.contentView.alpha = 0;
+        eachCell.alpha = 0;
         
         [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
                               delay:0 
                             options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut)  
                          animations:^(void) {
                              
-                             eachCell.contentView.alpha = 1;
+                             eachCell.alpha = 1;
                              
                          } completion:^(BOOL finished) {
                              
@@ -1033,10 +1028,10 @@ float nanosecondsWithSeconds(float seconds){
                 return;
             }
             
-            [cell.contentView removeFromSuperview];
-            [cell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
+            [cell removeFromSuperview];
+            [cell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
             [self.reusableCells addObject:cell];
-            cell.contentView.alpha = 1;
+            cell.alpha = 1;
             
         }];
      
@@ -1059,7 +1054,7 @@ float nanosecondsWithSeconds(float seconds){
                                  
                                  return;
                              }                                 
-                             cell.contentView.alpha = 0;
+                             cell.alpha = 0;
                              
                          }];
                          
@@ -1075,10 +1070,10 @@ float nanosecondsWithSeconds(float seconds){
                                  return;
                              }
                              
-                             [cell.contentView removeFromSuperview];
-                             [cell.contentView setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
+                             [cell removeFromSuperview];
+                             [cell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
                              [self.reusableCells addObject:cell];
-                             cell.contentView.alpha = 1;
+                             cell.alpha = 1;
                              
                          }];
                          
@@ -1257,7 +1252,7 @@ float nanosecondsWithSeconds(float seconds){
         if([c isEqual:[NSNull null]])
             return NO;
         
-        if(CGRectContainsPoint(c.contentView.frame, point)){
+        if(CGRectContainsPoint(c.frame, point)){
             *stop = YES;
             return YES;
             
@@ -1426,7 +1421,7 @@ float nanosecondsWithSeconds(float seconds){
     //create imageview to animate
     UIImage* i = [self _createImageFromCell:cell];
     UIImageView* iv = [[UIImageView alloc] initWithImage:i];
-    iv.frame = cell.contentView.frame;
+    iv.frame = cell.frame;
     self.reorderingCellView = iv;
     [self addSubview:iv];
     [iv release];
@@ -1454,7 +1449,7 @@ float nanosecondsWithSeconds(float seconds){
 
 - (UIImage*)_createImageFromCell:(FJSpringBoardCell*)cell{
     
-    UIView* cellView = cell.contentView;
+    UIView* cellView = cell;
     
     UIGraphicsBeginImageContext(cellView.bounds.size);
     [cellView.layer renderInContext:UIGraphicsGetCurrentContext()];
@@ -1511,7 +1506,7 @@ float nanosecondsWithSeconds(float seconds){
             
         }        
         
-        CGRect f = c.contentView.frame;
+        CGRect f = c.frame;
         if(CGRectIntersectsRect(insetRect, f)){
             [coveredIndexes addIndex:idx];
         }
@@ -1531,7 +1526,7 @@ float nanosecondsWithSeconds(float seconds){
     [coveredIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
         FJSpringBoardCell* cell = [[self.reorderingIndexMap newArray] objectAtIndex:idx];
-        CGRect rect = CGRectIntersection(insetRect, cell.contentView.frame);
+        CGRect rect = CGRectIntersection(insetRect, cell.frame);
         float area = rect.size.width * rect.size.height;
         
         if(area > coveredArea){
@@ -1596,7 +1591,7 @@ float nanosecondsWithSeconds(float seconds){
                          
                          v.alpha = 1.0;
                          v.transform = CGAffineTransformIdentity;
-                         v.frame = cell.contentView.frame;
+                         v.frame = cell.frame;
 
                          
                      } 
