@@ -3,7 +3,7 @@
 #import "FJSpringBoardDemoViewController.h"
 #import "DemoModelObject.h"
 
-#define CELL_COUNT 40
+#define CELL_COUNT 146
 #define CELL_WIDTH 57
 #define CELL_HEIGHT 57
 @implementation FJSpringBoardDemoViewController
@@ -106,7 +106,7 @@
         [b release];
         
         UILabel* l = [[UILabel alloc] initWithFrame:contentFrame];
-        l.tag = 99;
+        l.tag = 10101;
         [cell.contentView addSubview:l];
         l.textColor = [UIColor whiteColor];
         l.backgroundColor = [UIColor blueColor];
@@ -120,7 +120,7 @@
     }
     
     DemoModelObject* o  = [self.model objectAtIndex:index];
-    UILabel* l = (UILabel*)[cell.contentView viewWithTag:99];
+    UILabel* l = (UILabel*)[cell.contentView viewWithTag:10101];
     l.text = [NSString stringWithFormat:@"%i", [o value]];
     cell.contentView.tag = [o value];
   

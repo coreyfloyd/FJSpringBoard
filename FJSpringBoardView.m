@@ -685,13 +685,13 @@ float nanosecondsWithSeconds(float seconds){
             return;
         }
         
-        NSLog(@"Removing Cell From View %i", index);
-        RECTLOG(eachCell.frame);
+        //NSLog(@"Removing Cell From View %i", index);
+        //RECTLOG(eachCell.frame);
         
         [eachCell removeFromSuperview];
         [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
         eachCell.mode = FJSpringBoardCellModeNormal;
-        RECTLOG(eachCell.frame);
+        //RECTLOG(eachCell.frame);
         
     }];
     
@@ -1582,6 +1582,11 @@ float nanosecondsWithSeconds(float seconds){
     id<FJSpringBoardViewDataSource> d = self.dataSource;
     FJReorderingIndexMap* map = [self.reorderingIndexMap retain];
     self.reorderingIndexMap = nil;
+    
+    if([self.cells count] == 0){
+        
+        ALWAYS_ASSERT;
+    }
 
 
     [UIView animateWithDuration:0.3 

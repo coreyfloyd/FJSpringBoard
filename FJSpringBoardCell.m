@@ -154,6 +154,17 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
+- (void)setSelected:(BOOL)flag{
+    
+    if(selected == flag)
+        return;
+    
+    selected = flag;
+    
+    [self _updateView];
+    
+}
+
 
 
 - (void)_addDeleteButton{
