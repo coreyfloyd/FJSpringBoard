@@ -353,14 +353,24 @@
 
 - (CGRect)frameForPage:(NSUInteger)page{
     
+    if(page >= self.pageCount)
+        return CGRectZero;
+
     CGRect f = CGRectZero;
     f.size = self.pageSize;
-    f.origin = CGPointMake([self _horizontalOffsetForPage:page], 0); 
+    f.origin =  [self offsetForPage:page];
     
     return f;
     
 }
 
+- (CGPoint)offsetForPage:(NSUInteger)page{
+    
+    if(page >= self.pageCount)
+        return CGPointZero;
+
+    return CGPointMake([self _horizontalOffsetForPage:page], 0);
+}
 
 - (CGFloat)_horizontalOffsetForPage:(NSUInteger)page{
     

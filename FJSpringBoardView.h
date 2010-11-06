@@ -96,8 +96,7 @@ typedef enum  {
 - (NSUInteger)page;
 - (NSUInteger)nextPage;
 - (NSUInteger)previousPage;
-- (void)scrollToPage:(NSUInteger)page animated:(BOOL)animated;
-
+- (BOOL)scrollToPage:(NSUInteger)page animated:(BOOL)animated;
 
 //index sets must be continuous
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;

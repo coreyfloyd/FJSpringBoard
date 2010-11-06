@@ -34,5 +34,6 @@
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page;
 
 - (CGRect)frameForPage:(NSUInteger)page;
+- (CGPoint)offsetForPage:(NSUInteger)page;
 
 @end

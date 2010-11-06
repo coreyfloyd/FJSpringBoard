@@ -100,14 +100,16 @@ float nanosecondsWithSeconds(float seconds){
 
 //reordering
 - (UIImage*)_createImageFromCell:(FJSpringBoardCell*)cell;
-- (void)_makeCellReorderableAtIndex:(NSUInteger)index;
+- (void)_makeCellReorderableAtTouchPoint:(CGPoint)point;
 - (NSUInteger)_newCellIndexForTouchPoint:(CGPoint)point;
+- (void)_handleReorderbleCellWithTouchPoint:(CGPoint)point;
 - (void)_reorderCellsByUpdatingPlaceHolderIndex:(NSUInteger)index;
 - (void)_completeReorder;
 
 //scrolling during reordering
-- (BOOL)_scrollSpringBoardWithTouchPoint:(CGPoint)touch;
+- (BOOL)_scrollSpringBoardInDirectionOfEdge:(FJSpringBoardViewEdge)edge;
 - (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch;
+- (void)_keepReorderingCellUnderTouchPointDuringAnimationWithStartingTouchPoint:(CGPoint)point;
 
 @end
 
@@ -633,7 +635,10 @@ float nanosecondsWithSeconds(float seconds){
         eachCell.contentView.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
-        [self addSubview:eachCell.contentView];
+        if([self.reorderingCellView superview] == nil)
+            [self addSubview:eachCell.contentView];
+        else
+            [self insertSubview:eachCell.contentView belowSubview:self.reorderingCellView];
     
     }];
 }
@@ -660,7 +665,10 @@ float nanosecondsWithSeconds(float seconds){
         eachCell.contentView.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
-        [self addSubview:eachCell.contentView];
+        if([self.reorderingCellView superview] == nil)
+            [self addSubview:eachCell.contentView];
+        else
+            [self insertSubview:eachCell.contentView belowSubview:self.reorderingCellView];
         
         positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
         
@@ -1165,35 +1173,23 @@ float nanosecondsWithSeconds(float seconds){
     
     if(self.mode == FJSpringBoardCellModeEditing){
         
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeReorder) object:nil];
+        
         if(g.state == UIGestureRecognizerStateBegan){
             
-            NSUInteger indexOfCell = [self _indexOfCellAtPoint:p];
-            [self _makeCellReorderableAtIndex:indexOfCell];
+            [self _makeCellReorderableAtTouchPoint:p];
             
             return;
         }
         
         if(g.state == UIGestureRecognizerStateChanged){
             
-            self.reorderingCellView.center = p;
-            
-            //check if we need to scroll the view
-            if(![self _scrollSpringBoardWithTouchPoint:p]){
-                
-                //don't do anything if we are in the middle of a reordering animation
-                if(self.animatingReorder)
-                    return;    
-                
-                //if not, lets check to see if we need to reshuffle
-                NSUInteger index = [self _newCellIndexForTouchPoint:p];
-                [self _reorderCellsByUpdatingPlaceHolderIndex:index];
-
-            }
-            
+            [self _handleReorderbleCellWithTouchPoint:p];       
+    
             return;
         }
         
-        if(g.state == UIGestureRecognizerStateEnded){
+        if(g.state == UIGestureRecognizerStateEnded || UIGestureRecognizerStateCancelled){
             
             [self _completeReorder];
             
@@ -1204,7 +1200,6 @@ float nanosecondsWithSeconds(float seconds){
     }
     
 }
-
 
 
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point{
@@ -1234,21 +1229,21 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (BOOL)_scrollSpringBoardWithTouchPoint:(CGPoint)touch{
+- (BOOL)_scrollSpringBoardInDirectionOfEdge:(FJSpringBoardViewEdge)edge{
+        
+    NSLog(@"edge!");
     
-    FJSpringBoardViewEdge direction = [self _edgeOfViewAtTouchPoint:touch];
-    
-    if(direction == FJSpringBoardViewEdgeNone)
+    if(edge == FJSpringBoardViewEdgeNone)
         return NO;
     
     if(self.scrollDirection == FJSpringBoardViewScrollDirectionVertical){
         
-        if(direction == FJSpringBoardViewEdgeTop){
+        if(edge == FJSpringBoardViewEdgeTop){
             
             return NO;
             
             
-        }else if(direction == FJSpringBoardViewEdgeBottom){
+        }else if(edge == FJSpringBoardViewEdgeBottom){
          
             return NO;
             
@@ -1257,7 +1252,7 @@ float nanosecondsWithSeconds(float seconds){
     }else{
         
         
-        if(direction == FJSpringBoardViewEdgeLeft){
+        if(edge == FJSpringBoardViewEdgeLeft){
             
             NSUInteger prevPage = [self previousPage];
             
@@ -1267,7 +1262,7 @@ float nanosecondsWithSeconds(float seconds){
             [self scrollToPage:prevPage animated:YES];
                         
             
-        }else if(direction == FJSpringBoardViewEdgeRight){
+        }else if(edge == FJSpringBoardViewEdgeRight){
             
             NSUInteger nextPage = [self nextPage];
             
@@ -1279,9 +1274,7 @@ float nanosecondsWithSeconds(float seconds){
         }
         
     }
-    
-    [self _keepReorderingCellUnderTouchPointDuringAnimationWithStartingTouchPoint:touch];
-    
+        
     return YES;
 }
 
@@ -1307,6 +1300,8 @@ float nanosecondsWithSeconds(float seconds){
                            });
         }else{
             
+            [self performSelector:@selector(_completeReorder) withObject:nil afterDelay:0.25];
+            
             Block_release(updateCheck);
 
         }
@@ -1328,27 +1323,31 @@ float nanosecondsWithSeconds(float seconds){
 
 - (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch{
     
-    CGRect centerFrame = CGRectInset(self.bounds, EDGE_CUSHION, EDGE_CUSHION);
+    CGRect f;
+    f.origin = self.contentOffset;
+    f.size = self.bounds.size;
+    
+    CGRect centerFrame = CGRectInset(f, EDGE_CUSHION, EDGE_CUSHION);
     
     if(CGRectContainsPoint(centerFrame, touch))
         return FJSpringBoardViewEdgeNone;
     
-    CGRect top = CGRectMake(self.bounds.origin.x+EDGE_CUSHION, 0, self.bounds.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
+    CGRect top = CGRectMake(f.origin.x+EDGE_CUSHION, f.origin.y, f.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
     
     if(CGRectContainsPoint(top, touch))
         return FJSpringBoardViewEdgeTop;
     
-    CGRect right = CGRectMake(self.bounds.size.width-EDGE_CUSHION, self.bounds.origin.y+EDGE_CUSHION, EDGE_CUSHION, self.bounds.size.height-(2*EDGE_CUSHION));
+    CGRect right = CGRectMake(f.origin.x+f.size.width-EDGE_CUSHION, f.origin.y+EDGE_CUSHION, EDGE_CUSHION, f.size.height-(2*EDGE_CUSHION));
     
     if(CGRectContainsPoint(right, touch))
         return FJSpringBoardViewEdgeRight;
     
-    CGRect bottom = CGRectMake(self.bounds.origin.x+EDGE_CUSHION, self.bounds.size.height-EDGE_CUSHION, self.bounds.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
+    CGRect bottom = CGRectMake(f.origin.x + EDGE_CUSHION, f.origin.y+f.size.height-EDGE_CUSHION, f.size.width-(2*EDGE_CUSHION), EDGE_CUSHION);
     
     if(CGRectContainsPoint(bottom, touch))
         return FJSpringBoardViewEdgeBottom;
     
-    CGRect left = CGRectMake(0, self.bounds.origin.y+EDGE_CUSHION, EDGE_CUSHION, self.bounds.size.height-(2*EDGE_CUSHION));    
+    CGRect left = CGRectMake(f.origin.x, f.origin.y+EDGE_CUSHION, EDGE_CUSHION, f.size.height-(2*EDGE_CUSHION));    
     
     if(CGRectContainsPoint(left, touch))
         return FJSpringBoardViewEdgeLeft;
@@ -1360,8 +1359,11 @@ float nanosecondsWithSeconds(float seconds){
 
 #pragma mark -
 #pragma mark reorder
-- (void)_makeCellReorderableAtIndex:(NSUInteger)index{
+
+- (void)_makeCellReorderableAtTouchPoint:(CGPoint)point{
     
+    NSUInteger index = [self _indexOfCellAtPoint:point];
+
     if(index == NSNotFound)
         return;
     
@@ -1416,6 +1418,34 @@ float nanosecondsWithSeconds(float seconds){
     return viewImage;
     
 }
+
+- (void)_handleReorderbleCellWithTouchPoint:(CGPoint)point{
+    
+    self.reorderingCellView.center = point;
+    
+    //check if we need to scroll the view
+    FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:point];
+    if(e == FJSpringBoardViewEdgeNone){
+        
+        //don't do anything if we are in the middle of a reordering animation
+        if(self.animatingReorder)
+            return;    
+        
+        //if not, lets check to see if we need to reshuffle
+        NSUInteger index = [self _newCellIndexForTouchPoint:point];
+        [self _reorderCellsByUpdatingPlaceHolderIndex:index];
+        
+        
+    }else{
+        
+        if([self _scrollSpringBoardInDirectionOfEdge:e])
+            [self _keepReorderingCellUnderTouchPointDuringAnimationWithStartingTouchPoint:point];
+        
+    }
+    
+}
+
+
 
 - (NSUInteger)_newCellIndexForTouchPoint:(CGPoint)point{
     
@@ -1587,21 +1617,28 @@ float nanosecondsWithSeconds(float seconds){
     NSUInteger currentPage = [self page];
     
     if(currentPage > 0)
-        return (currentPage--);
+        return (currentPage+1);
     
        
     return NSNotFound;
     
 }
 
-- (void)scrollToPage:(NSUInteger)page animated:(BOOL)animated{
+- (BOOL)scrollToPage:(NSUInteger)page animated:(BOOL)animated{
     
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
-        return;
+        return NO;
     
-    CGFloat x = page * self.bounds.size.width;
+    FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;
+
+    if(page >= l.pageCount)
+        return NO;    
+        
+    CGPoint p = [l offsetForPage:page];
     
-    [self setContentOffset:CGPointMake(x, 0) animated:animated];
+    [self setContentOffset:p animated:animated];
+    
+    return YES;
     
 }
 

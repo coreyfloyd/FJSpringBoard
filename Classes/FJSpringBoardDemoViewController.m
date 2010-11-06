@@ -3,6 +3,9 @@
 #import "FJSpringBoardDemoViewController.h"
 #import "DemoModelObject.h"
 
+#define CELL_COUNT 40
+#define CELL_WIDTH 57
+#define CELL_HEIGHT 57
 @implementation FJSpringBoardDemoViewController
 
 @synthesize model;
@@ -48,8 +51,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    NSMutableArray* a = [NSMutableArray arrayWithCapacity:12];
-    for (int i = 0; i < 12; i++) {
+    NSMutableArray* a = [NSMutableArray arrayWithCapacity:CELL_COUNT];
+    for (int i = 0; i < CELL_COUNT; i++) {
         
         DemoModelObject* o = [[DemoModelObject alloc] init];
         o.value = i;
@@ -65,7 +68,7 @@
     f.size.height -= 40;
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
     self.springBoardView.backgroundColor = [UIColor redColor];
-    self.springBoardView.cellSize = CGSizeMake(100, 150);
+    self.springBoardView.cellSize = CGSizeMake(CELL_WIDTH, CELL_HEIGHT);
     self.springBoardView.horizontalCellSpacing = 20;
     self.springBoardView.verticalCellSpacing = 20;
     self.springBoardView.springBoardInsets = UIEdgeInsetsMake(15, 10, 15, 10);
@@ -92,7 +95,7 @@
     
     if(cell == nil){
      
-        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(100, 150) reuseIdentifier:cellID] autorelease];
+        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
         
         UILabel* l = [[UILabel alloc] initWithFrame:cell.contentView.bounds];
         l.tag = 99;
