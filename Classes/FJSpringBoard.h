@@ -17,23 +17,17 @@
 
  @bugs
  
- Dangling cell left sometimes. (usually cell 7?)
- 
- cells that move into range after adding indexes are not loaded (fixed?)
- 
+ Dangling cells left sometimes. need a full proof cleanup strategy
+  
  balance all copies with releases
  
  get touch to entire close button or change to image and use the view
- 
- compare to NSNotFound not NSUIntegerMax
- 
+  
  
  @todo
-    
- reorder based on position
- move to index on release
 
-
+ allows edit mode
+ 
  drag and drop and make a folder
  
  drag and drop on a folder
@@ -42,12 +36,13 @@
  @refactoring
  
  add view behind cell contentview
- 
+ change center to center and distribute evenly (both vertically and horizontally)
+
  pre-setup delegate detection BOOLs
  
  dont load next page until scroll stops
  
- change center to center and distribute evenly (both vertically and horizontally)
+ make insert delete more like reorder by using an indexmap
  
  
 

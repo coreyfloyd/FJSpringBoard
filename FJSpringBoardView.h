@@ -34,8 +34,8 @@ typedef enum  {
         
     NSMutableIndexSet *indexesNeedingLayout;
 
-    NSMutableIndexSet *indexesToQueue;
-    NSMutableIndexSet *indexesToDequeue;
+    NSMutableIndexSet *indexesScrollingInView;
+    NSMutableIndexSet *indexesScrollingOutOfView;
     
     NSMutableIndexSet *indexesToInsert;
     NSMutableIndexSet *indexesToDelete;
@@ -43,7 +43,7 @@ typedef enum  {
     NSMutableIndexSet *selectedIndexes;
     
     NSMutableArray *cells; 
-    NSMutableSet *dequeuedCells; //reusable cells
+    NSMutableSet *reusableCells; //reusable cells
     
     BOOL layoutIsDirty;
 
