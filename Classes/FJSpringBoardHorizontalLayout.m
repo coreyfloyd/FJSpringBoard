@@ -326,7 +326,7 @@
     
     if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
         
-        return NSUIntegerMax;
+        return NSNotFound;
     }
     
     NSUInteger currentPage = [self pageForContentOffset:currentOffset];
@@ -339,10 +339,10 @@
         lastPage = currentPage + NUMBER_OF_PAGES_TO_PAD + 1;
     
     if(lastPage > self.pageCount)
-        return NSUIntegerMax;
+        return NSNotFound;
     
     if(lastPage < 0)
-        return NSUIntegerMax;
+        return NSNotFound;
     
     return lastPage;
     
