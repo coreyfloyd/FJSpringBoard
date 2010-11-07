@@ -1172,9 +1172,9 @@ float nanosecondsWithSeconds(float seconds){
     
     if(doubleTapped){
         
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetDoubleTapped) object:nil];
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetDoubleTapped) object:nil];
         
-        [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
+        [self performSelector:@selector(_resetDoubleTapped) withObject:nil afterDelay:0.5];
         
         return;
     }
@@ -1187,7 +1187,7 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     self.doubleTapped = YES;
-    [self performSelector:@selector(resetDoubleTapped) withObject:nil afterDelay:0.5];
+    [self performSelector:@selector(_resetDoubleTapped) withObject:nil afterDelay:0.5];
     
     if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
         
@@ -1198,7 +1198,7 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-- (void)resetDoubleTapped{
+- (void)_resetDoubleTapped{
     
     self.doubleTapped = NO;
 }
@@ -1208,6 +1208,8 @@ float nanosecondsWithSeconds(float seconds){
     
     if(self.longTapped){
         
+        NSLog(@"still long tapped");
+
         if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled){
             
             self.longTapped = NO;
@@ -1222,6 +1224,8 @@ float nanosecondsWithSeconds(float seconds){
         
     
     CGPoint p = [g locationInView:self];
+    
+    self.lastTouchPoint = p;
 
     if(self.mode == FJSpringBoardCellModeNormal){
         
@@ -1232,7 +1236,11 @@ float nanosecondsWithSeconds(float seconds){
             if(indexOfCell != NSNotFound)
                 self.mode = FJSpringBoardCellModeEditing;
             
-            self.longTapped = YES;        
+            self.longTapped = YES;    
+            
+            NSLog(@"long tapped");
+            
+            [self performSelector:@selector(_startReordering) withObject:nil afterDelay:0.25];
 
         }
 
@@ -1253,7 +1261,6 @@ float nanosecondsWithSeconds(float seconds){
         
         if(g.state == UIGestureRecognizerStateChanged){
                         
-            self.lastTouchPoint = p;
             self.reorderingCellView.center = p;
             
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
@@ -1279,6 +1286,16 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
+
+- (void)_startReordering{
+    
+    NSLog(@"long tapped = NO");
+    
+    self.longTapped = NO;
+    
+    [self _makeCellReorderableAtTouchPoint:self.lastTouchPoint];
+
+}
 
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point{
     
@@ -1502,7 +1519,7 @@ float nanosecondsWithSeconds(float seconds){
     //check if we need to scroll the view
     FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:point];
     if(e == FJSpringBoardViewEdgeNone){
-        
+         
         //don't do anything if we are in the middle of a reordering animation
         if(self.animatingReorder)
             return;    

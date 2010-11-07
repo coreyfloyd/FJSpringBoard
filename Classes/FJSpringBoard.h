@@ -28,11 +28,7 @@
  
  
  @todo
- 
- drag and drop 
- 
- decide whether to move cell or insert into folder
- 
+   
  remove cell when adding to folder
  
  make a folder
