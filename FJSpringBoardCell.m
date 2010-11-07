@@ -34,6 +34,14 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
     }
 }
 
+@interface FJSpringBoardView(CellInternal)
+
+- (void)_deleteCell:(FJSpringBoardCell*)cell;
+
+
+@end
+
+
 @interface FJSpringBoardCell()
 
 @property(nonatomic, assign) FJSpringBoardView* springBoardView;
@@ -128,6 +136,9 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)delete{
     NSLog(@"deleted!");
+    
+    [self.springBoardView _deleteCell:self];
+    
 }
 
 
@@ -241,3 +252,12 @@ static UIColor* _defaultBackgroundColor = nil;
 }
     
 @end
+
+
+//configure an empty folder
+@implementation  FJSpringBoardGroupCell
+
+
+@end
+
+

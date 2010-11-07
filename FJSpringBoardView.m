@@ -1083,8 +1083,13 @@ float nanosecondsWithSeconds(float seconds){
                          
                      }];
     
-       
-   
+}
+
+- (void)_deleteCell:(FJSpringBoardCell*)cell{
+    
+    NSUInteger index = [self.cells indexOfObject:cell];
+    
+    [self deleteCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
 

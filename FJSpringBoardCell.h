@@ -30,7 +30,7 @@ typedef enum  {
 
 @property(nonatomic) FJSpringBoardCellMode mode;
 
-@property(nonatomic, retain) UIImageView *selectionModeImageView; //shown in selsct mode
+@property(nonatomic, retain) UIImageView *selectionModeImageView; //shown in select mode
 @property(nonatomic, retain) UIImageView *selectedImageView; //shown when selected in select mode
 @property(nonatomic) BOOL glowsOnSelection;
 
@@ -40,26 +40,22 @@ typedef enum  {
 
 @property(nonatomic) BOOL reordering;
 
+
 @end
 
 
 
-
-
-
-
-
+//configure an empty folder
 @interface FJSpringBoardGroupCell : FJSpringBoardCell {
     
 }
 
-
 @end
 
 
+
+
 //Icon / Folder specific Cells
-
-
 @interface FJSpringBoardIconCell : FJSpringBoardCell{
     
 }
@@ -79,17 +75,6 @@ typedef enum  {
 @property(nonatomic, retain) NSArray *groupImages;
 @property(nonatomic, retain) NSString *name;
 
-
-@end
-
-
-
-
-@protocol FJGridViewCellModel <NSObject>
-
-- (BOOL)canDelete;
-- (BOOL)isDraggable;
-- (BOOL)isGroupable;
 
 @end
 
