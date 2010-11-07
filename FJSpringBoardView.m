@@ -5,7 +5,6 @@
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
 #import <QuartzCore/QuartzCore.h>
-#import "FJReorderingIndexMap.h"
 
 #define DELETE_ANIMATION_DURATION 1.23
 #define INSERT_ANIMATION_DURATION 1.25
@@ -66,7 +65,7 @@ float nanosecondsWithSeconds(float seconds){
 @property(nonatomic) BOOL doubleTapped; //flag to handle double tap irregularities
 @property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
 
-@property(nonatomic, retain) FJReorderingIndexMap *reorderingIndexMap;
+@property(nonatomic, retain) id<FJIndexMapping> indexMap;
 @property(nonatomic, retain) UIView *reorderingCellView;
 @property(nonatomic) BOOL animatingReorder; //flag to indicate a reordering animation is occuring
 
@@ -142,7 +141,7 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize doubleTapped;
 @synthesize longTapped;
 
-@synthesize reorderingIndexMap;
+@synthesize indexMap;
 @synthesize animatingReorder;
 @synthesize reorderingCellView;
 
@@ -162,8 +161,8 @@ float nanosecondsWithSeconds(float seconds){
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
-    [reorderingIndexMap release];
-    reorderingIndexMap = nil;    
+    [indexMap release];
+    indexMap = nil;    
     [reorderingCellView release];
     reorderingCellView = nil;    
     [allIndexes release];
@@ -344,6 +343,7 @@ float nanosecondsWithSeconds(float seconds){
     
     [self _unloadCellsScrollingOutOfViewAtIndexes:self.onScreenCellIndexes];
     self.cells = nullArrayOfSize([self.allIndexes count]);
+    self.indexMap = [[FJNormalIndexMap alloc] initWithArray:self.cells];
     
     [self _configureLayout]; //triggers _updateCells and _updateIndexes
 }
@@ -484,13 +484,13 @@ float nanosecondsWithSeconds(float seconds){
     
     [self.indexesScrollingInView addIndexesInRange:rangeToLoad];
     
-    //dequeue cells that are no longer "visible"
+    //unload cells that are no longer "visible"
     [self _unloadCellsScrollingOutOfViewAtIndexes:[self.indexesScrollingOutOfView copy]];
     
-    //queue cells that are now visible
+    //load cells that are now visible
     [self _loadCellsScrollingIntoViewAtIndexes:[self.indexesScrollingInView copy]];
     
-    if([cells count] != [self.allIndexes count]){
+    if([self.cells count] != [self.allIndexes count]){
         
         ALWAYS_ASSERT;
     }
@@ -510,7 +510,13 @@ float nanosecondsWithSeconds(float seconds){
     if([indexes count] == 0)
         return;
     
-    //load: create and insert in array
+    //remove existing cells from view
+    [self _removeCellsFromSpringBoardViewAtIndexes:indexes];
+    
+    //unload them (placed in reusable pool)
+    [self _unloadCellsAtIndexes:indexes];
+    
+    //create and insert in array
     [self _loadCellsAtIndexes:indexes];
     
     //set frame and add to view
@@ -525,25 +531,14 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
        
-        NSMutableArray* cellData = self.cells;
-        NSUInteger realIndex = index;
+        NSUInteger realIndex = [self.indexMap oldIndexForNewIndex:index];
 
-        if(self.reorderingIndexMap != nil){
-            
-            cellData = [self.reorderingIndexMap newArray];
-            realIndex = [self.reorderingIndexMap oldIndexForNewIndex:index];
-
-        }
-        
         FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:realIndex];
         [cell retain];
         
         cell.springBoardView = self;
         
-        //potential wasting of already loaded cells or hiding a bug
-        [self _unloadCellsAtIndexes:[NSIndexSet indexSetWithIndex:index]];
-        
-        [cellData replaceObjectAtIndex:index withObject:cell];
+        [self.cells replaceObjectAtIndex:index withObject:cell];
         [cell release];
         
     }];
@@ -579,12 +574,16 @@ float nanosecondsWithSeconds(float seconds){
             return;
         }
         
-        NSMutableArray* cellData = self.cells;
+        //don't unload the index we are reordering
+        FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+        if([im isKindOfClass:[FJReorderingIndexMap class]]){
+            
+            if(index == im.currentReorderingIndex)
+                return;
+        }
         
-        if(self.reorderingIndexMap != nil)
-            cellData = [self.reorderingIndexMap newArray];
         
-        FJSpringBoardCell* eachCell = [cellData objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
             
@@ -592,7 +591,7 @@ float nanosecondsWithSeconds(float seconds){
         }
         
         [self.reusableCells addObject:eachCell];
-        [cellData replaceObjectAtIndex:index withObject:[NSNull null]];
+        [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
         
         
     }];
@@ -606,12 +605,7 @@ float nanosecondsWithSeconds(float seconds){
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        NSMutableArray* cellData = self.cells;
-        
-        if(self.reorderingIndexMap != nil)
-            cellData = [self.reorderingIndexMap newArray];
-        
-        FJSpringBoardCell* eachCell = [cellData objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
         if([eachCell isEqual:[NSNull null]]){
             
@@ -677,6 +671,13 @@ float nanosecondsWithSeconds(float seconds){
             return;
         }
         
+        //don't remove the index we are reordering
+        FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+        if([im isKindOfClass:[FJReorderingIndexMap class]]){
+            
+            if(index == im.currentReorderingIndex)
+                return;
+        }
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         
@@ -1416,7 +1417,7 @@ float nanosecondsWithSeconds(float seconds){
     }
     
     //crrate map for indexes
-    self.reorderingIndexMap = [[[FJReorderingIndexMap alloc] initWithOriginalArray:self.cells reorderingObjectIndex:index] autorelease];
+    self.indexMap = [[[FJReorderingIndexMap alloc] initWithArray:self.cells reorderingObjectIndex:index] autorelease];
     
     //create imageview to animate
     UIImage* i = [self _createImageFromCell:cell];
@@ -1496,14 +1497,14 @@ float nanosecondsWithSeconds(float seconds){
     
     NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
     
-    [[self.reorderingIndexMap newArray] enumerateObjectsAtIndexes:self.onScreenCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.cells enumerateObjectsAtIndexes:self.onScreenCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
     
         FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
         
         if([c isEqual:[NSNull null]]){
             
-            ALWAYS_ASSERT;
-            
+            //ALWAYS_ASSERT;
+            return;
         }        
         
         CGRect f = c.frame;
@@ -1525,7 +1526,7 @@ float nanosecondsWithSeconds(float seconds){
     
     [coveredIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
-        FJSpringBoardCell* cell = [[self.reorderingIndexMap newArray] objectAtIndex:idx];
+        FJSpringBoardCell* cell = [self.cells objectAtIndex:idx];
         CGRect rect = CGRectIntersection(insetRect, cell.frame);
         float area = rect.size.width * rect.size.height;
         
@@ -1553,7 +1554,9 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     self.animatingReorder = YES;
-    NSIndexSet* affectedIndexes = [self.reorderingIndexMap modifiedIndexesBymovingReorderingObjectToIndex:index];
+    FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+
+    NSIndexSet* affectedIndexes = [im modifiedIndexesByMovingReorderingObjectToIndex:index];
     
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
@@ -1574,14 +1577,29 @@ float nanosecondsWithSeconds(float seconds){
 
 
 - (void)_completeReorder{
-        
-    self.cells = [self.reorderingIndexMap newArray];
-    FJSpringBoardCell* cell = [[self.reorderingIndexMap newArray] objectAtIndex:self.reorderingIndexMap.currentReorderingIndex];
-    UIView* v = self.reorderingCellView;
+    
+    if(self.animatingReorder)
+        return;
+    
+    FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+    if(![im isKindOfClass:[FJReorderingIndexMap class]])
+        return;
+
+    
+    
+    NSLog(@"completing reorder...");
+    self.animatingReorder = YES;
+
+    UIView* v = [self.reorderingCellView retain];
     self.reorderingCellView = nil;
+        
+    NSUInteger original = im.originalReorderingIndex;
+    NSUInteger current = im.currentReorderingIndex;
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:im.currentReorderingIndex];
+
+    self.indexMap = [[FJNormalIndexMap alloc] initWithArray:self.cells];
+
     id<FJSpringBoardViewDataSource> d = self.dataSource;
-    FJReorderingIndexMap* map = [self.reorderingIndexMap retain];
-    self.reorderingIndexMap = nil;
     
     if([self.cells count] == 0){
         
@@ -1598,19 +1616,19 @@ float nanosecondsWithSeconds(float seconds){
                          v.transform = CGAffineTransformIdentity;
                          v.frame = cell.frame;
 
-                         
                      } 
      
                      completion:^(BOOL finished) {
                         
                          [v removeFromSuperview];
-                         
+                         [v release];
+
                          cell.reordering = NO;
-                         
+                         self.animatingReorder = NO;
                          if([d respondsToSelector:@selector(springBoardView:moveCellAtIndex:toIndex:)])
-                             [d springBoardView:self moveCellAtIndex:map.originalReorderingIndex toIndex:map.currentReorderingIndex];
+                             [d springBoardView:self moveCellAtIndex:original toIndex:current];
                          
-                         
+
                      }];
 
 
@@ -1663,7 +1681,7 @@ float nanosecondsWithSeconds(float seconds){
     NSUInteger currentPage = [self page];
     
     if(currentPage > 0)
-        return (currentPage+1);
+        return (currentPage-1);
     
        
     return NSNotFound;

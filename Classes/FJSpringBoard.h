@@ -20,6 +20,8 @@
  Dangling cells left sometimes. need a full proof cleanup strategy
   
  balance all copies with releases
+ 
+ find a way to keep the tile better in sync during paging
    
  
  @todo
@@ -41,6 +43,4 @@
  
  calculate path animation from old to new indexes (instead of straight line)
  
-
-
 */

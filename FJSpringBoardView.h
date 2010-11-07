@@ -3,10 +3,10 @@
 #import <UIKit/UIKit.h>
 
 #import "FJSpringBoardCell.h"
+#import "FJIndexMap.h"
 
 @class FJSpringBoardIndexLoader;
 @class FJSpringBoardLayout;
-@class FJReorderingIndexMap;
 
 @protocol FJSpringBoardViewDelegate;
 @protocol FJSpringBoardViewDataSource;
@@ -51,7 +51,7 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
-    FJReorderingIndexMap* reorderingIndexMap;
+    id<FJIndexMapping> indexMap;
     UIView* reorderingCellView;
 }
 //delegate and datasource

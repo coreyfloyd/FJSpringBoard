@@ -6,15 +6,60 @@
 //  Copyright 2010 Flying Jalapeño. All rights reserved.
 //
 
-#import "FJReorderingIndexMap.h"
+#import "FJIndexMap.h"
 #import "FJSpringBoardUtilities.h"
+
+
+@implementation FJNormalIndexMap
+
+@synthesize array;
+
+- (void) dealloc
+{
+    
+    [array release];
+    array = nil;
+    [super dealloc];
+}
+
+- (id)initWithArray:(NSMutableArray*)anArray{
+     
+    self = [super init];
+    if (self != nil) {
+        
+        self.array = anArray;
+    }
+    
+    return self;
+
+}
+
+- (NSArray*)oldArray{
+    
+    return self.array;
+}
+
+- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
+    
+    return oldIndex;
+    
+    
+}
+- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex{
+
+    return newIndex;
+}
+
+
+@end
+
 
 @implementation FJReorderingIndexMap
 
 @synthesize mapNewToOld;
 @synthesize mapOldToNew;
 @synthesize oldArray;
-@synthesize newArray;
+@synthesize array;
 @synthesize originalReorderingIndex;
 @synthesize currentReorderingIndex;
 
@@ -25,25 +70,25 @@
     mapOldToNew = nil;
     [oldArray release];
     oldArray = nil;
-    [newArray release];
-    newArray = nil;
+    [array release];
+    array = nil;
     [mapNewToOld release];
     mapNewToOld = nil;
     [super dealloc];
 }
 
-- (id)initWithOriginalArray:(NSArray*)original reorderingObjectIndex:(NSUInteger)index{
+- (id)initWithArray:(NSMutableArray*)anArray reorderingObjectIndex:(NSUInteger)index{
     
     self = [super init];
     if (self != nil) {
         
-        self.oldArray = original;
-        self.newArray = [[original mutableCopy] autorelease];
+        self.oldArray = [anArray copy];
+        self.array = anArray;
         self.originalReorderingIndex = index;
         self.currentReorderingIndex = index;
         
-        self.mapNewToOld = [NSMutableArray arrayWithCapacity:[original count]];
-        self.mapOldToNew = [NSMutableArray arrayWithCapacity:[original count]];
+        self.mapNewToOld = [NSMutableArray arrayWithCapacity:[anArray count]];
+        self.mapOldToNew = [NSMutableArray arrayWithCapacity:[anArray count]];
         
         [self.oldArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
@@ -60,7 +105,7 @@
     
 }
 
-- (NSIndexSet*)modifiedIndexesBymovingReorderingObjectToIndex:(NSUInteger)index{
+- (NSIndexSet*)modifiedIndexesByMovingReorderingObjectToIndex:(NSUInteger)index{
     
     if(self.currentReorderingIndex == index)
         return nil;
@@ -69,9 +114,9 @@
         return nil;
     
 
-    id obj = [[self.newArray objectAtIndex:self.currentReorderingIndex] retain];
-    [self.newArray removeObjectAtIndex:self.currentReorderingIndex];
-    [self.newArray insertObject:obj atIndex:index];
+    id obj = [[self.array objectAtIndex:self.currentReorderingIndex] retain];
+    [self.array removeObjectAtIndex:self.currentReorderingIndex];
+    [self.array insertObject:obj atIndex:index];
     [obj release];
     
     obj = [[self.mapNewToOld objectAtIndex:self.currentReorderingIndex] retain];
