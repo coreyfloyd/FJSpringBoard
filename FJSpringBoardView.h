@@ -53,6 +53,10 @@ typedef enum  {
     
     id<FJIndexMapping> indexMap;
     UIView* reorderingCellView;
+    
+    CGPoint lastTouchPoint;
+    
+    FJSpringBoardGroupCell* floatingGroupCell;
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
@@ -116,6 +120,7 @@ typedef enum  {
 @end
 
 
+
 @protocol FJSpringBoardViewDelegate <NSObject>
 
 @optional
@@ -134,20 +139,48 @@ typedef enum  {
 
 
 @optional
-//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
-//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
-
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
-- (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView cellsForGroupCell:(FJSpringBoardGroupCell*)cell AtIndex:(NSUInteger )index;
-
-- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
-
-
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index; 
 
 
+//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
+//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
+//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
+
+
+
+
+
+
+/*
+ The following methods are @required to support groups
+*/
+
+- (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView;
+
+//called when adding items to group cells
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex;
+
+//called when a new group cell has been created
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index addingCellsFromIndexes:(NSIndexSet *)indexes; 
+
+//called to get the image to be displayed inside the group cell
+- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
+
+
+//- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
+//- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
+
+
+
+
+
 @end
+
+@protocol FJSpringBoardViewGroupDataSource <NSObject>
+@end
+
+
+
 

@@ -91,9 +91,9 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				C47A3F8F1281F016003889CA /* Demo */,
-				C47A3F901281F024003889CA /* Dependencies */,
 				C47A3F911281F035003889CA /* FJSpringBoard */,
+				C47A3F901281F024003889CA /* Dependencies */,
+				C47A3F8F1281F016003889CA /* Demo */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -151,6 +151,17 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		C40B231A128760E0005552A9 /* Index Management */ = {
+			isa = PBXGroup;
+			children = (
+				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
+				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
+				C4A7DDB41283FB6C0097CFBD /* FJIndexMap.h */,
+				C4A7DDB51283FB6C0097CFBD /* FJIndexMap.m */,
+			);
+			name = "Index Management";
+			sourceTree = "<group>";
+		};
 		C47A3414127E575C003889CA /* Layout */ = {
 			isa = PBXGroup;
 			children = (
@@ -197,10 +208,7 @@
 				C47A872312700C4700203213 /* FJSpringBoardView.m */,
 				C44F5DCD1270D07B007E9850 /* FJSpringBoardCell.h */,
 				C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */,
-				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
-				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
-				C4A7DDB41283FB6C0097CFBD /* FJIndexMap.h */,
-				C4A7DDB51283FB6C0097CFBD /* FJIndexMap.m */,
+				C40B231A128760E0005552A9 /* Index Management */,
 				C47A3414127E575C003889CA /* Layout */,
 			);
 			name = FJSpringBoard;
