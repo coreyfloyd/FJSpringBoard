@@ -121,7 +121,7 @@
 
     float count = floorf(totalWidth / cellWidth);
     
-    if((totalWidth - (count * cellWidth)) < (10*(count-1)))
+    if((totalWidth - (count * cellWidth)) < (5*(count-1)))
        count--;
     
     return (NSUInteger)count;

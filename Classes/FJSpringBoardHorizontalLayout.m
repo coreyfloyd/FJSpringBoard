@@ -130,7 +130,7 @@
     
     float count = floorf(totalHeight / cellHeight);
     
-    if((totalHeight - (count * cellHeight)) < (10*(count-1)))
+    if((totalHeight - (count * cellHeight)) < (5*(count-1)))
         count--;
     
     return (NSUInteger)count;

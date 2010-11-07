@@ -23,24 +23,36 @@
  
  find a way to keep the tile better in sync during paging
    
+ need to handle deleting while reordering indexmap is actve
+ 
+ 
  
  @todo
-
- allows edit mode
  
- drag and drop and make a folder
+ drag and drop 
+ 
+ decide whether to move cell or insert into folder
+ 
+ remove cell when adding to folder
+ 
+ make a folder
  
  drag and drop on a folder
  
  
+ 
+ @low priority todo
  @refactoring
  
- pre-setup delegate detection BOOLs
+ allows edit mode
  
- dont load next page until scroll stops
+ pre-setup delegate detection BOOLs
  
  make insert delete more like reorder by using an indexmap
  
  calculate path animation from old to new indexes (instead of straight line)
+ 
+ create contentView for springboard to hold all cells
+  
  
 */

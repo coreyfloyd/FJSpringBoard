@@ -3,9 +3,9 @@
 #import "FJSpringBoardDemoViewController.h"
 #import "DemoModelObject.h"
 
-#define CELL_COUNT 146
-#define CELL_WIDTH 57
-#define CELL_HEIGHT 57
+#define CELL_COUNT 60
+#define CELL_WIDTH 67
+#define CELL_HEIGHT 67
 @implementation FJSpringBoardDemoViewController
 
 @synthesize model;
@@ -153,6 +153,15 @@
     [self.model removeObjectAtIndex:fromIndex];
     [self.model insertObject:obj atIndex:toIndex];
     [obj release];
+}
+
+- (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView{
+    
+    FJSpringBoardGroupCell *cell = [[FJSpringBoardGroupCell alloc] init];
+    cell.contentView.backgroundColor = [UIColor grayColor];
+    
+    return [cell autorelease];
+    
 }
 
 /*
