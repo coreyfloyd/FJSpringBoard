@@ -49,10 +49,14 @@
  
  calculate path animation from old to new indexes (instead of straight line)
  
+ forward all scrollview messages to scrollview
  
  indexes Scrolling on off:
-    for each inserted, scroll 1 off on the right
-    for each deleted, scroll 1 on from the right
+    1)for each inserted in view, scroll 1 off on the right
+    2)for each removed in view, scroll 1 on from the right
+    3)for each cell add before view,  scroll 1 on form the left + #1
+    4)for each cell removed before view, scroll 1 off on the left (unless it was the cell that was removed) + #2
+
     for each page change, do what we do now
  
  

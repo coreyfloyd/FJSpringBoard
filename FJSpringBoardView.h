@@ -27,6 +27,7 @@ typedef enum  {
     
     FJSpringBoardViewScrollDirection scrollDirection;
     
+    FJReorderingIndexMap* indexMap;
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
     
@@ -54,11 +55,10 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
-    FJReorderingIndexMap* indexMap;
-    UIView* reorderingCellView;
-    
     CGPoint lastTouchPoint;
-    
+
+    UIView* draggableCellView;
+        
     NSUInteger indexOfHighlightedCell;
     FJSpringBoardGroupCell* floatingGroupCell;
 }

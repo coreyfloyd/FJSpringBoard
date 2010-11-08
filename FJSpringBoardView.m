@@ -79,7 +79,7 @@ float nanosecondsWithSeconds(float seconds){
 @property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
 
 @property(nonatomic, retain) FJReorderingIndexMap* indexMap;
-@property(nonatomic, retain) UIView *reorderingCellView;
+@property(nonatomic, retain) UIView *draggableCellView;
 @property(nonatomic) BOOL animatingReorder; //flag to indicate a reordering animation is occuring
 
 
@@ -183,7 +183,7 @@ float nanosecondsWithSeconds(float seconds){
 
 @synthesize indexMap;
 @synthesize animatingReorder;
-@synthesize reorderingCellView;
+@synthesize draggableCellView;
 
 @synthesize animatingContentOffset;
 @synthesize lastContentOffset;
@@ -211,8 +211,8 @@ float nanosecondsWithSeconds(float seconds){
     floatingGroupCell = nil;    
     [indexMap release];
     indexMap = nil;    
-    [reorderingCellView release];
-    reorderingCellView = nil;    
+    [draggableCellView release];
+    draggableCellView = nil;    
     [allIndexes release];
     allIndexes = nil; 
     [indexesToInsert release];
@@ -1405,7 +1405,7 @@ float nanosecondsWithSeconds(float seconds){
         
         if(g.state == UIGestureRecognizerStateChanged){
                         
-            self.reorderingCellView.center = p;
+            self.draggableCellView.center = p;
             
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
                            
@@ -1557,7 +1557,7 @@ float nanosecondsWithSeconds(float seconds){
     UIImageView* iv = [[UIImageView alloc] initWithImage:i];
     iv.frame = cell.frame;
     iv.center = [self convertPoint:cell.center fromView:self.contentView];
-    self.reorderingCellView = iv;
+    self.draggableCellView = iv;
     [self addSubview:iv];
     [iv release];
     
@@ -1569,8 +1569,8 @@ float nanosecondsWithSeconds(float seconds){
                         options:(UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction) 
                      animations:^(void) {
                      
-                         self.reorderingCellView.alpha = 0.8;
-                         self.reorderingCellView.transform = CGAffineTransformMakeScale(1.1, 1.1);
+                         self.draggableCellView.alpha = 0.8;
+                         self.draggableCellView.transform = CGAffineTransformMakeScale(1.1, 1.1);
                      
                      } 
                      
@@ -1597,6 +1597,7 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_handleDraggableCellWithTouchPoint:(CGPoint)point{
         
+    
     //check if we need to scroll the view
     FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:point];
     
@@ -1651,7 +1652,7 @@ float nanosecondsWithSeconds(float seconds){
     updateCheck = ^{
         
         touchPosition.x += (self.scrollView.contentOffset.x - self.lastContentOffset.x); 
-        self.reorderingCellView.center = touchPosition;
+        self.draggableCellView.center = touchPosition;
         POINTLOG(touchPosition);
         
         if(self.animatingContentOffset){
@@ -1691,9 +1692,9 @@ float nanosecondsWithSeconds(float seconds){
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDropActionMove;
     
-    CGRect insetRect = CGRectInset(self.reorderingCellView.frame, 
-                                   0.15*self.reorderingCellView.frame.size.width, 
-                                   0.15*self.reorderingCellView.frame.size.height);
+    CGRect insetRect = CGRectInset(self.draggableCellView.frame, 
+                                   0.15*self.draggableCellView.frame.size.width, 
+                                   0.15*self.draggableCellView.frame.size.height);
     
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
     CGRect rect = CGRectIntersection(insetRect, cell.frame);
@@ -1711,9 +1712,9 @@ float nanosecondsWithSeconds(float seconds){
 
 - (NSUInteger)_coveredCellIndexForContentPoint:(CGPoint)point{
     
-    CGRect insetRect = CGRectInset(self.reorderingCellView.frame, 
-                                   0.15*self.reorderingCellView.frame.size.width, 
-                                   0.15*self.reorderingCellView.frame.size.height);
+    CGRect insetRect = CGRectInset(self.draggableCellView.frame, 
+                                   0.15*self.draggableCellView.frame.size.width, 
+                                   0.15*self.draggableCellView.frame.size.height);
     
     NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
     
@@ -1785,8 +1786,8 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_animateDraggableViewToCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block{
     
-    UIView* v = [self.reorderingCellView retain];
-    self.reorderingCellView = nil;
+    UIView* v = [self.draggableCellView retain];
+    self.draggableCellView = nil;
     
     [UIView animateWithDuration:0.3 
                           delay:0.1 
@@ -2018,7 +2019,8 @@ float nanosecondsWithSeconds(float seconds){
 
     //shift cell if group was added
     [cellsToAdd addIndex:self.indexMap.currentReorderingIndex];
-        
+
+    //change to animation into the group
     [self _animateDraggableViewToCellIndex:self.indexMap.currentReorderingIndex completionBlock:^{
         
               
@@ -2034,6 +2036,8 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_createGroupCellFromCellAtIndex:(NSUInteger)index{
     
+    //create new group, but we won't animate this asa it is always followed by adding cells 
+
     if(index == NSNotFound)
         return;
     
@@ -2042,45 +2046,13 @@ float nanosecondsWithSeconds(float seconds){
     NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingGroupCell:group atIndex:self.indexOfHighlightedCell];
     [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
  
-    group.alpha = 0;
-    [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
-                          delay:0 
-                        options:UIViewAnimationOptionCurveEaseInOut  
-                     animations:^(void) {
-                         
-                         group.alpha = 1;
-                         
-                     } completion:^(BOOL finished) {
-                         
-                         self.userInteractionEnabled = YES;
-                         
-                     }];
-    
     //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark    
     NSMutableIndexSet* toRemove = [toLayout mutableCopy];
     [toRemove removeIndexes:self.onScreenCellIndexes];
     [self.indexesScrollingOutOfView addIndexes:toRemove];
     
-    //move cells out of the way
-    [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
-                          delay:0 
-                        options:UIViewAnimationOptionCurveEaseInOut  
-                     animations:^(void) {
-                         
-                         [self _layoutCellsAtIndexes:[toLayout copy]];
-                         [self.indexesNeedingLayout removeAllIndexes];
-                         
-                     } completion:^(BOOL finished) {
-                         
-                         //dequeue any newly off screen cells
-                         [self _unloadCellsScrollingOutOfViewAtIndexes:[self.indexesScrollingOutOfView copy]];
-                         //update layout, content size, index loader, etc
-                         [self _updateLayout];
-                         
-                         
-                     }];
-    
-    
+    [self _layoutCellsAtIndexes:[toLayout copy]];
+    [self.indexesNeedingLayout removeIndexes:toLayout];
     
     //notify datasource
     if([self.dataSource respondsToSelector:@selector(springBoardView:commitInsertingGroupCellAtIndex:)])
@@ -2096,12 +2068,16 @@ float nanosecondsWithSeconds(float seconds){
     if(groupIndex == NSNotFound)
         return;
         
+    self.animatingReorder = YES;
+    
     NSArray* cellsToAdd = [[self.cells objectsAtIndexes:cellIndexes] retain];
     
     //TODO: animate cells here
     //FJSpringBoardGroupCell* group = (FJSpringBoardGroupCell*)[self.cells objectAtIndex:groupIndex];
     
-    [self.indexMap modifiedIndexesByRemovingCellsAtIndexes:cellIndexes];
+    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByRemovingCellsAtIndexes:cellIndexes];
+    
+    [self.indexesNeedingLayout addIndexes:toLayout];
     
     for(int i = 0; i < [cellIndexes count]; i++)
         [self.allIndexes removeIndex:[self.allIndexes lastIndex]];
@@ -2113,6 +2089,8 @@ float nanosecondsWithSeconds(float seconds){
                         options:UIViewAnimationOptionCurveEaseInOut 
                      animations:^(void) {
         
+                         [self _layoutCellsAtIndexes:[toLayout copy]];
+                         
                          [cellsToAdd enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
                              FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
@@ -2141,6 +2119,9 @@ float nanosecondsWithSeconds(float seconds){
                              [cell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
                              [self.reusableCells addObject:cell];
                              cell.alpha = 1;
+                             self.animatingReorder = NO;
+                             
+                             [self _updateLayout];
                              
                          }];
                          

@@ -56,7 +56,7 @@
 
 - (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
     
-    NSNumber* newNum = [self.mapNewToOld objectAtIndex:oldIndex];
+    NSNumber* newNum = [self.mapOldToNew objectAtIndex:oldIndex];
     
     return [newNum unsignedIntegerValue];
     
@@ -64,7 +64,7 @@
 }
 - (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex{
     
-    NSNumber* newNum = [self.mapOldToNew objectAtIndex:newIndex];
+    NSNumber* newNum = [self.mapNewToOld objectAtIndex:newIndex];
     
     return [newNum unsignedIntegerValue];
 }
@@ -137,27 +137,28 @@
     [self.cells insertObject:groupCell atIndex:index];
     [self.mapNewToOld insertObject:[NSNull null] atIndex:index];
     
-    NSRange rangeToEdit = NSMakeRange(index, [self.mapOldToNew count]-index);
+    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
     
-    NSArray* mapToEdit = [self.mapOldToNew subarrayWithRange:rangeToEdit];
-    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[mapToEdit count]];
-    
-    [mapToEdit enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
     
         NSNumber* val = (NSNumber*)obj;
         
         if(![obj isEqual:[NSNull null]]){
             
-            NSUInteger newVal = [val unsignedIntegerValue] + 1;
-            val = [NSNumber numberWithUnsignedInteger:newVal];
+            NSUInteger oldVal = [val unsignedIntegerValue];
+            if(oldVal >= index){
+               oldVal++;
 
+                val = [NSNumber numberWithUnsignedInteger:oldVal];
+
+            }
         }
         
         [editedValues addObject:val];
         
     }];
     
-    [self.mapOldToNew replaceObjectsInRange:rangeToEdit withObjectsFromArray:editedValues];
+    self.mapOldToNew = editedValues;
         
     NSRange affectedRange = NSMakeRange(index, [self.cells count] - index);
     NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
@@ -172,17 +173,59 @@
     if([indexes count] == 0)
         return nil;
     
+    //TODO: convert nulls to use NSNotFounds
+    NSArray* nulls = nullArrayOfSize([indexes count]);
+    
+    NSMutableIndexSet* oldIndexes = [NSMutableIndexSet indexSet];
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+    
+        NSUInteger old = [self oldIndexForNewIndex:idx];
+        [oldIndexes addIndex:old];    
+    }];
+    
+    [self.mapOldToNew replaceObjectsAtIndexes:oldIndexes withObjects:nulls];
+    
+    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
+
+    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        NSNumber* val = (NSNumber*)obj;
+        
+        if(![obj isEqual:[NSNull null]]){
+            
+            NSUInteger oldVal = [val unsignedIntegerValue];
+            __block int numToDecrement = 0;
+            
+            [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+            
+                if(oldVal > idx)
+                    numToDecrement++;
+            }];
+            
+            oldVal = oldVal-numToDecrement;
+            
+            val = [NSNumber numberWithUnsignedInteger:oldVal];
+            
+        }
+        
+        [editedValues addObject:val];
+        
+    }];
+    
+    self.mapOldToNew = editedValues;
+    
+    /*
+    for (int i = 0; i < [indexes count]; i++) {
+        [self.mapOldToNew removeLastObject];
+    }
+    */
+    
     //remove cells
     [self.cells removeObjectsAtIndexes:indexes];
     [self.mapNewToOld removeObjectsAtIndexes:indexes];
     
-    NSArray* nulls = nullArrayOfSize([indexes count]);
-    [self.mapOldToNew insertObjects:nulls atIndexes:indexes];
-    
-    for (int i = 0; i < [indexes count]; i++) {
-        [self.mapOldToNew removeLastObject];
-    }
-    
+        
     NSUInteger min = [indexes firstIndex];
     NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);
     NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
