@@ -176,7 +176,8 @@
 /****************************************************************************/
 
 
-@implementation NSObject (SDStuff)
+@implementation NSObject (Proxy)
+
 - (id) nextRunloopProxy {
 	return [[SDNextRunloopProxy alloc] initWithTarget:self];
 }
