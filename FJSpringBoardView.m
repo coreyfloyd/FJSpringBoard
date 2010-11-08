@@ -137,7 +137,6 @@ float nanosecondsWithSeconds(float seconds){
 //scrolling during reordering
 - (BOOL)_scrollSpringBoardInDirectionOfEdge:(FJSpringBoardViewEdge)edge;
 - (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch;
-- (void)_keepDraggableCellUnderTouchPointDuringScrollAnimationWithStartingTouchPoint:(CGPoint)point;
 
 //groups
 - (void)_highlightGroupAtIndex:(NSUInteger)index;
@@ -1632,55 +1631,9 @@ float nanosecondsWithSeconds(float seconds){
         
     }else{
         
-        if([self _scrollSpringBoardInDirectionOfEdge:e])
-            [self _keepDraggableCellUnderTouchPointDuringScrollAnimationWithStartingTouchPoint:point];
-        
+        [self _scrollSpringBoardInDirectionOfEdge:e];
+
     }
-    
-}
-
-
-- (void)_keepDraggableCellUnderTouchPointDuringScrollAnimationWithStartingTouchPoint:(CGPoint)point{
-    
-    return;
-    //shouldn't need this anymore!!!!
-    
-    //overly complicated way to keep the floating tile under the touch position until the scroll animation is complete
-    //all this just to avoid an ivar
-    __block CGPoint touchPosition = point;
-    __block dispatch_block_t updateCheck;
-    
-    updateCheck = ^{
-        
-        touchPosition.x += (self.scrollView.contentOffset.x - self.lastContentOffset.x); 
-        self.draggableCellView.center = touchPosition;
-        POINTLOG(touchPosition);
-        
-        if(self.animatingContentOffset){
-            
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
-                           dispatch_get_main_queue(), 
-                           ^{
-                               updateCheck();
-                           });
-        }else{
-            
-            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:0.25];
-            
-            Block_release(updateCheck);
-            
-        }
-    };
-    
-    updateCheck = Block_copy(updateCheck);
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(1/30.0)), 
-                   dispatch_get_main_queue(), 
-                   ^{
-                       updateCheck();
-                   });
-    
-    
     
 }
 
@@ -1797,7 +1750,9 @@ float nanosecondsWithSeconds(float seconds){
                          
                          v.alpha = 1.0;
                          v.transform = CGAffineTransformIdentity;
-                         v.frame = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
+                         CGRect f = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
+                         f = [self convertRect:f fromView:self.contentView];
+                         v.frame = f;
                          
                      } 
      
