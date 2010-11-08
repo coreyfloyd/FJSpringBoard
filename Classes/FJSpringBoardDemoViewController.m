@@ -128,12 +128,11 @@
     
 }
 
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index{
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndexes:(NSIndexSet* )indexes{
     
-    [self.model removeObjectAtIndex:index];
-    NSLog(@"Cell Deleted at Index: %i", index);
-    
+    [self.model removeObjectsAtIndexes:indexes];
 }
+
 
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index{
     

@@ -13,7 +13,7 @@
 - (id) nextRunloopProxy;
 - (id) proxyWithDelay:(float)time;
 - (id) performOnMainThreadProxy;
-- (id)performIfRespondsToSelectorProxy;
+- (id)performIfRespondsToSelectorProxyperformIfRespondsToSelectorProxy;
 
 
 @end

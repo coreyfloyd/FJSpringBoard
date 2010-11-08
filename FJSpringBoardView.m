@@ -6,6 +6,7 @@
 #import "FJSpringBoardLayout.h"
 #import "NSObject+Proxy.h"
 #import <QuartzCore/QuartzCore.h>
+#import "NSObject+Proxy.h"
 
 #define DELETE_ANIMATION_DURATION 1.23
 #define INSERT_ANIMATION_DURATION 1.25
@@ -1086,6 +1087,9 @@ float nanosecondsWithSeconds(float seconds){
     NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
     
+    for(int i = 0; i < [indexSet count]; i++)
+        [self.allIndexes removeIndex:[self.allIndexes lastIndex]];
+    
     [self.indexesToDelete addIndexes:indexSet];
     
     NSUInteger startIndex = MAX([indexSet firstIndex], [self.onScreenCellIndexes firstIndex]);
@@ -1097,7 +1101,7 @@ float nanosecondsWithSeconds(float seconds){
     startIndex = MAX([self.onScreenCellIndexes lastIndex] + 1 - [indexSet count], [indexSet firstIndex]);
     NSUInteger length = [indexSet count];
     NSIndexSet* toQueue = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(startIndex, length)];
-    
+        
     //remove indexes not on screen
     toQueue  = [toQueue indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
     
@@ -1163,6 +1167,7 @@ float nanosecondsWithSeconds(float seconds){
                          
                      } completion:^(BOOL finished) {
                          
+                         
                          //update layout, cell count, content size, index loader, etc
                          [self _updateLayout];
 
@@ -1179,7 +1184,7 @@ float nanosecondsWithSeconds(float seconds){
     
     NSArray* cellsToRemove = [self.cells objectsAtIndexes:indexes];
     [self.indexesToDelete removeIndexes:indexes];
-
+    
     [self.indexMap modifiedIndexesByRemovingCellsAtIndexes:indexes];
 
     if(self.layoutAnimation == FJSpringBoardCellAnimationNone){
@@ -1241,7 +1246,9 @@ float nanosecondsWithSeconds(float seconds){
                              cell.alpha = 1;
                              
                          }];
+                         [self.indexMap commitChanges];
                          
+                         [[self.dataSource performIfRespondsToSelectorProxy] springBoardView:self commitDeletionForCellAtIndexes:indexes];
                          self.userInteractionEnabled = YES;
 
                          
@@ -2076,13 +2083,13 @@ float nanosecondsWithSeconds(float seconds){
                              [self.reusableCells addObject:cell];
                              cell.alpha = 1;
                              self.animatingReorder = NO;
-                             
                              [self _updateLayout];
                              
                          }];
                          
                          self.userInteractionEnabled = YES;
-                         
+                         [self.indexMap commitChanges];
+
                          if([self.dataSource respondsToSelector:@selector(springBoardView:commitAddingCellsAtIndexes:toGroupCellAtIndex:)])
                              [self.dataSource springBoardView:self commitAddingCellsAtIndexes:cellIndexes toGroupCellAtIndex:groupIndex];
                          
