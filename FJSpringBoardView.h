@@ -56,6 +56,7 @@ typedef enum  {
     
     CGPoint lastTouchPoint;
     
+    NSUInteger indexOfHighlightedCell;
     FJSpringBoardGroupCell* floatingGroupCell;
 }
 //delegate and datasource
@@ -83,6 +84,7 @@ typedef enum  {
 - (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index;
 - (NSUInteger)indexForCell:(FJSpringBoardCell *)cell;
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
+- (NSUInteger)indexOfCellAtPoint:(CGPoint)point;
 
 @property(nonatomic, retain, readonly) NSMutableArray *cells; 
 @property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
@@ -159,11 +161,12 @@ typedef enum  {
 
 - (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView;
 
+//called when a new group cell has been created
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index;
+
 //called when adding items to group cells
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex;
 
-//called when a new group cell has been created
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index addingCellsFromIndexes:(NSIndexSet *)indexes; 
 
 //called to get the image to be displayed inside the group cell
 - (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;

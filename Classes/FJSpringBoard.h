@@ -22,8 +22,9 @@
  balance all copies with releases
  
  find a way to keep the tile better in sync during paging
-   
- need to handle deleting while reordering indexmap is actve
+    
+ stop readding group cell over and over again
+ 
  
  
  
@@ -48,7 +49,22 @@
  
  calculate path animation from old to new indexes (instead of straight line)
  
+ 
+ indexes Scrolling on off:
+    for each inserted, scroll 1 off on the right
+    for each deleted, scroll 1 on from the right
+    for each page change, do what we do now
+ 
+ 
  create contentView for springboard to hold all cells
-  
+ 
+ 
+ 
+ consider using NSOperationQueue with update object
+ 
+ update object
+    unanimated layout "fixes" (add / remove cells from view on visible boundries)
+    apply cell changes (insert, delete, reorder)
+    animation changes 
  
 */

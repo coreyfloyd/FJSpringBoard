@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class FJSpringBoardGroupCell;
+
 @interface FJReorderingIndexMap : NSObject {
 
     NSMutableArray* mapNewToOld;
@@ -31,14 +33,21 @@
 
 - (id)initWithArray:(NSMutableArray*)anArray;
 
-- (void)beginReorderingIndex:(NSUInteger)index;
-
-- (NSIndexSet*)modifiedIndexesByMovingReorderingObjectToIndex:(NSUInteger)index;
-
+//map existing indexes back to the datasource
 - (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
 - (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
 
-- (void)commitReorder; 
+//reordering
+- (void)beginReorderingIndex:(NSUInteger)index;
+- (NSIndexSet*)modifiedIndexesByMovingReorderingCellToCellAtIndex:(NSUInteger)index;
+
+//insert a new group cell
+- (NSIndexSet*)modifiedIndexesByAddingGroupCell:(FJSpringBoardGroupCell*)groupCell atIndex:(NSUInteger)index;
+
+//remove cells
+- (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes;
+
+- (void)commitChanges; //resets maps
 
 @end
 
