@@ -20,22 +20,15 @@
  Dangling cells left sometimes. need a full proof cleanup strategy
   
  balance all copies with releases
- 
- find a way to keep the tile better in sync during paging
-    
+     
  stop readding group cell over and over again
  
  
  
  
  @todo
-   
- remove cell when adding to folder
- 
- make a folder
- 
- drag and drop on a folder
- 
+    
+ clean up 
  
  
  @low priority todo

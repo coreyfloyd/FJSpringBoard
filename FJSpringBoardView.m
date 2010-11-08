@@ -124,10 +124,10 @@ float nanosecondsWithSeconds(float seconds){
 //dragging and dropping
 - (UIImage*)_createDraggableImageFromCell:(FJSpringBoardCell*)cell;
 - (void)_makeCellDraggableAtTouchPoint:(CGPoint)point;
-- (NSUInteger)_coveredCellIndexForContentPoint:(CGPoint)point;
 - (void)_handleDraggableCellWithTouchPoint:(CGPoint)point;
 - (void)_completeDragAction;
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atContentPoint:(CGPoint)point;
+- (NSUInteger)_coveredCellIndexWithObscuredContentFrame:(CGRect)contentFrame;
+- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame;
 - (void)_animateDraggableViewToCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block;
 
 //reordering
@@ -1601,7 +1601,7 @@ float nanosecondsWithSeconds(float seconds){
     //check if we need to scroll the view
     FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:point];
     
-    CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
+    //CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
     
     if(e == FJSpringBoardViewEdgeNone){
          
@@ -1609,8 +1609,10 @@ float nanosecondsWithSeconds(float seconds){
         if(self.animatingReorder)
             return;    
         
+        CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
+        
         //if not, lets check to see if we need to reshuffle
-        NSUInteger index = [self _coveredCellIndexForContentPoint:contentPoint];
+        NSUInteger index = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
         
         if(index == NSNotFound){
          
@@ -1619,15 +1621,14 @@ float nanosecondsWithSeconds(float seconds){
             return;
 
         }
-        FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index atContentPoint:contentPoint];
+        FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index obscuredContentFrame:adjustedFrame];
         
         if(a == FJSpringBoardDropActionMove)
             [self _reorderCellsByUpdatingPlaceHolderIndex:index];
         else if(a == FJSpringBoardDropActionAddToFolder)
             [self _highlightGroupAtIndex:index];
-        else{
+        else
             [self _removeHighlight];
-        }
         
     }else{
         
@@ -1684,7 +1685,7 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atContentPoint:(CGPoint)point{
+- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame{
     
     if(index == self.indexMap.currentReorderingIndex)
         return FJSpringBoardDropActionNone;
@@ -1692,9 +1693,9 @@ float nanosecondsWithSeconds(float seconds){
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDropActionMove;
     
-    CGRect insetRect = CGRectInset(self.draggableCellView.frame, 
-                                   0.15*self.draggableCellView.frame.size.width, 
-                                   0.15*self.draggableCellView.frame.size.height);
+    CGRect insetRect = CGRectInset(contentFrame, 
+                                   0.15*contentFrame.size.width, 
+                                   0.15*contentFrame.size.height);
     
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
     CGRect rect = CGRectIntersection(insetRect, cell.frame);
@@ -1710,11 +1711,11 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-- (NSUInteger)_coveredCellIndexForContentPoint:(CGPoint)point{
+- (NSUInteger)_coveredCellIndexWithObscuredContentFrame:(CGRect)contentFrame{
     
-    CGRect insetRect = CGRectInset(self.draggableCellView.frame, 
-                                   0.15*self.draggableCellView.frame.size.width, 
-                                   0.15*self.draggableCellView.frame.size.height);
+    CGRect insetRect = CGRectInset(contentFrame, 
+                                   0.15*contentFrame.size.width, 
+                                   0.15*contentFrame.size.height);
     
     NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
     
