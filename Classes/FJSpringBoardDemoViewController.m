@@ -157,9 +157,13 @@
 
 - (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView{
     
-    FJSpringBoardGroupCell *cell = [[FJSpringBoardGroupCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:@"Group"];
+    static NSString* groupID = @"Group";
+     FJSpringBoardGroupCell *cell = (FJSpringBoardGroupCell*)[self.springBoardView dequeueReusableCellWithIdentifier:groupID];
     
-    return [cell autorelease];
+    if(cell == nil)
+        cell = [[[FJSpringBoardGroupCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:groupID] autorelease];
+    
+    return cell;
     
 }
 

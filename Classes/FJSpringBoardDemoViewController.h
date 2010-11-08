@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "FJSpringBoardView.h"
 
-@interface FJSpringBoardDemoViewController : UIViewController <FJSpringBoardViewDelegate, FJSpringBoardViewDataSource> {
+@interface FJSpringBoardDemoViewController : UIViewController <FJSpringBoardViewDelegate, FJSpringBoardViewDataSource, UIScrollViewDelegate> {
 
     NSMutableArray* model;
     FJSpringBoardView* springBoardView;
