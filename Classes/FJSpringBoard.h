@@ -23,6 +23,8 @@
      
  stop readding group cell over and over again
  
+ fix empty cell when moving creating folder before dragging index
+ 
  fire timer to get rid of drag cell that never completes
  
  

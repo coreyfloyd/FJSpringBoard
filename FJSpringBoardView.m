@@ -1965,23 +1965,26 @@ float nanosecondsWithSeconds(float seconds){
     
     //NSArray* objects = [self.cells objectsAtIndexes:indexes];
 
+    NSUInteger index = self.indexOfHighlightedCell;
+    
+    [self _removeHighlight];
+
     FJSpringBoardCell* cell = nil;
     
-    cell = [self.cells objectAtIndex:self.indexOfHighlightedCell];
+    cell = [self.cells objectAtIndex:index];
     
     NSMutableIndexSet* cellsToAdd = [NSMutableIndexSet indexSet];
     
     if(![cell isKindOfClass:[FJSpringBoardGroupCell class]]){
        
-        [self _createGroupCellFromCellAtIndex:self.indexOfHighlightedCell];
+        [self _createGroupCellFromCellAtIndex:index];
         
-        [cellsToAdd addIndex:(self.indexOfHighlightedCell+1)];
+        [cellsToAdd addIndex:index+1];
         
     }
-    
 
     //shift cell if group was added
-    [cellsToAdd addIndex:self.indexMap.currentReorderingIndex];
+    [cellsToAdd addIndex:self.indexMap.currentReorderingIndex+1];
 
     //change to animation into the group
     [self _animateDraggableViewToCellIndex:self.indexMap.currentReorderingIndex completionBlock:^{
@@ -1990,11 +1993,8 @@ float nanosecondsWithSeconds(float seconds){
         
     }];
     
-
-    [self _addCellsAtIndexes:cellsToAdd toGroupAtIndex:self.indexOfHighlightedCell];
-    
-    self.indexOfHighlightedCell = NSNotFound;
-    
+    [self _addCellsAtIndexes:cellsToAdd toGroupAtIndex:index];
+        
 }
 
 - (void)_createGroupCellFromCellAtIndex:(NSUInteger)index{
@@ -2005,8 +2005,14 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     //create and group, use floating cell
-    FJSpringBoardGroupCell* group = self.floatingGroupCell;
-    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingGroupCell:group atIndex:self.indexOfHighlightedCell];
+    FJSpringBoardGroupCell* groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
+    
+    if(groupCell == nil){
+        
+        return;
+    }
+    
+    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingGroupCell:groupCell atIndex:index];
     [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
  
     //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark    
