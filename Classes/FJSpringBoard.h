@@ -23,6 +23,7 @@
      
  stop readding group cell over and over again
  
+ fire timer to get rid of drag cell that never completes
  
  
  
