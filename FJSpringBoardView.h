@@ -16,8 +16,11 @@ typedef enum  {
     FJSpringBoardViewScrollDirectionHorizontal
 } FJSpringBoardViewScrollDirection;
 
-@interface FJSpringBoardView : UIScrollView {
+@interface FJSpringBoardView : UIView <UIScrollViewDelegate> {
 
+    UIScrollView* scrollView;
+    UIView* contentView;
+    
     UIEdgeInsets springBoardInsets;
     
     CGSize cellSize;
@@ -61,7 +64,7 @@ typedef enum  {
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
-@property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
+@property(nonatomic, assign) id<FJSpringBoardViewDelegate, UIScrollViewDelegate> delegate;
 
 //view setup, Call reload after changing to update the layout
 @property(nonatomic) UIEdgeInsets springBoardInsets;

@@ -4,6 +4,7 @@
 #import "FJSpringBoardVerticalLayout.h"
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
+#import "NSObject+Proxy.h"
 #import <QuartzCore/QuartzCore.h>
 
 #define DELETE_ANIMATION_DURATION 1.23
@@ -46,6 +47,9 @@ float nanosecondsWithSeconds(float seconds){
 
 
 @interface FJSpringBoardView()
+
+@property(nonatomic, retain) UIScrollView *scrollView;
+@property(nonatomic, retain) UIView *contentView;
 
 @property(nonatomic, retain) FJSpringBoardIndexLoader *indexLoader;
 @property(nonatomic, retain) FJSpringBoardLayout *layout;
@@ -95,6 +99,12 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_updateLayout;
 - (void)_updateIndexes;
 
+
+- (void)_setContentSize:(CGSize)size;
+- (void)_contentOffsetAnimationCheck:(NSTimer*)timer;
+- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate;
+- (void)_setContentOffset:(CGPoint)offset;
+
 - (void)_loadCellsScrollingIntoViewAtIndexes:(NSIndexSet*)indexes;
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes;
@@ -114,10 +124,11 @@ float nanosecondsWithSeconds(float seconds){
 //dragging and dropping
 - (UIImage*)_createDraggableImageFromCell:(FJSpringBoardCell*)cell;
 - (void)_makeCellDraggableAtTouchPoint:(CGPoint)point;
-- (NSUInteger)_coveredCellIndexForTouchPoint:(CGPoint)point;
+- (NSUInteger)_coveredCellIndexForContentPoint:(CGPoint)point;
 - (void)_handleDraggableCellWithTouchPoint:(CGPoint)point;
 - (void)_completeDragAction;
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atTouchPoint:(CGPoint)point;
+- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atContentPoint:(CGPoint)point;
+- (void)_animateDraggableViewToCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block;
 
 //reordering
 - (void)_reorderCellsByUpdatingPlaceHolderIndex:(NSUInteger)index;
@@ -138,6 +149,9 @@ float nanosecondsWithSeconds(float seconds){
 @end
 
 @implementation FJSpringBoardView
+
+@synthesize scrollView;
+@synthesize contentView;
 
 @synthesize dataSource;
 @synthesize delegate;
@@ -189,6 +203,10 @@ float nanosecondsWithSeconds(float seconds){
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
+    [scrollView release];
+    scrollView = nil;
+    [contentView release];
+    contentView = nil;    
     [floatingGroupCell release];
     floatingGroupCell = nil;    
     [indexMap release];
@@ -227,6 +245,13 @@ float nanosecondsWithSeconds(float seconds){
 - (id)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
 
+        self.scrollView = [[[UIScrollView alloc] initWithFrame:self.bounds] autorelease];
+        self.scrollView.delegate = self;
+        [self addSubview:self.scrollView];
+        
+        self.contentView = [[[UIView alloc] initWithFrame:self.bounds] autorelease];
+        [self.scrollView addSubview:self.contentView];
+        
         self.indexLoader = [[[FJSpringBoardIndexLoader alloc] init] autorelease];
         
         self.allIndexes = [NSMutableIndexSet indexSet];
@@ -312,6 +337,52 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
+
+- (NSUInteger)indexOfCellAtPoint:(CGPoint)point{
+    
+    return [self _indexOfCellAtPoint:point checkOffScreenCells:YES];
+    
+}
+
+
+- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag{
+    
+    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
+        
+        if([c isEqual:[NSNull null]]){
+            
+            if(flag){
+                
+                CGRect f = [self.layout frameForCellAtIndex:idx];
+                if(CGRectContainsPoint(f, point))
+                    return YES;
+                
+            }
+            
+            return NO;
+            
+        }
+        
+        if(CGRectContainsPoint(c.frame, point)){
+            *stop = YES;
+            return YES;
+            
+        }
+        
+        return NO;
+        
+    }];
+    
+    if([a count] == 0)
+        return NSNotFound;
+    
+    return [a firstIndex];
+    
+}
+
+
 - (NSIndexSet*)visibleCellIndexes{
     
     return [[self.indexLoader.currentIndexes copy] autorelease];
@@ -337,7 +408,7 @@ float nanosecondsWithSeconds(float seconds){
     CGRect f =  [self _frameForCellAtIndex:index checkOffScreenIndexes:YES];
     
     //TODO: support scroll positions?
-    [self scrollRectToVisible:f animated:animated];
+    [self.scrollView scrollRectToVisible:f animated:animated];
     
 }
 
@@ -398,10 +469,10 @@ float nanosecondsWithSeconds(float seconds){
       
     if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         self.layout = [[[FJSpringBoardHorizontalLayout alloc] init] autorelease];
-        self.pagingEnabled = YES;
+        self.scrollView.pagingEnabled = YES;
     }else{
         self.layout = [[[FJSpringBoardVerticalLayout alloc] init] autorelease];
-        self.pagingEnabled = NO;
+        self.scrollView.pagingEnabled = NO;
     }
     
     self.indexLoader.layout = self.layout;
@@ -426,14 +497,14 @@ float nanosecondsWithSeconds(float seconds){
         
         [UIView animateWithDuration:0.25 animations:^(void) {
                 
-            self.contentSize = self.layout.contentSize;
+            [self _setContentSize:self.layout.contentSize];
 
         }];
         
         
     }else{
         
-        self.contentSize = self.layout.contentSize;
+        [self _setContentSize:self.layout.contentSize];
 
     }
     
@@ -446,9 +517,9 @@ float nanosecondsWithSeconds(float seconds){
 #pragma mark -
 #pragma mark UIScrollView
 
-- (void)setContentOffset:(CGPoint)offset{
+- (void)_setContentOffset:(CGPoint)offset{
     
-	[super setContentOffset: offset];
+    [self.scrollView setContentOffset:offset];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
@@ -457,13 +528,14 @@ float nanosecondsWithSeconds(float seconds){
     });
 }
 
-- (void)setContentOffset:(CGPoint)offset animated:(BOOL)animate{
+- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate{
     
     self.animatingContentOffset = YES;
-    self.lastContentOffset = self.contentOffset;
-	[super setContentOffset: offset animated: animate];  
+    self.lastContentOffset = self.scrollView.contentOffset;
     
-    [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(contentOffsetAnimationCheck:) userInfo:nil repeats:YES];
+	[self.scrollView setContentOffset: offset animated: animate];  
+    
+    [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(_contentOffsetAnimationCheck:) userInfo:nil repeats:YES];
     
     dispatch_async(dispatch_get_main_queue(), ^{
         
@@ -472,32 +544,91 @@ float nanosecondsWithSeconds(float seconds){
     });    
 }
 
-- (void)contentOffsetAnimationCheck:(NSTimer*)timer{
+
+- (void)_contentOffsetAnimationCheck:(NSTimer*)timer{
     
-    if(CGPointEqualToPoint(self.contentOffset, self.lastContentOffset)){
+    if(CGPointEqualToPoint(self.scrollView.contentOffset, self.lastContentOffset)){
         
         self.animatingContentOffset = NO;
         
         [timer invalidate];
     }
     
-    self.lastContentOffset = self.contentOffset;
+    self.lastContentOffset = self.scrollView.contentOffset;
 }
 
-- (void)setContentSize:(CGSize)size{
+- (void)_setContentSize:(CGSize)size{
     
-    if(!CGSizeEqualToSize(size, self.contentSize)){
+    if(!CGSizeEqualToSize(size, self.scrollView.contentSize)){
         
         dispatch_async(dispatch_get_main_queue(), ^{
            
-            [self flashScrollIndicators];
+            [self.scrollView flashScrollIndicators];
 
         });
     }
     
-    [super setContentSize:size];
+    self.scrollView.contentSize = size;
+    CGRect f = CGRectMake(0, 0, size.width, size.height);
+    self.contentView.frame = f;
+    [self.scrollView setContentSize:size];
     
 }
+
+
+#pragma mark -
+#pragma mark UIScrollViewDelegate
+
+
+
+- (void)scrollViewDidScroll:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidScroll:sView];
+    
+}
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndScrollingAnimation:sView];
+    
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewWillBeginDragging:scrollView];
+    
+}
+- (void)scrollViewDidEndDragging:(UIScrollView *)sView willDecelerate:(BOOL)decelerate{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
+
+}
+
+- (void)scrollViewWillBeginDecelerating:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewWillBeginDecelerating:sView];
+    
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndDecelerating:sView];
+}
+
+
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)sView{
+    
+    return [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewShouldScrollToTop:sView];
+    
+}
+
+- (void)scrollViewDidScrollToTop:(UIScrollView *)sView{
+    
+    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidScrollToTop:sView];
+
+}
+
+
 
 
 #pragma mark -
@@ -508,7 +639,7 @@ float nanosecondsWithSeconds(float seconds){
     if(indexLoader == nil)
         return;
     
-    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
+    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.scrollView.contentOffset];
     
     NSRange rangeToRemove = changes.indexRangeToRemove;
     
@@ -660,11 +791,8 @@ float nanosecondsWithSeconds(float seconds){
         eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
-        if([self.reorderingCellView superview] == nil)
-            [self addSubview:eachCell];
-        else
-            [self insertSubview:eachCell belowSubview:self.reorderingCellView];
-    
+        [self.contentView addSubview:eachCell];
+        
     }];
 }
 
@@ -690,10 +818,7 @@ float nanosecondsWithSeconds(float seconds){
         eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
-        if([self.reorderingCellView superview] == nil)
-            [self addSubview:eachCell];
-        else
-            [self insertSubview:eachCell belowSubview:self.reorderingCellView];
+        [self.contentView addSubview:eachCell];
         
         positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
         
@@ -1169,7 +1294,7 @@ float nanosecondsWithSeconds(float seconds){
     if(self.mode != FJSpringBoardCellModeNormal)
         return;
     
-    CGPoint p = [g locationInView:self];
+    CGPoint p = [g locationInView:self.contentView];
     
     NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
     
@@ -1197,7 +1322,7 @@ float nanosecondsWithSeconds(float seconds){
         return;
     }
     
-    CGPoint p = [g locationInView:self];
+    CGPoint p = [g locationInView:self.contentView];
     
     NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
     
@@ -1240,7 +1365,6 @@ float nanosecondsWithSeconds(float seconds){
     if(self.animatingContentOffset)
         return;
         
-    
     CGPoint p = [g locationInView:self];
     
     self.lastTouchPoint = p;
@@ -1249,7 +1373,9 @@ float nanosecondsWithSeconds(float seconds){
         
         if(g.state == UIGestureRecognizerStateBegan){
             
-            NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+            CGPoint contentPoint = [g locationInView:self.contentView];
+            
+            NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
             
             if(indexOfCell != NSNotFound)
                 self.mode = FJSpringBoardCellModeEditing;
@@ -1304,52 +1430,6 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-
-- (NSUInteger)indexOfCellAtPoint:(CGPoint)point{
-    
-    return [self _indexOfCellAtPoint:point checkOffScreenCells:YES];
-    
-}
-
-
-
-
-- (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag{
-    
-    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
-        
-        if([c isEqual:[NSNull null]]){
-            
-            if(flag){
-                
-                CGRect f = [self.layout frameForCellAtIndex:idx];
-                if(CGRectContainsPoint(f, point))
-                    return YES;
-                
-            }
-                   
-            return NO;
-            
-        }
-        
-        if(CGRectContainsPoint(c.frame, point)){
-            *stop = YES;
-            return YES;
-            
-        }
-        
-        return NO;
-        
-    }];
-    
-    if([a count] == 0)
-        return NSNotFound;
-    
-    return [a firstIndex];
-    
-}
 
 #pragma mark -
 #pragma mark Touch Point Scrolling
@@ -1407,9 +1487,7 @@ float nanosecondsWithSeconds(float seconds){
 
 - (FJSpringBoardViewEdge)_edgeOfViewAtTouchPoint:(CGPoint)touch{
     
-    CGRect f;
-    f.origin = self.contentOffset;
-    f.size = self.bounds.size;
+    CGRect f = self.bounds;
     
     CGRect centerFrame = CGRectInset(f, EDGE_CUSHION, EDGE_CUSHION);
     
@@ -1457,7 +1535,9 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_makeCellDraggableAtTouchPoint:(CGPoint)point{
     
-    NSUInteger index = [self indexOfCellAtPoint:point];
+    CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
+    
+    NSUInteger index = [self indexOfCellAtPoint:contentPoint];
 
     if(index == NSNotFound)
         return;
@@ -1476,6 +1556,7 @@ float nanosecondsWithSeconds(float seconds){
     UIImage* i = [self _createDraggableImageFromCell:cell];
     UIImageView* iv = [[UIImageView alloc] initWithImage:i];
     iv.frame = cell.frame;
+    iv.center = [self convertPoint:cell.center fromView:self.contentView];
     self.reorderingCellView = iv;
     [self addSubview:iv];
     [iv release];
@@ -1519,6 +1600,8 @@ float nanosecondsWithSeconds(float seconds){
     //check if we need to scroll the view
     FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:point];
     
+    CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
+    
     if(e == FJSpringBoardViewEdgeNone){
          
         //don't do anything if we are in the middle of a reordering animation
@@ -1526,13 +1609,24 @@ float nanosecondsWithSeconds(float seconds){
             return;    
         
         //if not, lets check to see if we need to reshuffle
-        NSUInteger index = [self _coveredCellIndexForTouchPoint:point];
-        FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index atTouchPoint:point];
+        NSUInteger index = [self _coveredCellIndexForContentPoint:contentPoint];
+        
+        if(index == NSNotFound){
+         
+            [self _removeHighlight];
+            
+            return;
+
+        }
+        FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index atContentPoint:contentPoint];
         
         if(a == FJSpringBoardDropActionMove)
             [self _reorderCellsByUpdatingPlaceHolderIndex:index];
         else if(a == FJSpringBoardDropActionAddToFolder)
             [self _highlightGroupAtIndex:index];
+        else{
+            [self _removeHighlight];
+        }
         
     }else{
         
@@ -1546,6 +1640,9 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_keepDraggableCellUnderTouchPointDuringScrollAnimationWithStartingTouchPoint:(CGPoint)point{
     
+    return;
+    //shouldn't need this anymore!!!!
+    
     //overly complicated way to keep the floating tile under the touch position until the scroll animation is complete
     //all this just to avoid an ivar
     __block CGPoint touchPosition = point;
@@ -1553,7 +1650,7 @@ float nanosecondsWithSeconds(float seconds){
     
     updateCheck = ^{
         
-        touchPosition.x += (self.contentOffset.x - self.lastContentOffset.x); 
+        touchPosition.x += (self.scrollView.contentOffset.x - self.lastContentOffset.x); 
         self.reorderingCellView.center = touchPosition;
         POINTLOG(touchPosition);
         
@@ -1586,9 +1683,9 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atTouchPoint:(CGPoint)point{
+- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atContentPoint:(CGPoint)point{
     
-    if(index == [self.indexMap oldIndexForNewIndex:self.indexMap.originalReorderingIndex])
+    if(index == self.indexMap.currentReorderingIndex)
         return FJSpringBoardDropActionNone;
     
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
@@ -1604,7 +1701,7 @@ float nanosecondsWithSeconds(float seconds){
     float totalArea = cell.contentView.frame.size.width * cell.contentView.frame.size.height;
     
     
-    if(area/totalArea > .60){
+    if(area/totalArea > .70){
         return FJSpringBoardDropActionAddToFolder;
     }
     
@@ -1612,7 +1709,7 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-- (NSUInteger)_coveredCellIndexForTouchPoint:(CGPoint)point{
+- (NSUInteger)_coveredCellIndexForContentPoint:(CGPoint)point{
     
     CGRect insetRect = CGRectInset(self.reorderingCellView.frame, 
                                    0.15*self.reorderingCellView.frame.size.width, 
@@ -1685,6 +1782,35 @@ float nanosecondsWithSeconds(float seconds){
     }
 }
 
+
+- (void)_animateDraggableViewToCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block{
+    
+    UIView* v = [self.reorderingCellView retain];
+    self.reorderingCellView = nil;
+    
+    [UIView animateWithDuration:0.3 
+                          delay:0.1 
+                        options:UIViewAnimationOptionCurveEaseIn 
+                     animations:^(void) {
+                         
+                         v.alpha = 1.0;
+                         v.transform = CGAffineTransformIdentity;
+                         v.frame = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
+                         
+                     } 
+     
+                     completion:^(BOOL finished) {
+                         
+                         [v removeFromSuperview];
+                         [v release];
+                         
+                         block();
+                         
+                     }];
+    
+}
+
+
 #pragma mark -
 #pragma mark Reorder
 
@@ -1726,9 +1852,6 @@ float nanosecondsWithSeconds(float seconds){
     NSLog(@"completing reorder...");
     self.animatingReorder = YES;
     
-    UIView* v = [self.reorderingCellView retain];
-    self.reorderingCellView = nil;
-    
     NSUInteger original = im.originalReorderingIndex;
     NSUInteger current = im.currentReorderingIndex;
     FJSpringBoardCell* cell = [self.cells objectAtIndex:im.currentReorderingIndex];
@@ -1741,31 +1864,17 @@ float nanosecondsWithSeconds(float seconds){
         ALWAYS_ASSERT;
     }
     
-    
-    [UIView animateWithDuration:0.3 
-                          delay:0.1 
-                        options:UIViewAnimationOptionCurveEaseIn 
-                     animations:^(void) {
-                         
-                         v.alpha = 1.0;
-                         v.transform = CGAffineTransformIdentity;
-                         v.frame = cell.frame;
-                         
-                     } 
-     
-                     completion:^(BOOL finished) {
-                         
-                         [v removeFromSuperview];
-                         [v release];
-                         
-                         cell.reordering = NO;
-                         self.animatingReorder = NO;
-                         if([d respondsToSelector:@selector(springBoardView:moveCellAtIndex:toIndex:)])
-                             [d springBoardView:self moveCellAtIndex:original toIndex:current];
-                         
-                         
-                     }];
-    
+    [self _animateDraggableViewToCellIndex:current completionBlock:^{
+        
+        if(![cell isEqual:[NSNull null]])
+            cell.reordering = NO;
+        
+        self.animatingReorder = NO;
+        if([d respondsToSelector:@selector(springBoardView:moveCellAtIndex:toIndex:)])
+            [d springBoardView:self moveCellAtIndex:original toIndex:current];
+        
+        
+    }];
     
 }
 
@@ -1775,6 +1884,10 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_highlightGroupAtIndex:(NSUInteger)index{
     
+    if(self.animatingReorder)
+        return;
+    
+    self.animatingReorder = YES;
     [self _removeHighlight];
         
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
@@ -1789,28 +1902,28 @@ float nanosecondsWithSeconds(float seconds){
     //if not, lets get one
     if(groupCell == nil){
         
-        //check if we have a spare one floating around
-        groupCell = self.floatingGroupCell;
+        //well lets ask for one
+        groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
         
-        //no, well lets ask for one
         if(groupCell == nil){
-            groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
-            self.floatingGroupCell = groupCell;
-
+            
+            return;
         }
         
+        self.floatingGroupCell = groupCell;        
+
         groupCell.frame = cell.frame;
         groupCell.center = cell.center;
+        [self.contentView addSubview:groupCell];
         groupCell.alpha = 0.0;
         groupCell.contentView.backgroundColor = [UIColor blackColor];
-        [self insertSubview:groupCell belowSubview:self.reorderingCellView];
+        groupCell.transform = CGAffineTransformMakeScale(1.3, 1.3);
 
     }
     
     groupCell.userInteractionEnabled = NO;
     cell.userInteractionEnabled = NO;
     
-    groupCell.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
 
     [UIView animateWithDuration:CREATE_GROUP_ANIMATION_DURATION 
                           delay:REMOVE_GROUP_ANIMATION_DURATION
@@ -1818,14 +1931,15 @@ float nanosecondsWithSeconds(float seconds){
                      animations:^(void) {
                          
                          groupCell.alpha = 1.0;
-
-                     } completion:^(BOOL finished) {
                          
                          if(![cell isEqual:groupCell])
                              cell.alpha = 0.0;
 
+                     } completion:^(BOOL finished) {
+                         
                          groupCell.userInteractionEnabled = YES;
                          cell.userInteractionEnabled = YES;
+                         self.animatingReorder = NO;
                          
                      }];
     
@@ -1837,8 +1951,10 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     FJSpringBoardCell* cell = [self.cells objectAtIndex:indexOfHighlightedCell];
-
     self.indexOfHighlightedCell = NSNotFound;
+    
+    FJSpringBoardGroupCell* group = [self.floatingGroupCell retain];
+    self.floatingGroupCell = nil;
 
     [UIView animateWithDuration:REMOVE_GROUP_ANIMATION_DURATION 
                           delay:0 
@@ -1847,18 +1963,18 @@ float nanosecondsWithSeconds(float seconds){
                          
                          if([cell isKindOfClass:[FJSpringBoardGroupCell class]]){
                              
-                             cell.layer.transform = CATransform3DIdentity;
-                           
+                             cell.transform = CGAffineTransformIdentity;
                              
                          }else{
                              
                              if(![cell isEqual:[NSNull null]])
                                  cell.alpha = 1.0;
                              
-                             self.floatingGroupCell.layer.transform = CATransform3DIdentity;
-                             self.floatingGroupCell.alpha = 0.0;
+                             group.transform = CGAffineTransformIdentity;
+                             group.alpha = 0.0;
 
                          }
+                         
                          
                      } completion:^(BOOL finished) {
                          
@@ -1868,10 +1984,15 @@ float nanosecondsWithSeconds(float seconds){
                              
                          }else{
                              
-                             //[self.floatingGroupCell removeFromSuperview];
-                             
+                             if(group != nil){
+                              
+                                 [group removeFromSuperview];
+                                 group.alpha = 1.0;
+                                 [self.reusableCells addObject:group];
+                                 [group release];
+                                 
+                             }
                          }
-                                                  
                      }];
     
 }
@@ -1894,11 +2015,20 @@ float nanosecondsWithSeconds(float seconds){
         
     }
     
+
     //shift cell if group was added
-    NSUInteger realCellIndex = [self.indexMap newIndexForOldIndex:self.indexMap.originalReorderingIndex];
-    [cellsToAdd addIndex:realCellIndex];
+    [cellsToAdd addIndex:self.indexMap.currentReorderingIndex];
+        
+    [self _animateDraggableViewToCellIndex:self.indexMap.currentReorderingIndex completionBlock:^{
+        
+              
+        
+    }];
     
+
     [self _addCellsAtIndexes:cellsToAdd toGroupAtIndex:self.indexOfHighlightedCell];
+    
+    self.indexOfHighlightedCell = NSNotFound;
     
 }
 
@@ -1926,8 +2056,10 @@ float nanosecondsWithSeconds(float seconds){
                          
                      }];
     
-    //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark
-    [self.indexesScrollingOutOfView addIndex:([self.onScreenCellIndexes lastIndex] + 1)];
+    //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark    
+    NSMutableIndexSet* toRemove = [toLayout mutableCopy];
+    [toRemove removeIndexes:self.onScreenCellIndexes];
+    [self.indexesScrollingOutOfView addIndexes:toRemove];
     
     //move cells out of the way
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
@@ -2035,7 +2167,7 @@ float nanosecondsWithSeconds(float seconds){
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
         return NSNotFound;
     
-    return floorf(self.contentOffset.x/self.bounds.size.width);
+    return floorf(self.scrollView.contentOffset.x/self.scrollView.bounds.size.width);
     
 }
 
@@ -2086,7 +2218,7 @@ float nanosecondsWithSeconds(float seconds){
         
     CGPoint p = [l offsetForPage:page];
     
-    [self setContentOffset:p animated:animated];
+    [self _setContentOffset:p animated:animated];
     
     return YES;
     
