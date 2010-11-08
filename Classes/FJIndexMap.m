@@ -135,7 +135,7 @@
     
     //insert group cell
     [self.cells insertObject:groupCell atIndex:index];
-    [self.mapNewToOld insertObject:[NSNull null] atIndex:index];
+    [self.mapNewToOld insertObject:[NSNumber numberWithUnsignedInt:NSNotFound] atIndex:index];
     
     NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
     
@@ -143,14 +143,15 @@
     
         NSNumber* val = (NSNumber*)obj;
         
-        if(![obj isEqual:[NSNull null]]){
+        NSUInteger oldVal = [val unsignedIntegerValue];
+        
+        if(oldVal != NSNotFound){
             
-            NSUInteger oldVal = [val unsignedIntegerValue];
             if(oldVal >= index){
-               oldVal++;
-
+                oldVal++;
+                
                 val = [NSNumber numberWithUnsignedInteger:oldVal];
-
+                
             }
         }
         
@@ -173,9 +174,14 @@
     if([indexes count] == 0)
         return nil;
     
-    //TODO: convert nulls to use NSNotFounds
-    NSArray* nulls = nullArrayOfSize([indexes count]);
+    NSMutableArray* nulls = [NSMutableArray arrayWithCapacity:[indexes count]];
     
+    for(int i = 0; i< [indexes count]; i++){
+        
+        [nulls addObject:[NSNumber numberWithUnsignedInt:NSNotFound]];
+    }
+    
+
     NSMutableIndexSet* oldIndexes = [NSMutableIndexSet indexSet];
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
@@ -192,13 +198,14 @@
         
         NSNumber* val = (NSNumber*)obj;
         
-        if(![obj isEqual:[NSNull null]]){
+        NSUInteger oldVal = [val unsignedIntegerValue];
+        
+        if(oldVal != NSNotFound){
             
-            NSUInteger oldVal = [val unsignedIntegerValue];
             __block int numToDecrement = 0;
             
             [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-            
+                
                 if(oldVal > idx)
                     numToDecrement++;
             }];
@@ -206,8 +213,9 @@
             oldVal = oldVal-numToDecrement;
             
             val = [NSNumber numberWithUnsignedInteger:oldVal];
-            
+                        
         }
+        
         
         [editedValues addObject:val];
         

@@ -1406,6 +1406,8 @@ float nanosecondsWithSeconds(float seconds){
             
             [self _makeCellDraggableAtTouchPoint:p];
             
+            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:5.0];
+            
             return;
         }
         
@@ -1582,7 +1584,7 @@ float nanosecondsWithSeconds(float seconds){
                      
                      completion:^(BOOL finished) {
                      
-                     
+                         
                      
                      }];
 
@@ -1984,10 +1986,16 @@ float nanosecondsWithSeconds(float seconds){
     }
 
     //shift cell if group was added
-    [cellsToAdd addIndex:self.indexMap.currentReorderingIndex+1];
+    
+    NSUInteger movingIndex = self.indexMap.currentReorderingIndex;
+    
+    if(movingIndex >= index)
+        movingIndex++;
+    
+    [cellsToAdd addIndex:movingIndex];
 
     //change to animation into the group
-    [self _animateDraggableViewToCellIndex:self.indexMap.currentReorderingIndex completionBlock:^{
+    [self _animateDraggableViewToCellIndex:index completionBlock:^{
         
               
         
