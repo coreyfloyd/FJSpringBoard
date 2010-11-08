@@ -8,38 +8,13 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol FJIndexMapping <NSObject>
-
-- (NSArray*)oldArray;  //original array before modifications
-
-//map values
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
-
-
-@end
-
-
-//this maps 1-1
-@interface FJNormalIndexMap : NSObject <FJIndexMapping>
-{
-    NSMutableArray* array;   
-}
-@property(nonatomic, retain) NSMutableArray *array;
-
-- (id)initWithArray:(NSMutableArray*)anArray;
-
-@end
-
-
-//adjusts indexes based on the reordering
-@interface FJReorderingIndexMap : NSObject <FJIndexMapping> {
+@interface FJReorderingIndexMap : NSObject {
 
     NSMutableArray* mapNewToOld;
     NSMutableArray* mapOldToNew;
     
-    NSArray* oldArray;
-    NSMutableArray* array;
+    NSArray* cellsWithoutCurrentChangesApplied;
+    NSMutableArray* cells;
     
     NSUInteger originalReorderingIndex;
     NSUInteger currentReorderingIndex;
@@ -48,17 +23,22 @@
 @property(nonatomic, retain) NSMutableArray *mapNewToOld;
 @property(nonatomic, retain) NSMutableArray *mapOldToNew;
 
-@property(nonatomic, retain) NSArray *oldArray;
-@property(nonatomic, retain) NSMutableArray *array;
+@property(nonatomic, retain) NSArray *cellsWithoutCurrentChangesApplied;
+@property(nonatomic, retain) NSMutableArray *cells;
 
-@property(nonatomic) NSUInteger originalReorderingIndex;
-@property(nonatomic) NSUInteger currentReorderingIndex;
+@property(nonatomic, readonly) NSUInteger originalReorderingIndex;
+@property(nonatomic, readonly) NSUInteger currentReorderingIndex;
 
-- (id)initWithArray:(NSMutableArray*)anArray reorderingObjectIndex:(NSUInteger)index;
+- (id)initWithArray:(NSMutableArray*)anArray;
+
+- (void)beginReorderingIndex:(NSUInteger)index;
 
 - (NSIndexSet*)modifiedIndexesByMovingReorderingObjectToIndex:(NSUInteger)index;
 
+- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
+- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
 
+- (void)commitReorder; 
 
 @end
 

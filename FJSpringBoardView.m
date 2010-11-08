@@ -70,7 +70,7 @@ float nanosecondsWithSeconds(float seconds){
 @property(nonatomic) BOOL doubleTapped; //flag to handle double tap irregularities
 @property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
 
-@property(nonatomic, retain) id<FJIndexMapping> indexMap;
+@property(nonatomic, retain) FJReorderingIndexMap* indexMap;
 @property(nonatomic, retain) UIView *reorderingCellView;
 @property(nonatomic) BOOL animatingReorder; //flag to indicate a reordering animation is occuring
 
@@ -120,7 +120,7 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_keepReorderingCellUnderTouchPointDuringAnimationWithStartingTouchPoint:(CGPoint)point;
 
 - (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index atTouchPoint:(CGPoint)point;
-- (void)_highlightFolderAtIndex:(NSUInteger)index;
+- (void)_highlightGroupAtIndex:(NSUInteger)index;
 @end
 
 @implementation FJSpringBoardView
@@ -365,7 +365,7 @@ float nanosecondsWithSeconds(float seconds){
     
     [self _unloadCellsScrollingOutOfViewAtIndexes:self.onScreenCellIndexes];
     self.cells = nullArrayOfSize([self.allIndexes count]);
-    self.indexMap = [[FJNormalIndexMap alloc] initWithArray:self.cells];
+    self.indexMap = [[FJReorderingIndexMap alloc] initWithArray:self.cells];
     
     [self _configureLayout]; //triggers _updateCells and _updateIndexes
 }
@@ -1469,8 +1469,8 @@ float nanosecondsWithSeconds(float seconds){
         ALWAYS_ASSERT;
     }
     
-    //crrate map for indexes
-    self.indexMap = [[[FJReorderingIndexMap alloc] initWithArray:self.cells reorderingObjectIndex:index] autorelease];
+    //start reordering
+    [self.indexMap beginReorderingIndex:index];
     
     //create imageview to animate
     UIImage* i = [self _createImageFromCell:cell];
@@ -1531,7 +1531,7 @@ float nanosecondsWithSeconds(float seconds){
         if(a == FJSpringBoardDropActionMove)
             [self _reorderCellsByUpdatingPlaceHolderIndex:index];
         else
-            [self _highlightFolderAtIndex:index];
+            [self _highlightGroupAtIndex:index];
         
         
     }else{
@@ -1558,7 +1558,7 @@ float nanosecondsWithSeconds(float seconds){
     float totalArea = cell.contentView.frame.size.width * cell.contentView.frame.size.height;
     
     
-    if(area/totalArea > 40){
+    if(area/totalArea > .60){
         return FJSpringBoardDropActionAddToFolder;
     }
     
@@ -1652,47 +1652,6 @@ float nanosecondsWithSeconds(float seconds){
     
 }
 
-- (void)_highlightFolderAtIndex:(NSUInteger)index{
-
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
-    
-    FJSpringBoardGroupCell* groupCell = nil;
-    
-    if([cell isKindOfClass:[FJSpringBoardGroupCell class]])
-        groupCell = (FJSpringBoardGroupCell*)cell;
-    
-    if(groupCell == nil){
-        
-        groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
-        groupCell.frame = cell.frame;
-        groupCell.alpha = 0.0;
-
-    }
-    groupCell.userInteractionEnabled = NO;
-    cell.userInteractionEnabled = NO;
-
-    [UIView animateWithDuration:0.25 
-                          delay:0 
-                        options:UIViewAnimationOptionCurveEaseInOut  
-                     animations:^(void) {
-                         
-                         if(cell != groupCell){
-                             groupCell.alpha = 1.0;
-                             cell.alpha = 0.0;
-                         }
-                         
-                         groupCell.layer.transform = CATransform3DMakeScale(1.2, 1.2, 0);
-                                                
-                     } completion:^(BOOL finished) {
-                         
-                         groupCell.userInteractionEnabled = YES;
-                         cell.userInteractionEnabled = YES;
-                        
-                     }];
-    
-}
-
-
 - (void)_completeReorder{
     
     if(self.animatingReorder)
@@ -1701,7 +1660,9 @@ float nanosecondsWithSeconds(float seconds){
     FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
     if(![im isKindOfClass:[FJReorderingIndexMap class]])
         return;
-
+    
+    
+    
     
     
     NSLog(@"completing reorder...");
@@ -1713,9 +1674,8 @@ float nanosecondsWithSeconds(float seconds){
     NSUInteger original = im.originalReorderingIndex;
     NSUInteger current = im.currentReorderingIndex;
     FJSpringBoardCell* cell = [self.cells objectAtIndex:im.currentReorderingIndex];
-
-    self.indexMap = [[FJNormalIndexMap alloc] initWithArray:self.cells];
-
+    [self.indexMap commitReorder];
+    
     id<FJSpringBoardViewDataSource> d = self.dataSource;
     
     if([self.cells count] == 0){
@@ -1749,6 +1709,53 @@ float nanosecondsWithSeconds(float seconds){
                      }];
 
 }
+
+#pragma mark -
+#pragma mark Grouping
+
+
+- (void)_highlightGroupAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    
+    FJSpringBoardGroupCell* groupCell = nil;
+    
+    if([cell isKindOfClass:[FJSpringBoardGroupCell class]])
+        groupCell = (FJSpringBoardGroupCell*)cell;
+    
+    if(groupCell == nil){
+        
+        groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
+        groupCell.frame = cell.frame;
+        groupCell.alpha = 0.0;
+        groupCell.contentView.backgroundColor = [UIColor blackColor];
+        [self addSubview:groupCell];
+        
+    }
+    groupCell.userInteractionEnabled = NO;
+    cell.userInteractionEnabled = NO;
+    
+    [UIView animateWithDuration:0.25 
+                          delay:0 
+                        options:UIViewAnimationOptionCurveEaseInOut  
+                     animations:^(void) {
+                         
+                         if(cell != groupCell){
+                             groupCell.alpha = 1.0;
+                             cell.alpha = 0.0;
+                         }
+                         
+                         groupCell.transform = CGAffineTransformMakeScale(1.2, 1.2);
+                         
+                     } completion:^(BOOL finished) {
+                         
+                         groupCell.userInteractionEnabled = YES;
+                         cell.userInteractionEnabled = YES;
+                         
+                     }];
+    
+}
+
 
 
 #pragma mark -

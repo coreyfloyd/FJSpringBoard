@@ -10,46 +10,10 @@
 #import "FJSpringBoardUtilities.h"
 
 
-@implementation FJNormalIndexMap
+@interface FJReorderingIndexMap()
 
-@synthesize array;
-
-- (void) dealloc
-{
-    
-    [array release];
-    array = nil;
-    [super dealloc];
-}
-
-- (id)initWithArray:(NSMutableArray*)anArray{
-     
-    self = [super init];
-    if (self != nil) {
-        
-        self.array = anArray;
-    }
-    
-    return self;
-
-}
-
-- (NSArray*)oldArray{
-    
-    return self.array;
-}
-
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
-    
-    return oldIndex;
-    
-    
-}
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex{
-
-    return newIndex;
-}
-
+@property(nonatomic, readwrite) NSUInteger originalReorderingIndex;
+@property(nonatomic, readwrite) NSUInteger currentReorderingIndex;
 
 @end
 
@@ -58,8 +22,8 @@
 
 @synthesize mapNewToOld;
 @synthesize mapOldToNew;
-@synthesize oldArray;
-@synthesize array;
+@synthesize cellsWithoutCurrentChangesApplied;
+@synthesize cells;
 @synthesize originalReorderingIndex;
 @synthesize currentReorderingIndex;
 
@@ -68,41 +32,31 @@
 {
     [mapOldToNew release];
     mapOldToNew = nil;
-    [oldArray release];
-    oldArray = nil;
-    [array release];
-    array = nil;
+    [cellsWithoutCurrentChangesApplied release];
+    cellsWithoutCurrentChangesApplied = nil;
+    [cells release];
+    cells = nil;
     [mapNewToOld release];
     mapNewToOld = nil;
     [super dealloc];
 }
 
-- (id)initWithArray:(NSMutableArray*)anArray reorderingObjectIndex:(NSUInteger)index{
+- (id)initWithArray:(NSMutableArray*)anArray{
     
     self = [super init];
     if (self != nil) {
         
-        self.oldArray = [anArray copy];
-        self.array = anArray;
-        self.originalReorderingIndex = index;
-        self.currentReorderingIndex = index;
-        
-        self.mapNewToOld = [NSMutableArray arrayWithCapacity:[anArray count]];
-        self.mapOldToNew = [NSMutableArray arrayWithCapacity:[anArray count]];
-        
-        [self.oldArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-            NSNumber* n = [NSNumber numberWithUnsignedInteger:idx];
-            [self.mapNewToOld addObject:n];
-            [self.mapOldToNew addObject:n];
-            
-        }];
-        
+        self.cells = anArray;
+        [self commitReorder];
         
     }
     return self;
+}
+
+- (void)beginReorderingIndex:(NSUInteger)index{
     
-    
+    self.originalReorderingIndex = index;
+    self.currentReorderingIndex = index;
 }
 
 - (NSIndexSet*)modifiedIndexesByMovingReorderingObjectToIndex:(NSUInteger)index{
@@ -114,9 +68,9 @@
         return nil;
     
 
-    id obj = [[self.array objectAtIndex:self.currentReorderingIndex] retain];
-    [self.array removeObjectAtIndex:self.currentReorderingIndex];
-    [self.array insertObject:obj atIndex:index];
+    id obj = [[self.cells objectAtIndex:self.currentReorderingIndex] retain];
+    [self.cells removeObjectAtIndex:self.currentReorderingIndex];
+    [self.cells insertObject:obj atIndex:index];
     [obj release];
     
     obj = [[self.mapNewToOld objectAtIndex:self.currentReorderingIndex] retain];
@@ -171,6 +125,25 @@
     NSNumber* newNum = [self.mapOldToNew objectAtIndex:newIndex];
     
     return [newNum unsignedIntegerValue];
+}
+
+- (void)commitReorder{
+    
+    self.cellsWithoutCurrentChangesApplied = [[self.cells copy] autorelease];
+    self.currentReorderingIndex = NSNotFound;
+    self.originalReorderingIndex = NSNotFound;
+    
+    self.mapNewToOld = [NSMutableArray arrayWithCapacity:[self.cells count]];
+    
+    [self.cellsWithoutCurrentChangesApplied enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        NSNumber* n = [NSNumber numberWithUnsignedInteger:idx];
+        [self.mapNewToOld addObject:n];
+        
+    }];
+    
+    self.mapOldToNew = [self.mapNewToOld mutableCopy];
+
 }
 
 

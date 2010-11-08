@@ -157,8 +157,7 @@
 
 - (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView{
     
-    FJSpringBoardGroupCell *cell = [[FJSpringBoardGroupCell alloc] init];
-    cell.contentView.backgroundColor = [UIColor grayColor];
+    FJSpringBoardGroupCell *cell = [[FJSpringBoardGroupCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:@"Group"];
     
     return [cell autorelease];
     

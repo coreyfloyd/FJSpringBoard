@@ -51,7 +51,7 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
-    id<FJIndexMapping> indexMap;
+    FJReorderingIndexMap* indexMap;
     UIView* reorderingCellView;
     
     CGPoint lastTouchPoint;
