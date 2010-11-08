@@ -2027,9 +2027,9 @@ float nanosecondsWithSeconds(float seconds){
     NSMutableIndexSet* toRemove = [toLayout mutableCopy];
     [toRemove removeIndexes:self.onScreenCellIndexes];
     [self.indexesScrollingOutOfView addIndexes:toRemove];
-    
-    [self _layoutCellsAtIndexes:[toLayout copy]];
-    [self.indexesNeedingLayout removeIndexes:toLayout];
+    [self.indexesNeedingLayout addIndexes:toLayout];
+    [self _layoutCellsAtIndexes:[NSIndexSet indexSetWithIndex:index]];
+    //[self.indexesNeedingLayout removeIndexes:toLayout];
     
     //notify datasource
     if([self.dataSource respondsToSelector:@selector(springBoardView:commitInsertingGroupCellAtIndex:)])
