@@ -1248,7 +1248,7 @@ float nanosecondsWithSeconds(float seconds){
                          }];
                          [self.indexMap commitChanges];
                          
-                         [[self.dataSource performIfRespondsToSelectorProxy] springBoardView:self commitDeletionForCellAtIndexes:indexes];
+                         [[(NSObject*)self.dataSource performIfRespondsToSelectorProxy] springBoardView:self commitDeletionForCellAtIndexes:indexes];
                          self.userInteractionEnabled = YES;
 
                          
@@ -1665,7 +1665,7 @@ float nanosecondsWithSeconds(float seconds){
     float totalArea = cell.contentView.frame.size.width * cell.contentView.frame.size.height;
     
     
-    if(area/totalArea > .70){
+    if(area/totalArea > .65){
         return FJSpringBoardDropActionAddToFolder;
     }
     
@@ -1851,6 +1851,9 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_highlightGroupAtIndex:(NSUInteger)index{
     
     if(self.animatingReorder)
+        return;
+    
+    if(self.indexOfHighlightedCell == index)
         return;
     
     self.animatingReorder = YES;

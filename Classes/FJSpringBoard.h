@@ -20,18 +20,15 @@
  Dangling cells left sometimes. need a full proof cleanup strategy
   
  balance all copies with releases
-     
- stop readding group cell over and over again
- 
- fix empty cell when moving creating folder before dragging index
- 
- fire timer to get rid of drag cell that never completes
- 
- 
+        
+ fix deletion of last cell
  
  @todo
     
- clean up 
+ add to exising group
+ 
+ check multipage drag drops (unloaded pages)
+ 
  
  
  @low priority todo
@@ -56,15 +53,11 @@
     for each page change, do what we do now
  
  
- create contentView for springboard to hold all cells
- 
- 
- 
  consider using NSOperationQueue with update object
  
  update object
     unanimated layout "fixes" (add / remove cells from view on visible boundries)
     apply cell changes (insert, delete, reorder)
-    animation changes 
+    animation changes (BOOL YES or NO)
  
 */
