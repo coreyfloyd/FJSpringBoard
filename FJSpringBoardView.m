@@ -1615,6 +1615,10 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_makeCellDraggableAtTouchPoint:(CGPoint)point{
     
+    if(self.draggableCellView != nil)
+        return;
+    
+    
     CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
     
     NSUInteger index = [self indexOfCellAtPoint:contentPoint];
@@ -1911,19 +1915,25 @@ float nanosecondsWithSeconds(float seconds){
         NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
         
         if(newIndex == NSNotFound)
-            newIndex = [visIndexes lastIndex];
+            newIndex = ([visIndexes lastIndex]-1);
         
-        [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
         
-        //TODO: guard against infinite loop   
-                
-        dispatch_async(dispatch_get_main_queue(), ^{
-        
-            [self _completeReorder];
+        if(newIndex != current){
             
-        });
-        
-        return;
+            
+            [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
+            
+            //TODO: guard against infinite loop   
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                
+                [self _completeReorder];
+                
+            });
+            
+            return;
+            
+        }       
     }
     
     

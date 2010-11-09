@@ -29,7 +29,7 @@
  
  release in middle of folder highlight animation
  
- 
+ dragging cell gets lost…
  
  
  @todo
