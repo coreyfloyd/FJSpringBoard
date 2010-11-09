@@ -113,10 +113,12 @@ float nanosecondsWithSeconds(float seconds){
 - (void)_removeCellsFromSpringBoardViewAtIndexes:(NSIndexSet*)indexes;
 - (void)_unloadCellsAtIndexes:(NSIndexSet*)indexes;
 
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes;
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes withCompletionBlock:(dispatch_block_t)block;
+- (void)_preLayoutIndexesComingIntoViewWhenAddingIndexes:(NSIndexSet*)indexes;
+- (void)_removeIndexesGoingOutOfViewWhenAddingIndexes:(NSIndexSet*)indexes;
 
 - (void)_deleteCellsAtIndexes:(NSIndexSet*)indexes withCompletionBlock:(dispatch_block_t)block;
-- (void)preLayoutIndexesComingIntoViewWhenRemovingIndexes:(NSIndexSet*)indexes;
+- (void)_preLayoutIndexesComingIntoViewWhenRemovingIndexes:(NSIndexSet*)indexes;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes inIndexPositions:(NSIndexSet*)positionIndexes;
 
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag;
@@ -724,7 +726,7 @@ float nanosecondsWithSeconds(float seconds){
     [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
        
         NSUInteger realIndex = [self.indexMap oldIndexForNewIndex:index];
-
+        
         FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:realIndex];
         [cell retain];
         
@@ -963,142 +965,159 @@ float nanosecondsWithSeconds(float seconds){
     
     NSUInteger firstIndex = [indexSet firstIndex];
     
+    //TODO: check all indexes
     if(firstIndex > [self.allIndexes lastIndex] + 1){
         
         ALWAYS_ASSERT;
-    } 
-    
-    
-    self.layoutAnimation = animation; //reset on next layout update
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
-    
-    [self.indexesToInsert addIndexes:indexSet];
-    
-    NSUInteger startIndex = MAX([indexSet lastIndex] + 1, [self.onScreenCellIndexes firstIndex]);
-    NSUInteger lastIndex = [self.onScreenCellIndexes lastIndex] + [indexSet count];
-    NSIndexSet* toLayOut = contiguousIndexSetWithFirstAndLastIndexes(startIndex, lastIndex); //non-continuous:remove indexSet form vis cell set, remove indexes less than the first index in indexset
-    [self.indexesNeedingLayout addIndexes:toLayOut];
-    
-    //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark
-    startIndex = [self.onScreenCellIndexes lastIndex] + 1;
-    NSUInteger length = [indexSet count];
-    [self.indexesScrollingOutOfView addIndexesInRange:NSMakeRange(startIndex, length)];
-    
-    //insert new cells
-    [self _insertCellsAtIndexes:[self.indexesToInsert copy]];
-    
-    //load cells comming into range??
-    NSMutableIndexSet* unloaded = [indexSet mutableCopy];
-    [unloaded removeIndexes:self.onScreenCellIndexes];
-    startIndex = [self.onScreenCellIndexes firstIndex];
-    length = [unloaded count];
-    
-    NSIndexSet* toQueue = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(startIndex, length)];
-    
-    //get pre-animation indexes for cells to be added to screen
-    NSMutableIndexSet* previousIndexPositionsForIndexesToQueue = [NSMutableIndexSet indexSet]; 
-    [toQueue enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        NSUInteger newIndex = idx - [indexSet count];
-        [previousIndexPositionsForIndexesToQueue addIndex:newIndex];
-        
-    }];
-    
-    [self.indexesScrollingInView addIndexes:toQueue];
-    [self _loadCellsAtIndexes:[self.indexesScrollingInView copy]];
-
-    //place at pre-animation indexes
-    [self _layoutCellsAtIndexes:[self.indexesScrollingInView copy] inIndexPositions:previousIndexPositionsForIndexesToQueue];
-    
-    
-    if(self.layoutAnimation == FJSpringBoardCellAnimationNone){
-        
-        [self _layoutCellsAtIndexes:[self.indexesNeedingLayout copy]];
-        [self.indexesNeedingLayout removeAllIndexes];
-        //dequeue any newly off screen cells
-        [self _unloadCellsScrollingOutOfViewAtIndexes:[self.indexesScrollingOutOfView copy]];
-        //update layout, content size, index loader, etc
-        [self _updateLayout];
-        
-        return;
     }
     
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     
+    if(numOfCells != [allIndexes count] + [indexSet count]){
+        
+        ALWAYS_ASSERT; //num != pervios count + number added 
+    } 
     
-    //move cells out of the way
-    [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
-                          delay:0 
-                        options:UIViewAnimationOptionCurveEaseInOut  
-                     animations:^(void) {
-                        
-                         [self _layoutCellsAtIndexes:[self.indexesNeedingLayout copy]];
-                         [self.indexesNeedingLayout removeAllIndexes];
+    [self.indexesToInsert addIndexes:indexSet];
 
-                     } completion:^(BOOL finished) {
-                         
-                         //dequeue any newly off screen cells
-                         [self _unloadCellsScrollingOutOfViewAtIndexes:[self.indexesScrollingOutOfView copy]];
-                         //update layout, content size, index loader, etc
-                         [self _updateLayout];
-
-
-                     }];
+    self.layoutAnimation = animation; //reset on next layout update
     
-    
+    [self _insertCellsAtIndexes:indexSet withCompletionBlock:^{
+        
+        [self.indexesToInsert removeIndexes:indexSet];
+        self.layoutAnimation = FJSpringBoardCellAnimationNone;
+
+        
+    }];
+            
 }
 
 
 
-- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes{
+- (void)_insertCellsAtIndexes:(NSIndexSet*)indexes withCompletionBlock:(dispatch_block_t)block{
     
     if([indexes count] == 0)
         return;
     
-    //make room in the array
-    NSArray* nulls = nullArrayOfSize([indexes count]);
-    [self.cells insertObjects:nulls atIndexes:indexes];    
+    [self _preLayoutIndexesComingIntoViewWhenAddingIndexes:indexes];
     
+    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingCellsAtIndexes:indexes];
+    [self.indexesNeedingLayout addIndexes:toLayout];
+
+    for(int i = 0; i < [indexes count]; i++)
+        [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
+
+    [self.indexMap commitChanges];
+
     //load
     [self _loadCellsAtIndexes:indexes];
     
     //add to view
     [self _layoutCellsAtIndexes:indexes];
     
-    //update indexset
-    [self.indexesToInsert removeIndexes:indexes];
-    
-    if(self.layoutAnimation == FJSpringBoardCellAnimationNone)
+    if(self.layoutAnimation == FJSpringBoardCellAnimationNone){
+             
+        [self _layoutAllCellsNeedingLayout];
+        [self _removeIndexesGoingOutOfViewWhenAddingIndexes:indexes];
+
+        [self _updateLayout];
+        block();               
         return;
+    }
     
     self.userInteractionEnabled = NO; 
 
     //fade in
+    
+    
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
         FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
         eachCell.alpha = 0;
         
-        [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
-                              delay:0 
-                            options:UIViewAnimationOptionCurveEaseInOut  
-                         animations:^(void) {
-                             
-                             eachCell.alpha = 1;
-                             
-                         } completion:^(BOOL finished) {
-                             
-                             
-                             self.userInteractionEnabled = YES;
-
-                             
-                         }];
-        
         
     }];
     
+    [UIView animateWithDuration:INSERT_ANIMATION_DURATION 
+                          delay:0 
+                        options:UIViewAnimationOptionCurveEaseInOut  
+                     animations:^(void) {
+                         
+                         [self _layoutAllCellsNeedingLayout];
+                         
+                         [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+                             
+                             FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+                             eachCell.alpha = 1;
+                             
+                             
+                         }];
+                                                  
+                     } completion:^(BOOL finished) {
+                         
+                         [self _removeIndexesGoingOutOfViewWhenAddingIndexes:indexes];
+                         self.userInteractionEnabled = YES;
+                         
+                         [self _updateLayout];
+                         block();               
+                         
+                     }];
+    
 }
+
+
+
+
+- (void)_preLayoutIndexesComingIntoViewWhenAddingIndexes:(NSIndexSet*)indexes{
+    
+    //indexes we need to bring on screen due to the deletion
+    //get indexes that are scrolling on screen if all deleted indexes were already on screen, then we need to scroll on [indexSet count]
+    //otherwise we only scroll on x = number of cells in deleted indexes contained in onscreen indexes
+    
+    NSUInteger firstVisIndex = [self.onScreenCellIndexes firstIndex];
+    
+    NSIndexSet* releventIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        if(idx < firstVisIndex)
+            return YES;
+        
+        return NO;
+        
+    }];
+    
+    NSRange newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes firstIndex] - [releventIndexes count], [releventIndexes count]);
+    NSIndexSet* newIndexesToLoadAndLayout = [NSIndexSet indexSetWithIndexesInRange:newRangeToLoadAndLayout]; 
+    
+    [self _loadCellsAtIndexes:newIndexesToLoadAndLayout];
+    [self _layoutCellsAtIndexes:newIndexesToLoadAndLayout];
+    
+}
+
+
+
+
+
+- (void)_removeIndexesGoingOutOfViewWhenAddingIndexes:(NSIndexSet*)indexes{
+    
+    NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
+    
+    NSIndexSet* releventIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        if(idx > lastVisIndex)
+            return NO;
+        
+        return YES;
+        
+    }];
+    
+    NSRange newRangeToPushAndRemove = NSMakeRange([self.onScreenCellIndexes lastIndex] + 1, [releventIndexes count]);
+    NSIndexSet* newIndexesToPushAndRemove = [NSIndexSet indexSetWithIndexesInRange:newRangeToPushAndRemove]; 
+    
+    [self _unloadCellsScrollingOutOfViewAtIndexes:newIndexesToPushAndRemove];
+    
+}
+
+
 
 
 
@@ -1190,7 +1209,7 @@ float nanosecondsWithSeconds(float seconds){
     if([indexes count] == 0)
         return;
     
-    [self preLayoutIndexesComingIntoViewWhenRemovingIndexes:indexes];
+    [self _preLayoutIndexesComingIntoViewWhenRemovingIndexes:indexes];
     
     NSArray* cellsToDelete = [[self.cells objectsAtIndexes:indexes] retain];
     
@@ -1266,9 +1285,10 @@ float nanosecondsWithSeconds(float seconds){
                              [cell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
                              [self.reusableCells addObject:cell];
                              cell.alpha = 1;
-                             self.animatingReorder = NO;
                              
                          }];
+                         
+                         //TODO: remove newly offscreen cells
                          
                          [self _updateLayout];
                          self.userInteractionEnabled = YES;
@@ -1282,7 +1302,7 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
-- (void)preLayoutIndexesComingIntoViewWhenRemovingIndexes:(NSIndexSet*)indexes{
+- (void)_preLayoutIndexesComingIntoViewWhenRemovingIndexes:(NSIndexSet*)indexes{
     
     //indexes we need to bring on screen due to the deletion
     //get indexes that are scrolling on screen if all deleted indexes were already on screen, then we need to scroll on [indexSet count]
@@ -2135,7 +2155,7 @@ float nanosecondsWithSeconds(float seconds){
         
     self.animatingReorder = YES;
     
-    [self preLayoutIndexesComingIntoViewWhenRemovingIndexes:cellIndexes];
+    [self _preLayoutIndexesComingIntoViewWhenRemovingIndexes:cellIndexes];
     
     NSArray* cellsToAdd = [[self.cells objectsAtIndexes:cellIndexes] retain];
     

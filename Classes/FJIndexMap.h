@@ -47,6 +47,10 @@
 //remove cells
 - (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes;
 
+//add cells
+- (NSIndexSet*)modifiedIndexesByAddingCellsAtIndexes:(NSIndexSet*)indexes;
+
+
 - (void)commitChanges; //resets maps
 
 @end

@@ -242,6 +242,70 @@
     
 }
 
+- (NSIndexSet*)modifiedIndexesByAddingCellsAtIndexes:(NSIndexSet*)indexes{
+
+    
+    if([indexes count] == 0)
+        return nil;
+
+    NSArray* nulls = nullArrayOfSize([indexes count]);
+
+    
+    //insert cells
+    [self.cells insertObjects:nulls atIndexes:indexes];
+    
+    NSMutableArray* notfounds = [NSMutableArray arrayWithCapacity:[indexes count]];
+    
+    for(int i = 0; i< [indexes count]; i++){
+        
+        [notfounds addObject:[NSNumber numberWithUnsignedInt:NSNotFound]];
+    }
+    
+    
+    [self.mapNewToOld insertObjects:notfounds atIndexes:indexes];
+    
+    
+    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
+    
+    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        NSNumber* val = (NSNumber*)obj;
+        
+        NSUInteger oldVal = [val unsignedIntegerValue];
+        
+        if(oldVal != NSNotFound){
+            
+            NSUInteger numberOfInsertedCellsBeforeIndex = [[indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+            
+                if(oldVal >= idx)
+                    return YES;
+                
+                return NO;
+            
+            }] count];
+            
+            
+            oldVal+=numberOfInsertedCellsBeforeIndex;
+                
+            val = [NSNumber numberWithUnsignedInteger:oldVal];
+                
+            }
+        
+        [editedValues addObject:val];
+        
+    }];
+     
+    self.mapOldToNew = editedValues;
+    
+    NSUInteger min = [indexes firstIndex];
+    NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);
+    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
+    
+    return affectedIndexes;
+    
+    
+}
+
 
 - (void)commitChanges{
     
