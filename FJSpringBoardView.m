@@ -1885,11 +1885,9 @@ float nanosecondsWithSeconds(float seconds){
         groupCell.center = cell.center;
         [self.contentView addSubview:groupCell];
         groupCell.alpha = 0.0;
-        groupCell.contentView.backgroundColor = [UIColor blackColor];
-        groupCell.transform = CGAffineTransformMakeScale(1.3, 1.3);
 
     }
-    
+    groupCell.transform = CGAffineTransformMakeScale(1.3, 1.3);
     groupCell.userInteractionEnabled = NO;
     cell.userInteractionEnabled = NO;
     
@@ -1980,20 +1978,18 @@ float nanosecondsWithSeconds(float seconds){
     
     NSMutableIndexSet* cellsToAdd = [NSMutableIndexSet indexSet];
     
+    NSUInteger movingIndex = self.indexMap.currentReorderingIndex;
+
     if(![cell isKindOfClass:[FJSpringBoardGroupCell class]]){
        
         [self _createGroupCellFromCellAtIndex:index];
         
         [cellsToAdd addIndex:index+1];
         
-    }
-
-    //shift cell if group was added
+        if(movingIndex >= index)
+            movingIndex++;
+    }        
     
-    NSUInteger movingIndex = self.indexMap.currentReorderingIndex;
-    
-    if(movingIndex >= index)
-        movingIndex++;
     
     [cellsToAdd addIndex:movingIndex];
 
