@@ -1915,7 +1915,7 @@ float nanosecondsWithSeconds(float seconds){
         NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
         
         if(newIndex == NSNotFound)
-            newIndex = ([visIndexes lastIndex]-1);
+            newIndex = ([visIndexes lastIndex]-1); //compensating for weird foundation bug that does not report the proper last index. sometimes it reports lastIndex+1. wtf???
         
         
         if(newIndex != current){
@@ -2165,7 +2165,35 @@ float nanosecondsWithSeconds(float seconds){
         
     self.animatingReorder = YES;
     
-    [self _preLayoutIndexesComingIntoViewWhenRemovingIndexes:cellIndexes];
+    
+    //from the pre method
+    NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
+    
+    NSIndexSet* releventDeletedIndexes = [cellIndexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        if(idx > lastVisIndex)
+            return NO;
+        
+        return YES;
+        
+    }];
+    
+    NSRange newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes lastIndex] + 1, [releventDeletedIndexes count]);
+    
+    if([self.cells count] > self.layout.cellCount){
+        
+        //TODO: hey another hack!
+        //compensating for the new group being added and haven't yet commited the changes
+        newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes lastIndex] + 2, [releventDeletedIndexes count]-1);
+    }
+    
+    NSIndexSet* newIndexesToLoadAndLayout = [NSIndexSet indexSetWithIndexesInRange:newRangeToLoadAndLayout]; 
+    
+    [self _loadCellsAtIndexes:newIndexesToLoadAndLayout];
+    [self _layoutCellsAtIndexes:newIndexesToLoadAndLayout];
+    
+    
+    
     
     NSArray* cellsToAdd = [[self.cells objectsAtIndexes:cellIndexes] retain];
     

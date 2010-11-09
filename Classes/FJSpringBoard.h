@@ -24,18 +24,18 @@
  Dangling cells left sometimes. need a full proof cleanup strategy
   
  balance all copies with releases
-        
- fix deletion of last cell
- 
+         
  release in middle of folder highlight animation
  
- dragging cell gets lost…
+ repeat edge detection during multipage drags seems to fail after 2 pages or so…
  
  
  @todo
      
- check multipage drag drops (unloaded pages)
-   
+
+ 
+ 
+ 
  @low priority todo
  @refactoring
  
