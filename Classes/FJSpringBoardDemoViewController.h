@@ -20,5 +20,7 @@
 - (IBAction)insert;
 - (IBAction)deleteCells;
 
+- (IBAction)doneEditing;
+
 @end
 

@@ -185,7 +185,11 @@ static UIColor* _defaultBackgroundColor = nil;
         self.deleteImage = _deleteImage;
     }
     
-    UIButton* b  = [UIButton buttonWithType:UIButtonTypeCustom];
+    UIButton* b  = (UIButton*)[self viewWithTag:1001];
+
+    if(b == nil)
+        b  = [UIButton buttonWithType:UIButtonTypeCustom];
+    
     b.tag = 1001;
     b.frame = CGRectMake(0, 0, 30, 30);
     [b setImage:self.deleteImage forState:UIControlStateNormal];
@@ -196,7 +200,7 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)_removeDeleteButton{
     
-    [[self.contentView viewWithTag:1001] removeFromSuperview];
+    [[self viewWithTag:1001] removeFromSuperview];
 }
 
 - (void)_startWiggle{
