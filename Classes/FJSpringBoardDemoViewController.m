@@ -3,7 +3,7 @@
 #import "FJSpringBoardDemoViewController.h"
 #import "DemoModelObject.h"
 
-#define CELL_COUNT 20
+#define CELL_COUNT 100
 #define CELL_WIDTH 90
 #define CELL_HEIGHT 90
 @implementation FJSpringBoardDemoViewController

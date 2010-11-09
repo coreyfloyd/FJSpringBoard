@@ -583,6 +583,12 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)scrollViewDidScroll:(UIScrollView *)sView{
     
+    dispatch_async(dispatch_get_main_queue(), ^{
+        
+        [self _updateIndexes];
+        
+    });
+    
     [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidScroll:sView];
     
 }

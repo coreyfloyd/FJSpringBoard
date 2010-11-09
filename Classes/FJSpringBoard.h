@@ -26,9 +26,7 @@
  @todo
      
  check multipage drag drops (unloaded pages)
- 
- check why cells for pages aren't working for scrolling
- 
+  
  
  @low priority todo
  @refactoring
