@@ -85,7 +85,6 @@ float nanosecondsWithSeconds(float seconds){
 
 
 @property(nonatomic) BOOL animatingContentOffset; //flag to indicate a scrolling animation is occuring (due to calling setContentOffset:animated:)
-@property(nonatomic) CGPoint lastContentOffset; //used to determine the above flag
 
 @property(nonatomic) CGPoint lastTouchPoint;
 
@@ -102,9 +101,9 @@ float nanosecondsWithSeconds(float seconds){
 
 
 - (void)_setContentSize:(CGSize)size;
-- (void)_contentOffsetAnimationCheck:(NSTimer*)timer;
-- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate;
-- (void)_setContentOffset:(CGPoint)offset;
+- (void)_resetAnimatingContentOffset;
+//- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate;
+//- (void)_setContentOffset:(CGPoint)offset;
 
 - (void)_loadCellsScrollingIntoViewAtIndexes:(NSIndexSet*)indexes;
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
@@ -186,7 +185,6 @@ float nanosecondsWithSeconds(float seconds){
 @synthesize draggableCellView;
 
 @synthesize animatingContentOffset;
-@synthesize lastContentOffset;
 
 @synthesize lastTouchPoint;
 
@@ -517,6 +515,7 @@ float nanosecondsWithSeconds(float seconds){
 #pragma mark -
 #pragma mark UIScrollView
 
+/*
 - (void)_setContentOffset:(CGPoint)offset{
     
     [self.scrollView setContentOffset:offset];
@@ -544,18 +543,8 @@ float nanosecondsWithSeconds(float seconds){
     });    
 }
 
+*/
 
-- (void)_contentOffsetAnimationCheck:(NSTimer*)timer{
-    
-    if(CGPointEqualToPoint(self.scrollView.contentOffset, self.lastContentOffset)){
-        
-        self.animatingContentOffset = NO;
-        
-        [timer invalidate];
-    }
-    
-    self.lastContentOffset = self.scrollView.contentOffset;
-}
 
 - (void)_setContentSize:(CGSize)size{
     
@@ -576,6 +565,12 @@ float nanosecondsWithSeconds(float seconds){
 }
 
 
+- (void)_resetAnimatingContentOffset{
+    
+    self.animatingContentOffset = NO;
+    
+}
+
 #pragma mark -
 #pragma mark UIScrollViewDelegate
 
@@ -583,6 +578,11 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)scrollViewDidScroll:(UIScrollView *)sView{
     
+    self.animatingContentOffset = YES;
+    
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetAnimatingContentOffset) object:nil];
+    [self performSelector:@selector(_resetAnimatingContentOffset) withObject:nil afterDelay:0.1];
+
     dispatch_async(dispatch_get_main_queue(), ^{
         
         [self _updateIndexes];
@@ -2181,7 +2181,7 @@ float nanosecondsWithSeconds(float seconds){
         
     CGPoint p = [l offsetForPage:page];
     
-    [self _setContentOffset:p animated:animated];
+    [self.scrollView setContentOffset:p animated:animated];
     
     return YES;
     

@@ -27,6 +27,7 @@
      
  check multipage drag drops (unloaded pages)
   
+ after paging completes repage in 0.5
  
  @low priority todo
  @refactoring
