@@ -16,10 +16,7 @@
 /*
 
  @bugs
- 
- when making goup, sometimes we lose last cell. is this related to the last cel deletion issue??
- 
- when making group, we sometimes get an extra cell at the end (related to above)?
+
  
  Dangling cells left sometimes. need a full proof cleanup strategy
   
@@ -43,8 +40,6 @@
  
  merge indexMap and index loader?
  
- after paging completes repage in 0.5
-
  allows edit mode
  
  

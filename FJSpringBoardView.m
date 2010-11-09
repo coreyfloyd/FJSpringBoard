@@ -2132,7 +2132,7 @@ float nanosecondsWithSeconds(float seconds){
     
     //create and group, use floating cell
     FJSpringBoardGroupCell* groupCell = [self.dataSource emptyGroupCellForSpringBoardView:self];
-    
+    groupCell.springBoardView = self;
     if(groupCell == nil){
         
         return;
