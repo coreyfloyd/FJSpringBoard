@@ -26,12 +26,12 @@
  @todo
      
  check multipage drag drops (unloaded pages)
-  
- after paging completes repage in 0.5
- 
+   
  @low priority todo
  @refactoring
  
+ after paging completes repage in 0.5
+
  allows edit mode
  
  pre-setup delegate detection BOOLs

@@ -1397,6 +1397,9 @@ float nanosecondsWithSeconds(float seconds){
             NSLog(@"long tapped");
             
             [self performSelector:@selector(_startDragging) withObject:nil afterDelay:0.25];
+            
+            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
+
 
         }
 
