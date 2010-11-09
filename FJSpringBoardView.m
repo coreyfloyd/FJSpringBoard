@@ -1303,10 +1303,11 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)didSingleTap:(UITapGestureRecognizer*)g{
     
+    CGPoint p = [g locationInView:self.contentView];
+    self.lastTouchPoint = p;
+
     if(self.mode != FJSpringBoardCellModeNormal)
         return;
-    
-    CGPoint p = [g locationInView:self.contentView];
     
     NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
     
@@ -1322,6 +1323,9 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)didDoubleTap:(UITapGestureRecognizer*)g{
     
+    CGPoint p = [g locationInView:self.contentView];
+    self.lastTouchPoint = p;
+    
     if(self.mode != FJSpringBoardCellModeNormal)
         return;
     
@@ -1333,9 +1337,7 @@ float nanosecondsWithSeconds(float seconds){
         
         return;
     }
-    
-    CGPoint p = [g locationInView:self.contentView];
-    
+
     NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
     
     if(indexOfCell == NSNotFound)
@@ -1361,6 +1363,9 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)didLongTap:(UILongPressGestureRecognizer*)g{
     
+    CGPoint p = [g locationInView:self];
+    self.lastTouchPoint = p;
+    
     if(self.longTapped){
         
         NSLog(@"still long tapped");
@@ -1376,15 +1381,13 @@ float nanosecondsWithSeconds(float seconds){
     //don't do anything if we are in the middle of scrolling animation
     if(self.animatingContentOffset)
         return;
-        
-    CGPoint p = [g locationInView:self];
-    
-    self.lastTouchPoint = p;
 
     if(self.mode == FJSpringBoardCellModeNormal){
         
         if(g.state == UIGestureRecognizerStateBegan){
             
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
+
             CGPoint contentPoint = [g locationInView:self.contentView];
             
             NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
@@ -1415,7 +1418,7 @@ float nanosecondsWithSeconds(float seconds){
             
             [self _makeCellDraggableAtTouchPoint:p];
             
-            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:5.0];
+            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
             
             return;
         }
@@ -1431,6 +1434,7 @@ float nanosecondsWithSeconds(float seconds){
 
             });
             
+            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
     
             return;
         }
@@ -1496,7 +1500,8 @@ float nanosecondsWithSeconds(float seconds){
         }
         
     }
-        
+    
+    
     return YES;
 }
 
@@ -1650,6 +1655,15 @@ float nanosecondsWithSeconds(float seconds){
     }else{
         
         [self _scrollSpringBoardInDirectionOfEdge:e];
+        
+        CGPoint savedPoint = self.lastTouchPoint;
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
+            
+            if(CGPointEqualToPoint(savedPoint, self.lastTouchPoint))
+                [self _scrollSpringBoardInDirectionOfEdge:e];
+            
+        });
 
     }
     
@@ -1825,13 +1839,41 @@ float nanosecondsWithSeconds(float seconds){
     FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
 
     NSLog(@"completing reorder...");
-    self.animatingReorder = YES;
-    
-    NSUInteger original = im.originalReorderingIndex;
     NSUInteger current = im.currentReorderingIndex;
+    NSUInteger original = im.originalReorderingIndex;
+    
+    FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;
+    NSUInteger page = [l pageForContentOffset:self.scrollView.contentOffset];
+    NSIndexSet* visIndexes = [l cellIndexesForPage:page];
+    
+    if(![visIndexes containsIndex:current]){
+        
+        CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
+
+        NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
+        
+        if(newIndex == NSNotFound)
+            newIndex = [visIndexes lastIndex];
+        
+        [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
+        
+        //TODO: guard against infinite loop   
+                
+        dispatch_async(dispatch_get_main_queue(), ^{
+        
+            [self _completeReorder];
+            
+        });
+        
+        return;
+    }
+    
+    
     FJSpringBoardCell* cell = [self.cells objectAtIndex:im.currentReorderingIndex];
     [self.indexMap commitChanges];
     
+    self.animatingReorder = YES;
+
     id<FJSpringBoardViewDataSource> d = self.dataSource;
     
     if([self.cells count] == 0){
