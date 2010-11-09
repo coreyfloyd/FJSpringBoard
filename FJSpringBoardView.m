@@ -675,6 +675,19 @@ float nanosecondsWithSeconds(float seconds){
         ALWAYS_ASSERT;
     }
     
+    [self.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+        
+        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+            
+            return;
+        }
+        
+        cell.alpha = 1;
+        
+    }];
+         
     self.layoutIsDirty = NO;
 
 }
@@ -1888,7 +1901,7 @@ float nanosecondsWithSeconds(float seconds){
                          
                          self.animatingReorder = NO;
                          //update layout, cell count, content size, index loader, etc
-                         [self _updateLayout];
+                         //[self _updateLayout];
                          
                      }];
     
@@ -2255,6 +2268,13 @@ float nanosecondsWithSeconds(float seconds){
 
                          if([self.dataSource respondsToSelector:@selector(springBoardView:commitAddingCellsAtIndexes:toGroupCellAtIndex:)])
                              [self.dataSource springBoardView:self commitAddingCellsAtIndexes:cellIndexes toGroupCellAtIndex:groupIndex];
+                         
+                         NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+                         
+                         if([self.cells count] != newNumOfCells){
+                             
+                             ALWAYS_ASSERT;
+                         }
                          
                          
                      }];
