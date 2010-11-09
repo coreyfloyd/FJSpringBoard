@@ -17,11 +17,15 @@
 
  @bugs
  
+ when making goup, sometimes we lose last cell. is this related to the last cel deletion issue??
+ 
  Dangling cells left sometimes. need a full proof cleanup strategy
   
  balance all copies with releases
         
  fix deletion of last cell
+ 
+ release in middle of folder highlight animation
  
  @todo
      
@@ -30,13 +34,17 @@
  @low priority todo
  @refactoring
  
+ make insert delete more like reorder by using an indexmap
+
+ move allindexes into indexMap
+ 
+ merge indexMap and index loader?
+ 
  after paging completes repage in 0.5
 
  allows edit mode
  
- pre-setup delegate detection BOOLs
  
- make insert delete more like reorder by using an indexmap
  
  calculate path animation from old to new indexes (instead of straight line)
  
@@ -57,5 +65,8 @@
     unanimated layout "fixes" (add / remove cells from view on visible boundries)
     apply cell changes (insert, delete, reorder)
     animation changes (BOOL YES or NO)
+ 
+ pre-setup delegate detection BOOLs if needed
+
  
 */

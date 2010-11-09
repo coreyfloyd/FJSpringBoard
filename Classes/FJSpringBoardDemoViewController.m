@@ -3,9 +3,9 @@
 #import "FJSpringBoardDemoViewController.h"
 #import "DemoModelObject.h"
 
-#define CELL_COUNT 100
-#define CELL_WIDTH 90
-#define CELL_HEIGHT 90
+#define CELL_COUNT 25
+#define CELL_WIDTH 120
+#define CELL_HEIGHT 140
 @implementation FJSpringBoardDemoViewController
 
 @synthesize model;
@@ -164,6 +164,20 @@
     
     return cell;
     
+}
+
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index{
+    
+    DemoModelObject* o = [[DemoModelObject alloc] init];
+    o.value = 999;
+    [self.model insertObject:o atIndex:index];
+    [o release];
+
+}
+
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex{
+    
+    [self.model removeObjectsAtIndexes:indexes];
 }
 
 /*
