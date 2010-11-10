@@ -277,6 +277,7 @@ float nanosecondsWithSeconds(float seconds){
         [self addGestureRecognizer:t];
         
         UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongTap:)];
+        l.minimumPressDuration = 0.1;
         [self addGestureRecognizer:l];
         
        
@@ -1510,7 +1511,7 @@ float nanosecondsWithSeconds(float seconds){
             return;
         }
         
-        if(g.state == UIGestureRecognizerStateEnded || UIGestureRecognizerStateCancelled){
+        if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled){
             
             [self _completeDragAction];
             
@@ -1661,8 +1662,8 @@ float nanosecondsWithSeconds(float seconds){
     //notify cell it is being reordered. power of… invisibility!
     cell.reordering = YES;
     
-    [UIView animateWithDuration:0.3 
-                          delay:0.1 
+    [UIView animateWithDuration:0.2 
+                          delay:0.0
                         options:(UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction) 
                      animations:^(void) {
                      

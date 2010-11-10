@@ -18,12 +18,14 @@
  @bugs
 
  @high
- 
  release in middle of folder highlight animation
+ 
+ dragging view sometimes gets stuck
+ 
+ when reordering, the invisible doesn't stay invisible
 
- when reordering , the invisible doesn't stay invisible related to…
  Dangling cells left sometimes. need a full proof cleanup strategy
-
+ 
   
  @low
  balance all copies with releases
@@ -31,6 +33,15 @@
  repeat edge detection during multipage drags seems to fail after 2 pages or so…
  
  ---------
+ 
+ @todo
+ animate adding to folders
+
+ add images to folders
+ 
+ action / selection
+ 
+ --------
  
  @refactoring (all low)
  

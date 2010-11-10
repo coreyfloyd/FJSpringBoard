@@ -4,8 +4,8 @@
 #import "DemoModelObject.h"
 
 #define CELL_COUNT 25
-#define CELL_WIDTH 120
-#define CELL_HEIGHT 140
+#define CELL_WIDTH 80
+#define CELL_HEIGHT 80
 @implementation FJSpringBoardDemoViewController
 
 @synthesize model;
