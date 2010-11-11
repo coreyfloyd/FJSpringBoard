@@ -292,8 +292,8 @@ static UIColor* _defaultBackgroundColor = nil;
 
 
 -(void)drawRect:(CGRect)rect{
-    b
-    CGRect f = self.bounds;
+    
+    __block CGRect f = self.bounds;
     f.origin = CGPointMake(2, 2);
     f.size = CGSizeMake((f.size.width-4-2)/2, (f.size.height-4-2)/2);
     
@@ -301,19 +301,19 @@ static UIColor* _defaultBackgroundColor = nil;
     
         if(idx == 1){
          
-            f.origin.x+=(f.size.width+2)
+            f.origin.x+=(f.size.width+2);
             
         }
         if(idx == 2){
             
-            f.origin.x-=(f.size.width+2)
-            f.origin.y+=(f.size.height+2)
+            f.origin.x-=(f.size.width+2);
+            f.origin.y+=(f.size.height+2);
 
         }
         if(idx == 3){
             
-            f.origin.x+=(f.size.width+2)
-            stop = YES;
+            f.origin.x+=(f.size.width+2);
+            *stop = YES;
         }
         
         UIImage* i = (UIImage*)obj;
