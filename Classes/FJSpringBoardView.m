@@ -5,6 +5,8 @@
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
 #import <QuartzCore/QuartzCore.h>
+#import "FJSpringBoardCell.h"
+#import "FJIndexMap.h"
 
 #define DELETE_ANIMATION_DURATION 1.23
 #define INSERT_ANIMATION_DURATION 1.25
@@ -39,6 +41,16 @@ typedef enum  {
 
 @end
 
+
+
+@interface FJSpringBoardGroupCell(Internal)
+
+//- (void)setContentImages:(NSArray*)images;
+
+@property(nonatomic, assign) FJSpringBoardView* springBoardView;
+
+
+@end
 
 @interface FJSpringBoardView()
 
@@ -277,6 +289,21 @@ typedef enum  {
         
     }
     return self;
+}
+
+- (void)setFrame:(CGRect)aFrame{
+    
+    [super setFrame:aFrame];
+    
+    [self _updateLayout];
+    
+}
+
+- (void)setBounds:(CGRect)aFrame{
+    
+    [super setBounds:aFrame];
+    
+    [self _updateLayout];
 }
 
 
@@ -737,6 +764,16 @@ typedef enum  {
         
         FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:realIndex];
         [cell retain];
+        
+        if([cell isKindOfClass:[FJSpringBoardGroupCell class]]){
+        
+            NSArray* a = [[self.dataSource performIfRespondsToSelectorProxy] springBoardView:self imagesForGroupAtIndex:realIndex];
+            
+            FJSpringBoardGroupCell* group = (FJSpringBoardGroupCell*)cell;
+            [group setContentImages:a];
+            //[cell setC
+            
+        }
         
         cell.springBoardView = self;
         
@@ -1715,6 +1752,7 @@ typedef enum  {
             return;
 
         }
+        
         FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index obscuredContentFrame:adjustedFrame];
         
         if(a == FJSpringBoardDropActionMove)
@@ -1750,11 +1788,18 @@ typedef enum  {
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDropActionMove;
     
+    FJSpringBoardCell* draggableCell = [self.cells objectAtIndex:self.indexMap.currentReorderingIndex];
+    
+    if([draggableCell isKindOfClass:[FJSpringBoardGroupCell class]])
+        return FJSpringBoardDropActionMove;
+
+    
     CGRect insetRect = CGRectInset(contentFrame, 
                                    0.15*contentFrame.size.width, 
                                    0.15*contentFrame.size.height);
     
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    
     CGRect rect = CGRectIntersection(insetRect, cell.frame);
     float area = rect.size.width * rect.size.height;
     float totalArea = cell.contentView.frame.size.width * cell.contentView.frame.size.height;

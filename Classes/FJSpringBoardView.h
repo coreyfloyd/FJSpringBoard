@@ -1,9 +1,11 @@
 
 
 #import <UIKit/UIKit.h>
+#import "FJSpringBoardUtilities.h"
 
-#import "FJSpringBoardCell.h"
-#import "FJIndexMap.h"
+@class FJSpringBoardCell;
+@class FJSpringBoardGroupCell;
+@class FJReorderingIndexMap;
 
 @class FJSpringBoardIndexLoader;
 @class FJSpringBoardLayout;
@@ -174,7 +176,8 @@ typedef enum  {
 
 
 //called to get the image to be displayed inside the group cell
-- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
+- (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView imagesForGroupAtIndex:(NSUInteger)groupIndex;
+//- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
 
 
 //- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
