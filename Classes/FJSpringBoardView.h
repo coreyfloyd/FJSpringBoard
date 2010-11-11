@@ -63,6 +63,14 @@ typedef enum  {
         
     NSUInteger indexOfHighlightedCell;
     FJSpringBoardGroupCell* floatingGroupCell;
+    
+    UITapGestureRecognizer* singleTapRecognizer;
+    UITapGestureRecognizer* doubleTapRecognizer;
+    
+    UILongPressGestureRecognizer* editingModeRecognizer;
+    
+    UILongPressGestureRecognizer* draggingSelectionRecognizer;
+    UIPanGestureRecognizer* draggingRecognizer;
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;

@@ -17,14 +17,12 @@
 
  @high
  release in middle of folder highlight animation
- 
- dragging view sometimes gets stuck
- 
+  
  when reordering, the invisible doesn't stay invisible
 
  Dangling cells left sometimes. need a full proof cleanup strategy
  
-  
+ 
  @low
  balance all copies with releases
         
@@ -34,8 +32,13 @@
  
  @todo
  animate adding to folders
-
- add images to folders
+ 
+ use seperate gesture recognizers for long press to activate editing and and selection
+ 
+ allow dragging without long press, use long press OR movement to apply transform
+ 
+ check out facebook code to get better timing
+ 
  
  action / selection
  
@@ -50,7 +53,8 @@
  
  allows edit mode
 
-  
+ Create FJSpringBoardItem Protocol, rely on that for the creation of cells
+
  calculate path animation from old to new indexes (instead of straight line)
  
  forward all scrollview messages to scrollview

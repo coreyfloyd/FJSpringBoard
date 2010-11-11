@@ -196,9 +196,9 @@
 			children = (
 				C480574E128B1F9B0038EFE1 /* Global.h */,
 				C480574F128B1F9B0038EFE1 /* Global.m */,
+				C47A3452127F189A003889CA /* MacroUtilities.h */,
 				C4A7D9F3128346600097CFBD /* NSObject+Proxy.h */,
 				C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */,
-				C47A3452127F189A003889CA /* MacroUtilities.h */,
 			);
 			name = Dependencies;
 			sourceTree = "<group>";

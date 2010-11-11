@@ -3,10 +3,10 @@
 //  
 //
 //  Created by Corey Floyd.
-//  Borrowed From Steve Degutis and Peter Hosey, with a splash of me
+//  Borrowed from Steve Degutis and Peter Hosey, with a splash of me
 //
 
-#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
 
 
 @protocol FJNSObjectProxy
@@ -19,7 +19,7 @@
 @end
 
 
-@interface NSObject(Proxy)  
+@interface NSObject(Proxy) <FJNSObjectProxy>
 
 - (id)nextRunloopProxy;
 - (id)proxyWithDelay:(float)time;
