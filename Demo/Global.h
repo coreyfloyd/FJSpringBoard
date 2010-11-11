@@ -3,7 +3,6 @@
 //uncomment if using the simulator with charles
 #define USE_CHARLES_PROXY
 
-
 //structs
 typedef struct {
     NSUInteger complete;

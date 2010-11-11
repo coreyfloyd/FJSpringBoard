@@ -48,16 +48,16 @@
 		8D1107310486CEB800E47090 /* FJSpringBoardDemo-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "FJSpringBoardDemo-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		C44F5DCD1270D07B007E9850 /* FJSpringBoardCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardCell.h; sourceTree = "<group>"; };
 		C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardCell.m; sourceTree = "<group>"; };
-		C47A3452127F189A003889CA /* MacroUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MacroUtilities.h; sourceTree = "<group>"; };
+		C47A3452127F189A003889CA /* MacroUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MacroUtilities.h; path = ../Demo/MacroUtilities.h; sourceTree = "<group>"; };
 		C47A34FB127F3141003889CA /* FJSpringBoard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoard.h; sourceTree = "<group>"; };
 		C47A350C127F33EE003889CA /* FJSpringBoardUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardUtilities.h; sourceTree = "<group>"; };
 		C47A350D127F33EE003889CA /* FJSpringBoardUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardUtilities.m; sourceTree = "<group>"; };
 		C47A872212700C4700203213 /* FJSpringBoardView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardView.h; sourceTree = "<group>"; };
 		C47A872312700C4700203213 /* FJSpringBoardView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardView.m; sourceTree = "<group>"; };
-		C480574E128B1F9B0038EFE1 /* Global.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Global.h; sourceTree = "<group>"; };
-		C480574F128B1F9B0038EFE1 /* Global.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Global.m; sourceTree = "<group>"; };
-		C4A7D9F3128346600097CFBD /* NSObject+Proxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+Proxy.h"; sourceTree = "<group>"; };
-		C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Proxy.m"; sourceTree = "<group>"; };
+		C480574E128B1F9B0038EFE1 /* Global.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Global.h; path = ../Demo/Global.h; sourceTree = "<group>"; };
+		C480574F128B1F9B0038EFE1 /* Global.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Global.m; path = ../Demo/Global.m; sourceTree = "<group>"; };
+		C4A7D9F3128346600097CFBD /* NSObject+Proxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject+Proxy.h"; path = "../Demo/NSObject+Proxy.h"; sourceTree = "<group>"; };
+		C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSObject+Proxy.m"; path = "../Demo/NSObject+Proxy.m"; sourceTree = "<group>"; };
 		C4A7DAA01283569D0097CFBD /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C4A7DAF212835A700097CFBD /* close.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = close.png; sourceTree = "<group>"; };
 		C4A7DDB41283FB6C0097CFBD /* FJIndexMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJIndexMap.h; sourceTree = "<group>"; };
@@ -314,6 +314,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = FJSpringBoardDemo_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Demo",
+					"$(SRCROOT)/Classes",
+				);
 				INFOPLIST_FILE = "FJSpringBoardDemo-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.1;
 				PRODUCT_NAME = FJSpringBoardDemo;
@@ -330,6 +334,10 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = FJSpringBoardDemo_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Demo",
+					"$(SRCROOT)/Classes",
+				);
 				INFOPLIST_FILE = "FJSpringBoardDemo-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.1;
 				PRODUCT_NAME = FJSpringBoardDemo;

@@ -18,7 +18,8 @@
 
 @end
 
-@interface NSObject(Proxy) <FJNSObjectProxy> 
+
+@interface NSObject(Proxy)  
 
 - (id)nextRunloopProxy;
 - (id)proxyWithDelay:(float)time;
