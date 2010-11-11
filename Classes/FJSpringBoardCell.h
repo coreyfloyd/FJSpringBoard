@@ -1,21 +1,7 @@
 
 
 #import <Foundation/Foundation.h>
-
-typedef enum  {
-    FJSpringBoardCellModeNormal,
-    FJSpringBoardCellModeSelection,
-    FJSpringBoardCellModeEditing //delete + move
-} FJSpringBoardCellMode;
-
-typedef enum  {
-    FJSpringBoardCellAnimationNone,
-    FJSpringBoardCellAnimationFade
-} FJSpringBoardCellAnimation;
-
-typedef enum  {
-    FJSpringBoardCellScrollPositionMiddle
-} FJSpringBoardCellScrollPosition;
+#import "FJSpringBoardUtilities.h"
 
 
 @interface FJSpringBoardCell : UIView {
@@ -62,13 +48,11 @@ typedef enum  {
 
 
 
-
-
-
 /*
+
 //Icon / Folder specific Cells
 @interface FJSpringBoardIconCell : FJSpringBoardCell{
-
+    
 }
 
 @property(nonatomic, retain) UIImage *image;
@@ -86,8 +70,6 @@ typedef enum  {
 @property(nonatomic, retain) NSArray *groupImages;
 @property(nonatomic, retain) NSString *name;
 
-
 @end
- 
- */
 
+*/

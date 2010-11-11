@@ -2,7 +2,6 @@
 #import "FJSpringBoardCell.h"
 #import "FJSpringBoardView.h"
 #import <QuartzCore/QuartzCore.h>
-#import "FJSpringBoardUtilities.h"
 
 CGFloat DegreesToRadians(CGFloat degrees) {
     return degrees * M_PI / 180;
@@ -298,9 +297,9 @@ static UIColor* _defaultBackgroundColor = nil;
     f.size = CGSizeMake((f.size.width-4-2)/2, (f.size.height-4-2)/2);
     
     [self.contentImages enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-    
+        
         if(idx == 1){
-         
+            
             f.origin.x+=(f.size.width+2);
             
         }
@@ -308,7 +307,7 @@ static UIColor* _defaultBackgroundColor = nil;
             
             f.origin.x-=(f.size.width+2);
             f.origin.y+=(f.size.height+2);
-
+            
         }
         if(idx == 3){
             
@@ -319,7 +318,7 @@ static UIColor* _defaultBackgroundColor = nil;
         UIImage* i = (UIImage*)obj;
         
         [i drawInRect:f];
-
+        
         
     }];
     
@@ -371,5 +370,4 @@ static UIColor* _defaultBackgroundColor = nil;
 }
 
 @end
-
 
