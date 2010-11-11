@@ -4,8 +4,6 @@
 
 #import "FJSpringBoardCell.h"
 
-#import "FJSpringBoardCellItem.h"
-
 #import "FJSpringBoardIndexLoader.h"
 
 #import "FJSpringBoardVerticalLayout.h"

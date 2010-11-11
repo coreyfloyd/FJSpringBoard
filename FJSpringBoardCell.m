@@ -77,6 +77,9 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize deleteImage;
 @synthesize springBoardView;
 @synthesize reordering;
+@synthesize showsDeleteButton;
+@synthesize draggable;
+
 
 
 
@@ -127,6 +130,9 @@ static UIColor* _defaultBackgroundColor = nil;
         self.contentView = [[[UIView alloc] initWithFrame:f] autorelease];
         self.contentView.backgroundColor = _defaultBackgroundColor;
         [self addSubview:self.contentView];
+        
+        self.showsDeleteButton = YES;
+        self.draggable = YES;
         
         self.reuseIdentifier = identifier;
     }
@@ -230,11 +236,13 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)_updateView{
     
-
     if(mode == FJSpringBoardCellModeEditing){
         
-        [self _startWiggle];
-        [self _addDeleteButton];
+        if(draggable)
+            [self _startWiggle];
+        
+        if(showsDeleteButton)
+            [self _addDeleteButton];
         
     }else if(mode == FJSpringBoardCellModeNormal){
         
@@ -258,9 +266,109 @@ static UIColor* _defaultBackgroundColor = nil;
 @end
 
 
+@interface FJSpringBoardGroupCellContentView : UIView
+{
+    
+}
+
+@property(nonatomic, copy) NSArray *contentImages;
+
+
+@end
+
+
+@implementation FJSpringBoardGroupCellContentView
+
+@synthesize contentImages;
+
+
+- (void) dealloc
+{
+    
+    [contentImages release];
+    contentImages = nil;
+    [super dealloc];
+}
+
+
+-(void)drawRect:(CGRect)rect{
+    b
+    CGRect f = self.bounds;
+    f.origin = CGPointMake(2, 2);
+    f.size = CGSizeMake((f.size.width-4-2)/2, (f.size.height-4-2)/2);
+    
+    [self.contentImages enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    
+        if(idx == 1){
+         
+            f.origin.x+=(f.size.width+2)
+            
+        }
+        if(idx == 2){
+            
+            f.origin.x-=(f.size.width+2)
+            f.origin.y+=(f.size.height+2)
+
+        }
+        if(idx == 3){
+            
+            f.origin.x+=(f.size.width+2)
+            stop = YES;
+        }
+        
+        UIImage* i = (UIImage*)obj;
+        
+        [i drawInRect:f];
+
+        
+    }];
+    
+}
+
+
+@end
+
+
+
+@interface FJSpringBoardGroupCell()
+
+@property(nonatomic, retain) FJSpringBoardGroupCellContentView* contentImageHolder;
+
+@end
+
 //configure an empty folder
 @implementation  FJSpringBoardGroupCell
 
+@synthesize contentImageHolder;
+
+- (void) dealloc
+{
+    
+    [contentImageHolder release];
+    contentImageHolder = nil;
+    [super dealloc];
+}
+
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
+    
+    self = [super initWithSize:size reuseIdentifier:identifier];
+    if (self != nil) {
+        
+        self.contentImageHolder = [[[FJSpringBoardGroupCellContentView alloc] initWithFrame:self.contentView.frame] autorelease];
+        self.contentImageHolder.backgroundColor = [UIColor clearColor];
+        [self addSubview:self.contentImageHolder];
+        
+    }
+    return self;
+    
+}  
+
+
+- (void)setContentImages:(NSArray*)images{
+    
+    self.contentImageHolder.contentImages = images;
+    
+}
 
 @end
 

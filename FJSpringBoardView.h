@@ -107,7 +107,7 @@ typedef enum  {
 
 
 //mode
-@property(nonatomic) FJSpringBoardCellMode mode;
+@property(nonatomic) FJSpringBoardCellMode mode; //KVO to be notified about mode changes
 
 
 //Selection, these only work in Selection Mode
@@ -126,7 +126,7 @@ typedef enum  {
 
 
 
-@protocol FJSpringBoardViewDelegate <NSObject>
+@protocol FJSpringBoardViewDelegate <NSObject, FJNSObjectProxy>
 
 @optional
 - (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail?
@@ -137,14 +137,16 @@ typedef enum  {
 
 
 
-@protocol FJSpringBoardViewDataSource <NSObject>
+@protocol FJSpringBoardViewDataSource <NSObject, FJNSObjectProxy>
 
 - (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView;
 - (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index;
 
 
 @optional
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
+
 
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndexes:(NSIndexSet* )indexes; 
 

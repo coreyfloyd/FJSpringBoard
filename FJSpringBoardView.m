@@ -4,9 +4,7 @@
 #import "FJSpringBoardVerticalLayout.h"
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardLayout.h"
-#import "NSObject+Proxy.h"
 #import <QuartzCore/QuartzCore.h>
-#import "NSObject+Proxy.h"
 
 #define DELETE_ANIMATION_DURATION 1.23
 #define INSERT_ANIMATION_DURATION 1.25
@@ -33,11 +31,6 @@ typedef enum  {
 }FJSpringBoardDropAction; 
 
 
-float nanosecondsWithSeconds(float seconds){
-    
-    return (seconds * 1000000000);
-    
-}
 
 @interface FJSpringBoardCell(Internal)
 
@@ -663,6 +656,7 @@ float nanosecondsWithSeconds(float seconds){
     //check maths, newI == oldI - removed + added    
     [self.indexesScrollingOutOfView addIndexesInRange:rangeToRemove];
     
+    //TODO: recheck to see if cells comming into view are already loaded and laid out, remove those that are
     [self.indexesScrollingInView addIndexesInRange:rangeToLoad];
     
     //unload cells that are no longer "visible"
@@ -1632,7 +1626,6 @@ float nanosecondsWithSeconds(float seconds){
     if(self.draggableCellView != nil)
         return;
     
-    
     CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
     
     NSUInteger index = [self indexOfCellAtPoint:contentPoint];
@@ -1646,6 +1639,9 @@ float nanosecondsWithSeconds(float seconds){
         
         ALWAYS_ASSERT;
     }
+    
+    if(![cell draggable])
+        return;
     
     //start reordering
     [self.indexMap beginReorderingIndex:index];
@@ -1831,7 +1827,11 @@ float nanosecondsWithSeconds(float seconds){
 
 - (void)_completeDragAction{
     
+    //TODO: get rid of this, this is what leaves me "hanging". put a queue in lazy!
     if(self.animatingReorder)
+        return;
+    
+    if(self.indexMap.originalReorderingIndex == NSNotFound)
         return;
     
     if(self.indexOfHighlightedCell == NSNotFound){
@@ -1885,6 +1885,16 @@ float nanosecondsWithSeconds(float seconds){
         return;
     
     [self _removeHighlight];
+    
+    if([self.dataSource respondsToSelector:@selector(springBoardView:canMoveCellAtIndex:toIndex:)]){
+        
+       if(![self.dataSource springBoardView:self canMoveCellAtIndex:self.indexMap.originalReorderingIndex toIndex:self.indexMap.currentReorderingIndex]){
+           
+           return;
+       }
+    }
+        
+    
 
     self.animatingReorder = YES;
     FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
