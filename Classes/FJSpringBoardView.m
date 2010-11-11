@@ -1551,8 +1551,10 @@ typedef enum  {
     
     
     //don't do anything if we are in the middle of scrolling animation
+    /*
     if(self.animatingContentOffset)
         return;
+    */
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
     
@@ -1642,6 +1644,7 @@ typedef enum  {
     if(self.animatingContentOffset)
         return;
     
+    
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
 
     CGPoint contentPoint = [g locationInView:self.contentView];
@@ -1703,15 +1706,16 @@ typedef enum  {
     if(g.state == UIGestureRecognizerStateEnded){
         
         [self _completeDragAction];
-        
+       
         return;
     }
     
     //we failed to start panning, lets clean up
     if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
         
+               
         [self _completeDragAction];
-        
+
         return;
     }
 }
@@ -1723,11 +1727,11 @@ typedef enum  {
     CGPoint p = [g locationInView:self];
     self.lastTouchPoint = p;
     
-    /*
+    
     //don't do anything if we are in the middle of scrolling animation
     if(self.animatingContentOffset)
         return;
-    */
+    
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
     
@@ -1802,8 +1806,10 @@ typedef enum  {
     //we are done lets reorder or add to folder
     if(g.state == UIGestureRecognizerStateEnded){
         
-        [self _completeDragAction];
         
+        [self _completeDragAction];        
+        
+      
         return;
     }
     
@@ -1811,6 +1817,7 @@ typedef enum  {
     if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
         
         [self _completeDragAction];
+        
         
         return;
     }
