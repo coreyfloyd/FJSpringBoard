@@ -18,6 +18,8 @@
 
 #define EDGE_CUSHION 20.0
 
+#define GROUP_COVERAGE .7
+
 typedef enum  {
     FJSpringBoardViewEdgeNone,
     FJSpringBoardViewEdgeTop,
@@ -157,6 +159,7 @@ typedef enum  {
 - (void)_highlightGroupAtIndex:(NSUInteger)index;
 - (void)_addCellsAtIndexes:(NSIndexSet*)cellIndexes toGroupAtIndex:(NSUInteger)groupIndex;
 - (void)_createGroupCellFromCellAtIndex:(NSUInteger)index;
+- (void)_animateDraggableViewInGroupCellAtIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block;
 - (void)_completeGrouping;
 - (void)_removeHighlight;
 
@@ -1999,7 +2002,7 @@ typedef enum  {
     float totalArea = cell.contentView.frame.size.width * cell.contentView.frame.size.height;
     
     
-    if(area/totalArea > .65){
+    if(area/totalArea > GROUP_COVERAGE){
         return FJSpringBoardDropActionAddToFolder;
     }
     
@@ -2109,6 +2112,13 @@ typedef enum  {
 
     NSIndexSet* affectedIndexes = [im modifiedIndexesByMovingReorderingCellToCellAtIndex:index];
     
+    FJSpringBoardCell* c = [self.cells objectAtIndex:im.currentReorderingIndex];
+    
+    if(![c isEqual:[NSNull null]]){
+        
+        c.alpha = 0;
+    }
+    
     [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
                           delay:0 
                         options:UIViewAnimationOptionCurveEaseInOut  
@@ -2186,6 +2196,8 @@ typedef enum  {
         if(![cell isEqual:[NSNull null]])
             cell.reordering = NO;
         
+        self.draggableCellView = nil;
+
         self.animatingReorder = NO;
         if([d respondsToSelector:@selector(springBoardView:moveCellAtIndex:toIndex:)])
             [d springBoardView:self moveCellAtIndex:original toIndex:current];
@@ -2200,7 +2212,6 @@ typedef enum  {
 - (void)_animateDraggableViewToReorderedCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block{
     
     UIView* v = [self.draggableCellView retain];
-    self.draggableCellView = nil;
     
     [UIView animateWithDuration:0.3 
                           delay:0.1 
@@ -2240,7 +2251,6 @@ typedef enum  {
     if(self.indexOfHighlightedCell == index)
         return;
     
-    self.animatingReorder = YES;
     [self _removeHighlight];
         
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
@@ -2290,7 +2300,6 @@ typedef enum  {
                          
                          groupCell.userInteractionEnabled = YES;
                          cell.userInteractionEnabled = YES;
-                         self.animatingReorder = NO;
                          
                      }];
     
@@ -2376,16 +2385,9 @@ typedef enum  {
     
     
     [cellsToAdd addIndex:movingIndex];
-
-    //change to animation into the group
-    [self _animateDraggableViewToReorderedCellIndex:index completionBlock:^{
-        
-              
-        
-    }];
     
     [self _addCellsAtIndexes:cellsToAdd toGroupAtIndex:index];
-        
+    
 }
 
 - (void)_createGroupCellFromCellAtIndex:(NSUInteger)index{
@@ -2430,7 +2432,8 @@ typedef enum  {
         
     self.animatingReorder = YES;
     
-    
+    FJSpringBoardGroupCell* group = [self.cells objectAtIndex:groupIndex];
+
     //from the pre method
     NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
     
@@ -2474,6 +2477,26 @@ typedef enum  {
     
     self.userInteractionEnabled = NO;
     
+    [cellsToAdd enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+        
+        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+            
+            return;
+        }                                 
+        cell.alpha = 0;
+        
+    }];
+    
+    NSUInteger newIndex = [self.cells indexOfObject:group];
+
+    [self _animateDraggableViewInGroupCellAtIndex:newIndex completionBlock:^{
+        
+        self.draggableCellView = nil;
+        
+    }];
+        
     [UIView animateWithDuration:DELETE_ANIMATION_DURATION 
                           delay:0 
                         options:UIViewAnimationOptionCurveEaseInOut 
@@ -2481,18 +2504,9 @@ typedef enum  {
         
                          [self _layoutCellsAtIndexes:[toLayout copy]];
                          [self.indexesNeedingLayout removeAllIndexes];
+                                                  
                          
-                         [cellsToAdd enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                             
-                             FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
-                             
-                             if(![cell isKindOfClass:[FJSpringBoardCell class]]){
-                                 
-                                 return;
-                             }                                 
-                             cell.alpha = 0;
-                             
-                         }];
+                                                                
                          
                      } 
                      completion:^(BOOL finished) {
@@ -2517,7 +2531,7 @@ typedef enum  {
                          [self _updateLayout];
                          self.userInteractionEnabled = YES;
                          [self.indexMap commitChanges];
-
+                         
                          if([self.dataSource respondsToSelector:@selector(springBoardView:commitAddingCellsAtIndexes:toGroupCellAtIndex:)])
                              [self.dataSource springBoardView:self commitAddingCellsAtIndexes:cellIndexes toGroupCellAtIndex:groupIndex];
                          
@@ -2537,18 +2551,19 @@ typedef enum  {
 - (void)_animateDraggableViewInGroupCellAtIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block{
     
     UIView* v = [self.draggableCellView retain];
-    self.draggableCellView = nil;
     
-    [UIView animateWithDuration:0.3 
-                          delay:0.1 
+    [UIView animateWithDuration:0.4 
+                          delay:0 
                         options:UIViewAnimationOptionCurveEaseIn 
                      animations:^(void) {
                          
                          v.alpha = 1.0;
-                         v.transform = CGAffineTransformIdentity;
-                         CGRect f = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
-                         f = [self convertRect:f fromView:self.contentView];
-                         v.frame = f;
+                         v.transform = CGAffineTransformMakeScale(0.2, 0.2);
+                         FJSpringBoardCell* c = [self.cells objectAtIndex:index];
+                         v.center = [self convertPoint:c.center fromView:self.contentView];
+                         //CGRect f = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
+                         //f = [self convertRect:f fromView:self.contentView];
+                         //v.frame = f;
                          
                      } 
      

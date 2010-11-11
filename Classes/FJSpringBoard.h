@@ -16,29 +16,19 @@
  @bugs
 
  @high
- release in middle of folder highlight animation
-  
- when reordering, the invisible doesn't stay invisible
-
- Dangling cells left sometimes. need a full proof cleanup strategy
- 
+   
  
  @low
  balance all copies with releases
-        
- repeat edge detection during multipage drags seems to fail after 2 pages or so…
+         
+ Dangling cells left sometimes. need a full proof cleanup strategy, but now it fixes itself
  
+ mostly cell is left during an edge animation, need to clean up better
+
  ---------
  
  @todo
- animate adding to folders
- 
- use seperate gesture recognizers for long press to activate editing and and selection
- 
- allow dragging without long press, use long press OR movement to apply transform
- 
- check out facebook code to get better timing
- 
+    
  
  action / selection
  

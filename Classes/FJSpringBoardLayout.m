@@ -9,6 +9,8 @@
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
 
+#define MINIMUM_CELL_SPACING 2
+
 @interface FJSpringBoardLayout()
 
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
@@ -121,7 +123,7 @@
 
     float count = floorf(totalWidth / cellWidth);
     
-    if((totalWidth - (count * cellWidth)) < (5*(count-1)))
+    if((totalWidth - (count * cellWidth)) < (MINIMUM_CELL_SPACING*(count-1)))
        count--;
     
     return (NSUInteger)count;
