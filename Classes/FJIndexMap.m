@@ -83,6 +83,8 @@
     
     if(index == NSNotFound)
         return nil;
+    if(self.currentReorderingIndex == NSNotFound)
+        return nil;
     
     id obj = [[self.cells objectAtIndex:self.currentReorderingIndex] retain];
     [self.cells removeObjectAtIndex:self.currentReorderingIndex];
