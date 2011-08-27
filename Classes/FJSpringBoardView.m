@@ -139,10 +139,10 @@ typedef enum  {
 
 //dragging and dropping
 - (void)_makeCellDraggableAtIndex:(NSUInteger)index;
-- (void)_handleDraggableCellWithTouchPoint:(CGPoint)point;
+- (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point;
+- (FJSpringBoardDropAction)_actionForDraggableCellAtIndex:(NSUInteger)dragIndex coveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame;
 - (void)_completeDragAction;
 - (NSUInteger)_coveredCellIndexWithObscuredContentFrame:(CGRect)contentFrame;
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame;
 - (void)_animateDraggableViewToReorderedCellIndex:(NSUInteger)index completionBlock:(dispatch_block_t)block;
 - (void)animateEmbiggeningOfDraggableCell;
 - (void)animateEmbiggeningOfDraggableCellQuickly;
@@ -1591,7 +1591,7 @@ typedef enum  {
                 
                 if(e == FJSpringBoardViewEdgeNone){
                     
-                    [self _handleDraggableCellWithTouchPoint:p];       
+                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
                     
                 }else{
                     
@@ -1680,7 +1680,7 @@ typedef enum  {
                 
                 if(e == FJSpringBoardViewEdgeNone){
                     
-                    [self _handleDraggableCellWithTouchPoint:p];       
+                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
                     
                 }else{
                     
@@ -1782,7 +1782,7 @@ typedef enum  {
 
                 if(e == FJSpringBoardViewEdgeNone){
                     
-                    [self _handleDraggableCellWithTouchPoint:p];       
+                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
 
                 }else{
                     
@@ -1941,7 +1941,7 @@ typedef enum  {
     cell.reordering = YES;
 }
 
-- (void)_handleDraggableCellWithTouchPoint:(CGPoint)point{
+- (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point{
         
     //check if we need to scroll the view
     
@@ -1964,7 +1964,7 @@ typedef enum  {
         
     }
     
-    FJSpringBoardDropAction a = [self _actionForCoveredCellIndex:index obscuredContentFrame:adjustedFrame];
+    FJSpringBoardDropAction a = [self _actionForDraggableCellAtIndex:dragIindex coveredCellIndex:index obscuredContentFrame:adjustedFrame];
     
     if(a == FJSpringBoardDropActionMove)
         [self _reorderCellsByUpdatingPlaceHolderIndex:index];
@@ -1977,7 +1977,7 @@ typedef enum  {
 }
 
 
-- (FJSpringBoardDropAction)_actionForCoveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame{
+- (FJSpringBoardDropAction)_actionForDraggableCellAtIndex:(NSUInteger)dragIndex coveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame{
     
     if(index == self.indexMap.currentReorderingIndex)
         return FJSpringBoardDropActionNone;
@@ -1985,7 +1985,16 @@ typedef enum  {
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDropActionMove;
     
-    FJSpringBoardCell* draggableCell = [self.cells objectAtIndex:self.indexMap.currentReorderingIndex];
+    NSUInteger idx = self.indexMap.currentReorderingIndex;
+    
+    if(idx == NSNotFound)
+        idx = dragIndex;
+    
+    if(idx == NSNotFound)
+        return FJSpringBoardDropActionNone;
+
+    
+    FJSpringBoardCell* draggableCell = [self.cells objectAtIndex:idx];
     
     if([draggableCell isKindOfClass:[FJSpringBoardGroupCell class]])
         return FJSpringBoardDropActionMove;
