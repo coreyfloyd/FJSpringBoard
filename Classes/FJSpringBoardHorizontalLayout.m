@@ -248,15 +248,15 @@
 
     val = roundf(val);
     
-    if(val < 0){
-     
-        ALWAYS_ASSERT;
+    if(val < 0){     
+        val = 0;
     }
     
     NSUInteger page = (NSUInteger)val;
     
-    if(page > self.pageCount){
-        ALWAYS_ASSERT;
+    if(page >= self.pageCount){
+        
+        page = self.pageCount-1;
     }
     
     return page;
