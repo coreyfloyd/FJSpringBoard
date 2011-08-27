@@ -627,8 +627,6 @@ typedef enum  {
 #pragma mark -
 #pragma mark UIScrollViewDelegate
 
-
-
 - (void)scrollViewDidScroll:(UIScrollView *)sView{
     
     self.animatingContentOffset = YES;
@@ -642,49 +640,59 @@ typedef enum  {
         
     });
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidScroll:sView];
-    
+    if([self.delegate respondsToSelector:@selector(scrollViewDidScroll:)])
+        [self.delegate scrollViewDidScroll:sView];
+        
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)sView{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndScrollingAnimation:sView];
-    
+    if([self.delegate respondsToSelector:@selector(scrollViewDidEndScrollingAnimation:)])
+        [self.delegate scrollViewDidEndScrollingAnimation:sView];
 }
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)sView{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewWillBeginDragging:scrollView];
-    
+    if([self.delegate respondsToSelector:@selector(scrollViewWillBeginDragging:)])
+        [self.delegate scrollViewWillBeginDragging:sView];
+        
 }
 - (void)scrollViewDidEndDragging:(UIScrollView *)sView willDecelerate:(BOOL)decelerate{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
+    if([self.delegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)])
+        [self.delegate scrollViewDidEndDragging:sView willDecelerate:decelerate];
 
 }
 
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)sView{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewWillBeginDecelerating:sView];
+    if([self.delegate respondsToSelector:@selector(scrollViewWillBeginDecelerating:)])
+        [self.delegate scrollViewWillBeginDecelerating:sView];
+    
     
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)sView{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidEndDecelerating:sView];
+    if([self.delegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)])
+        [self.delegate scrollViewDidEndDecelerating:sView];
 }
 
 
 - (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)sView{
     
-    return [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewShouldScrollToTop:sView];
+    if([self.delegate respondsToSelector:@selector(scrollViewShouldScrollToTop:)])
+        return [self.delegate scrollViewShouldScrollToTop:sView];
+    
+    return YES;
     
 }
 
 - (void)scrollViewDidScrollToTop:(UIScrollView *)sView{
     
-    [[(NSObject*)self.delegate performIfRespondsToSelectorProxy] scrollViewDidScrollToTop:sView];
-
+    if([self.delegate respondsToSelector:@selector(scrollViewDidScrollToTop:)])
+        [self.delegate scrollViewDidScrollToTop:sView];
+    
 }
 
 
