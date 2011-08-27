@@ -36,10 +36,6 @@
  
  @refactoring (all low)
  
-
- move allindexes into indexMap
- 
- merge indexMap and index loader?
  
  allows edit mode
 
