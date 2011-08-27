@@ -6,6 +6,6 @@
     #import <Foundation/Foundation.h>
     #import <UIKit/UIKit.h>
     #import "MacroUtilities.h"
-    #import "Global.h"
+    #import "Functions.h"
     #import "NSObject+Proxy.h"
 #endif

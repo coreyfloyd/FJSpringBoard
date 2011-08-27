@@ -49,12 +49,16 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 
 @property (nonatomic, copy, readwrite) NSString *reuseIdentifier;
 
+@property (nonatomic, readwrite) BOOL tapped;
+
 - (void)_startWiggle;
 - (void)_stopWiggle;
 - (CAAnimation*)_wiggleAnimation;
 - (void)_removeDeleteButton;
 - (void)_addDeleteButton;
 - (void)_updateView;
+
+- (void)setTapped:(BOOL)flag animated:(BOOL)animated;
 
 @end
 
@@ -71,14 +75,16 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize mode;
 @synthesize selectionModeImageView;
 @synthesize selectedImageView;
-@synthesize glowsOnSelection;
+@synthesize glowsOnTap;
 @synthesize selected;
 @synthesize deleteImage;
 @synthesize springBoardView;
 @synthesize reordering;
 @synthesize showsDeleteButton;
 @synthesize draggable;
-
+@synthesize groupable;
+@synthesize tapable;
+@synthesize tapped;
 
 
 
@@ -102,8 +108,8 @@ static UIColor* _defaultBackgroundColor = nil;
 
 + (void)initialize{
     
-    _deleteImage = [UIImage imageNamed:@"close.png"];
-    _defaultBackgroundColor = [UIColor whiteColor];
+    _deleteImage = [[UIImage imageNamed:@"close.png"] retain];
+    _defaultBackgroundColor = [UIColor clearColor];
     
 }
 
@@ -127,12 +133,13 @@ static UIColor* _defaultBackgroundColor = nil;
         [self addSubview:self.backgroundView];
 
         self.contentView = [[[UIView alloc] initWithFrame:f] autorelease];
-        self.contentView.backgroundColor = _defaultBackgroundColor;
+        self.contentView.backgroundColor = [UIColor clearColor];
         [self addSubview:self.contentView];
         
         self.showsDeleteButton = YES;
         self.draggable = YES;
-        
+        self.groupable = YES;
+        self.tapable = YES;
         self.reuseIdentifier = identifier;
     }
     return self;
@@ -140,7 +147,7 @@ static UIColor* _defaultBackgroundColor = nil;
 }  
 
 - (void)delete{
-    NSLog(@"deleted!");
+    debugLog(@"deleted!");
     
     [self.springBoardView _deleteCell:self];
     
@@ -181,6 +188,29 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
+- (void)setTapped:(BOOL)flag{
+    
+    if(tapped == flag)
+        return;
+    
+    tapped = flag;
+    
+    [self _updateView];
+
+}
+
+
+- (void)setTapped:(BOOL)flag animated:(BOOL)animated{
+    
+    if(tapped == flag)
+        return;
+    
+    tapped = flag;
+    
+    [self _updateView];
+    
+}
+
 
 
 - (void)_addDeleteButton{
@@ -196,8 +226,9 @@ static UIColor* _defaultBackgroundColor = nil;
         b  = [UIButton buttonWithType:UIButtonTypeCustom];
     
     b.tag = 1001;
-    b.frame = CGRectMake(0, 0, 30, 30);
+    b.frame = CGRectMake(0, 0, 44, 44);
     [b setImage:self.deleteImage forState:UIControlStateNormal];
+    [b setImageEdgeInsets:UIEdgeInsetsMake(0, 0, 14, 14)];
     [b addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
     [self insertSubview:b aboveSubview:self.contentView];
     
@@ -224,14 +255,18 @@ static UIColor* _defaultBackgroundColor = nil;
     [animation setRepeatCount:10000];
     // Try to get the animation to begin to start with a small offset // that makes it shake out of sync with other layers. srand([[NSDate date] timeIntervalSince1970]); float rand = (float)random();
     [animation setBeginTime: CACurrentMediaTime() + rand() * .0000000001];
+    
+    [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
       
     NSMutableArray *values = [NSMutableArray array]; // Turn right
     [values addObject:DegreesToNumber(-2)]; // Turn left
     [values addObject:DegreesToNumber(2)]; // Turn right
     [values addObject:DegreesToNumber(-2)]; // Set the values for the animation
-    [animation setValues:values]; return animation;
+    [animation setValues:values]; 
+    return animation;
     
 }
+
 
 - (void)_updateView{
     
@@ -256,7 +291,10 @@ static UIColor* _defaultBackgroundColor = nil;
         
     }else{
         
-        self.alpha = 1;
+        if(tapped)
+            self.alpha = CELL_DRAGGABLE_ALPHA;
+        else
+            self.alpha = 1;
         
     }
     
@@ -290,28 +328,29 @@ static UIColor* _defaultBackgroundColor = nil;
 }
 
 
+
 -(void)drawRect:(CGRect)rect{
     
     __block CGRect f = self.bounds;
-    f.origin = CGPointMake(2, 2);
-    f.size = CGSizeMake((f.size.width-4-2)/2, (f.size.height-4-2)/2);
+    f.origin = CGPointMake(8, 8);
+    f.size = CGSizeMake((f.size.width-16-4)/2, (f.size.height-16-4)/2);
     
     [self.contentImages enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
         if(idx == 1){
             
-            f.origin.x+=(f.size.width+2);
+            f.origin.x+=(f.size.width+4);
             
         }
         if(idx == 2){
             
-            f.origin.x-=(f.size.width+2);
-            f.origin.y+=(f.size.height+2);
+            f.origin.x-=(f.size.width+4);
+            f.origin.y+=(f.size.height+4);
             
         }
         if(idx == 3){
             
-            f.origin.x+=(f.size.width+2);
+            f.origin.x+=(f.size.width+4);
             *stop = YES;
         }
         
@@ -366,6 +405,10 @@ static UIColor* _defaultBackgroundColor = nil;
 - (void)setContentImages:(NSArray*)images{
     
     self.contentImageHolder.contentImages = images;
+    
+    [self.contentImageHolder setNeedsDisplay];
+    [[self.contentImageHolder layer] setNeedsDisplay];
+    [[[self.contentImageHolder layer] presentationLayer] setNeedsDisplay];
     
 }
 

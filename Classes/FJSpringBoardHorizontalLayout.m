@@ -130,7 +130,7 @@
     
     float count = floorf(totalHeight / cellHeight);
     
-    if((totalHeight - (count * cellHeight)) < (5*(count-1)))
+    if((totalHeight - (count * cellHeight)) < (2*(count-1)))
         count--;
     
     return (NSUInteger)count;
@@ -248,13 +248,14 @@
 
     val = roundf(val);
     
-    NSUInteger page = (NSUInteger)val;
-    
-    if(page > self.pageCount){
+    if(val < 0){
+     
         ALWAYS_ASSERT;
     }
     
-    if(page < 0){
+    NSUInteger page = (NSUInteger)val;
+    
+    if(page > self.pageCount){
         ALWAYS_ASSERT;
     }
     
@@ -286,7 +287,7 @@
         return pageInt--;
     
     if(pageInt < 0)
-        return pageInt++;
+        return 0;
     
     return pageInt;
 }
@@ -314,7 +315,7 @@
         return lastPage--;
     
     if(lastPage < 0)
-        return lastPage++;
+        return 0;
     
     return lastPage;
     

@@ -18,7 +18,7 @@ typedef enum  {
     FJSpringBoardViewScrollDirectionHorizontal
 } FJSpringBoardViewScrollDirection;
 
-@interface FJSpringBoardView : UIView <UIScrollViewDelegate> {
+@interface FJSpringBoardView : UIView <UIScrollViewDelegate, UIGestureRecognizerDelegate> {
 
     UIScrollView* scrollView;
     UIView* contentView;
@@ -29,12 +29,9 @@ typedef enum  {
     
     FJSpringBoardViewScrollDirection scrollDirection;
     
-    FJReorderingIndexMap* indexMap;
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
-    
-    NSMutableIndexSet *allIndexes;
-        
+            
     NSMutableIndexSet *indexesNeedingLayout;
 
     NSMutableIndexSet *indexesScrollingInView;
@@ -45,7 +42,6 @@ typedef enum  {
     
     NSMutableIndexSet *selectedIndexes;
     
-    NSMutableArray *cells; 
     NSMutableSet *reusableCells; //reusable cells
     
     BOOL layoutIsDirty;
@@ -99,16 +95,17 @@ typedef enum  {
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 - (NSUInteger)indexOfCellAtPoint:(CGPoint)point;
 
-@property(nonatomic, retain, readonly) NSMutableArray *cells; 
 @property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
 
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 //paging, only valid if scrollingDirection == horizontal
+- (NSUInteger)numberOfPages;
 - (NSUInteger)page;
 - (NSUInteger)nextPage;
 - (NSUInteger)previousPage;
+
 - (BOOL)scrollToPage:(NSUInteger)page animated:(BOOL)animated;
 
 //index sets must be continuous
@@ -158,7 +155,10 @@ typedef enum  {
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
 
+
+- (NSIndexSet*)springBoardView:(FJSpringBoardView *)springBoardView shouldDeleteCellsAtIndexes:(NSIndexSet* )indexes; //return the indexes to delete immediately
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndexes:(NSIndexSet* )indexes; 
+
 
 
 //- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;

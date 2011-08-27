@@ -6,9 +6,8 @@
 #import "FJSpringBoardLayout.h"
 #import <QuartzCore/QuartzCore.h>
 #import "FJSpringBoardCell.h"
-#import "FJIndexMap.h"
 
-#define DELETE_ANIMATION_DURATION 1.23
+#define DELETE_ANIMATION_DURATION 0.50
 #define INSERT_ANIMATION_DURATION 1.25
 #define RELOAD_ANIMATION_DURATION 0.75
 #define LAYOUT_ANIMATION_DURATION 0.25
@@ -39,7 +38,8 @@ typedef enum  {
 @interface FJSpringBoardCell(Internal)
 
 @property(nonatomic, assign) FJSpringBoardView* springBoardView;
-
+@property (nonatomic, readwrite) BOOL tapped;
+- (void)setTapped:(BOOL)flag animated:(BOOL)animated;
 
 @end
 
@@ -62,10 +62,8 @@ typedef enum  {
 @property(nonatomic, retain) FJSpringBoardIndexLoader *indexLoader;
 @property(nonatomic, retain) FJSpringBoardLayout *layout;
 
-@property(nonatomic, retain, readwrite) NSMutableArray *cells; 
 @property(nonatomic, retain) NSMutableSet *reusableCells;
 
-@property(nonatomic, retain) NSMutableIndexSet *allIndexes;
 @property(nonatomic, retain) NSMutableIndexSet *onScreenCellIndexes; 
 
 //used to process changes due to movement
@@ -86,7 +84,6 @@ typedef enum  {
 @property(nonatomic) BOOL doubleTapped; //flag to handle double tap irregularities
 @property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
 
-@property(nonatomic, retain) FJReorderingIndexMap* indexMap;
 @property(nonatomic, retain) UIView *draggableCellView;
 @property(nonatomic) BOOL animatingReorder; //flag to indicate a reordering animation is occuring
 
@@ -100,6 +97,7 @@ typedef enum  {
 @property(nonatomic, retain) FJSpringBoardGroupCell *floatingGroupCell;
 @property(nonatomic) NSUInteger indexOfHighlightedCell;
 
+@property(nonatomic, retain) UILongPressGestureRecognizer *glowTapRecognizer;
 @property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
 @property(nonatomic, retain) UITapGestureRecognizer *doubleTapRecognizer;
 @property(nonatomic, retain) UILongPressGestureRecognizer *editingModeRecognizer;
@@ -137,6 +135,7 @@ typedef enum  {
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag;
 - (CGRect)_frameForCellAtIndex:(NSUInteger)index checkOffScreenIndexes:(BOOL)flag;
 
+- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g;
 //dragging and dropping
 - (void)_makeCellDraggableAtIndex:(NSUInteger)index;
 - (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point;
@@ -181,10 +180,8 @@ typedef enum  {
 @synthesize indexLoader;
 @synthesize layout;
 
-@synthesize cells;
 @synthesize reusableCells;
 
-@synthesize allIndexes;
 @synthesize indexesScrollingInView;
 @synthesize indexesNeedingLayout;
 @synthesize indexesToDelete;
@@ -198,7 +195,6 @@ typedef enum  {
 @synthesize doubleTapped;
 @synthesize longTapped;
 
-@synthesize indexMap;
 @synthesize animatingReorder;
 @synthesize draggableCellView;
 
@@ -209,6 +205,7 @@ typedef enum  {
 @synthesize floatingGroupCell;
 @synthesize indexOfHighlightedCell;
 
+@synthesize glowTapRecognizer;
 @synthesize singleTapRecognizer;
 @synthesize doubleTapRecognizer;
 @synthesize editingModeRecognizer;
@@ -226,6 +223,8 @@ typedef enum  {
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
+    [glowTapRecognizer release];
+    glowTapRecognizer = nil;
     [singleTapRecognizer release];
     singleTapRecognizer = nil;
     [doubleTapRecognizer release];
@@ -242,12 +241,8 @@ typedef enum  {
     contentView = nil;    
     [floatingGroupCell release];
     floatingGroupCell = nil;    
-    [indexMap release];
-    indexMap = nil;    
     [draggableCellView release];
-    draggableCellView = nil;    
-    [allIndexes release];
-    allIndexes = nil; 
+    draggableCellView = nil;   
     [indexesToInsert release];
     indexesToInsert = nil;
     [indexesScrollingOutOfView release];
@@ -260,8 +255,6 @@ typedef enum  {
     indexesNeedingLayout = nil;
     [selectedIndexes release];
     selectedIndexes = nil;    
-    [cells release];
-    cells = nil;
     [reusableCells release];
     reusableCells = nil;
     [layout release];
@@ -284,21 +277,28 @@ typedef enum  {
         
         self.contentView = [[[UIView alloc] initWithFrame:self.bounds] autorelease];
         [self.scrollView addSubview:self.contentView];
-        
-        self.indexLoader = [[[FJSpringBoardIndexLoader alloc] init] autorelease];
-        
-        self.allIndexes = [NSMutableIndexSet indexSet];
+                
         self.indexesScrollingInView = [NSMutableIndexSet indexSet];
         self.indexesNeedingLayout = [NSMutableIndexSet indexSet];
         self.selectedIndexes = [NSMutableIndexSet indexSet];
         self.indexesToInsert = [NSMutableIndexSet indexSet];
         self.indexesToDelete = [NSMutableIndexSet indexSet];
         self.indexesScrollingOutOfView = [NSMutableIndexSet indexSet];
-        self.cells = [NSMutableArray array];
         self.reusableCells = [NSMutableSet set];
 
         self.indexOfHighlightedCell = NSNotFound;
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
+        
+        
+              
+        UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateGlowWithTap:)];
+        g.minimumPressDuration = 0.1;
+        g.delegate = self;
+        g.cancelsTouchesInView = NO;
+        [self addGestureRecognizer:g];
+        self.glowTapRecognizer = g;
+        [g release];
+        
         
         UITapGestureRecognizer* d = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
         d.numberOfTapsRequired = 2;
@@ -319,9 +319,9 @@ typedef enum  {
         [l release];
         
 
-        
         l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
         l.minimumPressDuration = 0.1;
+        l.cancelsTouchesInView = NO;
         [self addGestureRecognizer:l];
         self.draggingSelectionRecognizer = l;
         [l release];
@@ -360,14 +360,14 @@ typedef enum  {
 
 - (NSUInteger)numberOfCells{
     
-    return [self.allIndexes count];
+    return [self.indexLoader.allIndexes count];
     
 }
 
 
 - (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index{
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
     
     if([[NSNull null] isEqual:(NSNull*)cell])
         return nil;
@@ -378,7 +378,7 @@ typedef enum  {
 
 - (NSUInteger)indexForCell:(FJSpringBoardCell *)cell{
     
-    NSUInteger i = [self.cells indexOfObject:cell];
+    NSUInteger i = [self.indexLoader.cells indexOfObject:cell];
     
     return i;
     
@@ -392,7 +392,7 @@ typedef enum  {
 
 - (CGRect)_frameForCellAtIndex:(NSUInteger)index checkOffScreenIndexes:(BOOL)flag{
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
     
     if([[NSNull null] isEqual:(NSNull*)cell]){
         
@@ -417,25 +417,36 @@ typedef enum  {
 
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag{
     
-    NSIndexSet* a = [self.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+    NSIndexSet* a = [self.indexLoader.cells indexesOfObjectsPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
         
         FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
         
+        CGRect f = CGRectZero;
+
         if([c isEqual:[NSNull null]]){
             
-            if(flag){
-                
-                CGRect f = [self.layout frameForCellAtIndex:idx];
-                if(CGRectContainsPoint(f, point))
-                    return YES;
-                
-            }
+            if(flag)
+                f = [self.layout frameForCellAtIndex:idx];
+                           
+        }else{
             
-            return NO;
-            
+             f = c.frame;
         }
         
-        if(CGRectContainsPoint(c.frame, point)){
+        if(CGRectEqualToRect(f, CGRectZero))
+            return NO;
+        
+        if(self.mode == FJSpringBoardCellModeEditing){
+            
+            CGRect bFrame = CGRectMake(f.origin.x, f.origin.y, 44, 44);
+            
+            if(CGRectContainsPoint(bFrame, point)){
+                *stop = YES;
+                return NO;
+            }
+        }
+
+        if(CGRectContainsPoint(f, point)){
             *stop = YES;
             return YES;
             
@@ -519,12 +530,11 @@ typedef enum  {
 
 - (void)reloadData{
     
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, numOfCells)];
+    //remove existing cells from view
+    [self _removeCellsFromSpringBoardViewAtIndexes:self.indexLoader.allIndexes];
     
-    [self _unloadCellsScrollingOutOfViewAtIndexes:self.onScreenCellIndexes];
-    self.cells = nullArrayOfSize([self.allIndexes count]);
-    self.indexMap = [[FJReorderingIndexMap alloc] initWithArray:self.cells];
+    //unload them (placed in reusable pool)
+    [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
     
     [self _configureLayout]; //triggers _updateCells and _updateIndexes
 }
@@ -545,6 +555,10 @@ typedef enum  {
         self.scrollView.pagingEnabled = NO;
     }
     
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    self.layout.cellCount = numOfCells;
+
+    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
     self.indexLoader.layout = self.layout;
         
     [self _updateLayout];
@@ -558,8 +572,6 @@ typedef enum  {
     self.layout.springBoardbounds = self.bounds;
     self.layout.insets = self.springBoardInsets;
     self.layout.cellSize = self.cellSize;
-    
-    self.layout.cellCount = [self.allIndexes count];
     
     [self.layout updateLayout];
     
@@ -586,37 +598,6 @@ typedef enum  {
 
 #pragma mark -
 #pragma mark UIScrollView
-
-/*
-- (void)_setContentOffset:(CGPoint)offset{
-    
-    [self.scrollView setContentOffset:offset];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        [self _updateIndexes];
-
-    });
-}
-
-- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate{
-    
-    self.animatingContentOffset = YES;
-    self.lastContentOffset = self.scrollView.contentOffset;
-    
-	[self.scrollView setContentOffset: offset animated: animate];  
-    
-    [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(_contentOffsetAnimationCheck:) userInfo:nil repeats:YES];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        [self _updateIndexes];
-        
-    });    
-}
-
-*/
-
 
 - (void)_setContentSize:(CGSize)size{
     
@@ -740,12 +721,7 @@ typedef enum  {
     //load cells that are now visible
     [self _loadCellsScrollingIntoViewAtIndexes:[self.indexesScrollingInView copy]];
     
-    if([self.cells count] != [self.allIndexes count]){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    [self.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.indexLoader.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
         FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
         
@@ -800,7 +776,7 @@ typedef enum  {
     
     NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
     
-        if([self.allIndexes containsIndex:idx])
+        if([self.indexLoader.allIndexes containsIndex:idx])
             return YES;
         return NO;
     
@@ -808,7 +784,7 @@ typedef enum  {
     
     [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
        
-        NSUInteger realIndex = [self.indexMap oldIndexForNewIndex:index];
+        NSUInteger realIndex = [self.indexLoader oldIndexForNewIndex:index];
         
         FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:realIndex];
         [cell retain];
@@ -819,13 +795,12 @@ typedef enum  {
             
             FJSpringBoardGroupCell* group = (FJSpringBoardGroupCell*)cell;
             [group setContentImages:a];
-            //[cell setC
             
         }
         
         cell.springBoardView = self;
-        
-        [self.cells replaceObjectAtIndex:index withObject:cell];
+                
+        [self.indexLoader.cells replaceObjectAtIndex:index withObject:cell];
         [cell release];
         
     }];
@@ -863,21 +838,21 @@ typedef enum  {
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.allIndexes containsIndex:index]){
+        if(![self.indexLoader.allIndexes containsIndex:index]){
             
             return;
         }
         
         //don't unload the index we are reordering
-        FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
-        if([im isKindOfClass:[FJReorderingIndexMap class]]){
+        FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
+        if([im isKindOfClass:[FJSpringBoardIndexLoader class]]){
             
             if(index == im.currentReorderingIndex)
                 return;
         }
         
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
             
@@ -885,7 +860,7 @@ typedef enum  {
         }
         
         [self.reusableCells addObject:eachCell];
-        [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
+        [self.indexLoader.cells replaceObjectAtIndex:index withObject:[NSNull null]];
         
         
     }];
@@ -907,7 +882,7 @@ typedef enum  {
     
     NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
-        if([self.allIndexes containsIndex:idx])
+        if([self.indexLoader.allIndexes containsIndex:idx])
             return YES;
         return NO;
         
@@ -916,7 +891,7 @@ typedef enum  {
     [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
     
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         
         if([eachCell isEqual:[NSNull null]]){
             
@@ -943,10 +918,10 @@ typedef enum  {
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.allIndexes containsIndex:index])
+        if(![self.indexLoader.allIndexes containsIndex:index])
             return;
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         eachCell.mode = self.mode;
         
         //NSLog(@"Laying Out Cell At Index %i in Old Index Position %i", index, positionIndex);
@@ -967,20 +942,20 @@ typedef enum  {
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.allIndexes containsIndex:index]){
+        if(![self.indexLoader.allIndexes containsIndex:index]){
         
             return;
         }
         
         //don't remove the index we are reordering
-        FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
-        if([im isKindOfClass:[FJReorderingIndexMap class]]){
+        FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
+        if([im isKindOfClass:[FJSpringBoardIndexLoader class]]){
             
             if(index == im.currentReorderingIndex)
                 return;
         }
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
             
@@ -1004,14 +979,22 @@ typedef enum  {
 
 
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+        
     
-    [self _unloadCellsScrollingOutOfViewAtIndexes:indexSet];
+    //remove existing cells from view
+    [self _removeCellsFromSpringBoardViewAtIndexes:indexSet];
     
-    //load: create and insert in array
+    //unload them (placed in reusable pool)
+    [self _unloadCellsAtIndexes:indexSet];
+    
+    //create and insert in array
     [self _loadCellsAtIndexes:indexSet];
     
     //set frame and add to view
     [self _layoutCellsAtIndexes:indexSet];
+
+    if(animation == FJSpringBoardCellAnimationNone)
+        return;
     
     [indexSet enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
@@ -1020,7 +1003,7 @@ typedef enum  {
             return;
         }
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         
         eachCell.alpha = 0;
         
@@ -1059,16 +1042,16 @@ typedef enum  {
     NSUInteger firstIndex = [indexSet firstIndex];
     
     //TODO: check all indexes
-    if(firstIndex > [self.allIndexes lastIndex] + 1){
+    if(firstIndex > [self.indexLoader.allIndexes lastIndex] + 1){
         
         ALWAYS_ASSERT;
     }
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
     
-    if(numOfCells != [allIndexes count] + [indexSet count]){
+    if(numOfCells != [indexLoader.allIndexes count] + [indexSet count]){
         
-        ALWAYS_ASSERT; //num != pervios count + number added 
+        NSLog(@"inserted cell count + previous cell count != datasource cell count"); //num != pervios count + number added 
     } 
     
     [self.indexesToInsert addIndexes:indexSet];
@@ -1094,13 +1077,10 @@ typedef enum  {
     
     [self _preLayoutIndexesComingIntoViewWhenAddingIndexes:indexes];
     
-    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingCellsAtIndexes:indexes];
+    NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByAddingCellsAtIndexes:indexes];
     [self.indexesNeedingLayout addIndexes:toLayout];
 
-    for(int i = 0; i < [indexes count]; i++)
-        [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
-
-    [self.indexMap commitChanges];
+    [self.indexLoader commitChanges];
 
     //load
     [self _loadCellsAtIndexes:indexes];
@@ -1125,7 +1105,7 @@ typedef enum  {
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         eachCell.alpha = 0;
         
         
@@ -1140,7 +1120,7 @@ typedef enum  {
                          
                          [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
                              
-                             FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+                             FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
                              eachCell.alpha = 1;
                              
                              
@@ -1224,7 +1204,7 @@ typedef enum  {
     
     NSIndexSet* idxs = [indexSet indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
-        return [self.allIndexes containsIndex:idx];
+        return [self.indexLoader.allIndexes containsIndex:idx];
         
     }];
     
@@ -1232,15 +1212,7 @@ typedef enum  {
         
         ALWAYS_ASSERT;
     }   
-    
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    
-    if(numOfCells != [allIndexes count] - [indexSet count]){
-        
-        ALWAYS_ASSERT; //num != pervios count - number deleted 
-    } 
-
+       
     [self.indexesToDelete addIndexes:indexSet];
 
     self.layoutAnimation = animation; //reset on next layout update
@@ -1249,6 +1221,13 @@ typedef enum  {
         
         [self.indexesToDelete removeAllIndexes];
         self.layoutAnimation = FJSpringBoardCellAnimationNone;
+                
+        NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+        
+        if(newNumOfCells != [indexLoader.allIndexes count]){
+            
+            ALWAYS_ASSERT; //num != pervious count - number deleted 
+        } 
         
     }];
 
@@ -1258,7 +1237,7 @@ typedef enum  {
 
 - (void)_deleteCell:(FJSpringBoardCell*)cell{
     
-    NSUInteger index = [self.cells indexOfObject:cell];
+    NSUInteger index = [self.indexLoader.cells indexOfObject:cell];
     
     if(index == NSNotFound){
         ALWAYS_ASSERT;
@@ -1266,13 +1245,20 @@ typedef enum  {
     }
     
     
-    if(![self.allIndexes containsIndex:index]){
+    if(![self.indexLoader.allIndexes containsIndex:index]){
         
         ALWAYS_ASSERT;
         return;
     }
     
-    [self.indexesToDelete addIndexes:[NSIndexSet indexSetWithIndex:index]];
+    NSIndexSet* shouldDelete = [[(NSObject*)self.dataSource performIfRespondsToSelectorProxy] springBoardView:self shouldDeleteCellsAtIndexes:[NSIndexSet indexSetWithIndex:index]];
+    
+    if(shouldDelete == nil || [shouldDelete count] == 0){
+        
+        return;
+    }
+    
+    [self.indexesToDelete addIndexes:shouldDelete];
     
     self.layoutAnimation = FJSpringBoardCellAnimationFade; //reset on next layout update
     
@@ -1283,7 +1269,7 @@ typedef enum  {
         
         NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
 
-        [[(NSObject*)self.dataSource performIfRespondsToSelectorProxy] springBoardView:self commitDeletionForCellAtIndexes:[NSIndexSet indexSetWithIndex:index]];
+        [[(NSObject*)self.dataSource performIfRespondsToSelectorProxy] springBoardView:self commitDeletionForCellAtIndexes:shouldDelete];
         
         NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
         
@@ -1304,15 +1290,13 @@ typedef enum  {
     
     [self _preLayoutIndexesComingIntoViewWhenRemovingIndexes:indexes];
     
-    NSArray* cellsToDelete = [[self.cells objectsAtIndexes:indexes] retain];
+    NSArray* cellsToDelete = [[[self.indexLoader.cells objectsAtIndexes:indexes] retain] autorelease];
     
-    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByRemovingCellsAtIndexes:indexes];
+    NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByRemovingCellsAtIndexes:indexes];
     
     [self.indexesNeedingLayout addIndexes:toLayout];
     
-    for(int i = 0; i < [indexes count]; i++)
-        [self.allIndexes removeIndex:[self.allIndexes lastIndex]];
-    
+        
     
     if(self.layoutAnimation == FJSpringBoardCellAnimationNone){
         
@@ -1335,7 +1319,7 @@ typedef enum  {
         }];
         
         [self _updateLayout];
-        [self.indexMap commitChanges];
+        [self.indexLoader commitChanges];
         block();                         
 
         return;
@@ -1385,7 +1369,7 @@ typedef enum  {
                          
                          [self _updateLayout];
                          self.userInteractionEnabled = YES;
-                         [self.indexMap commitChanges];
+                         [self.indexLoader commitChanges];
                          
                          block();                         
                          
@@ -1452,7 +1436,7 @@ typedef enum  {
         
     mode = aMode;
     
-    [self.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.indexLoader.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
     
         FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
 
@@ -1471,16 +1455,52 @@ typedef enum  {
 #pragma mark -
 #pragma mark Touches
 
-- (void)didSingleTap:(UITapGestureRecognizer*)g{
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+    
+    return YES;
+
+}
+
+- (void)updateGlowWithTap:(UIGestureRecognizer*)g{
     
     CGPoint p = [g locationInView:self.contentView];
-    self.lastTouchPoint = p;
-
+    
     NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
     
     if(indexOfCell == NSNotFound)
         return;
+
+    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
+       
+    if(![c tapable])
+        return;
     
+    if(g.state == UIGestureRecognizerStateBegan){
+        
+        [c setTapped:YES];
+        
+    }else if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled || g.state == UIGestureRecognizerStateFailed){
+        
+        [c setTapped:NO];
+
+    }
+}
+
+- (void)didSingleTap:(UITapGestureRecognizer*)g{
+    
+    CGPoint p = [g locationInView:self.contentView];
+    self.lastTouchPoint = p;
+    
+    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+        
+    if(indexOfCell == NSNotFound)
+        return;
+
+    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
+           
+    if(![c tapable])
+        return;
+
     if([delegate respondsToSelector:@selector(springBoardView:cellWasTappedAtIndex:)])
         [delegate springBoardView:self cellWasTappedAtIndex:indexOfCell];
     
@@ -1493,6 +1513,17 @@ typedef enum  {
     CGPoint p = [g locationInView:self.contentView];
     self.lastTouchPoint = p;
     
+    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSNotFound)
+        return;
+
+    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
+    
+    if(![c tapable])
+        return;
+    
+    
     if(doubleTapped){
         
         [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetDoubleTapped) object:nil];
@@ -1501,11 +1532,6 @@ typedef enum  {
         
         return;
     }
-
-    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
-    
-    if(indexOfCell == NSNotFound)
-        return;
     
     self.doubleTapped = YES;
     [self performSelector:@selector(_resetDoubleTapped) withObject:nil afterDelay:0.5];
@@ -1530,210 +1556,55 @@ typedef enum  {
     CGPoint p = [g locationInView:self];
     self.lastTouchPoint = p;
     
-    if(self.mode == FJSpringBoardCellModeNormal){
-        
-        CGPoint contentPoint = [g locationInView:self.contentView];
-        NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
-        
-        if(indexOfCell != NSNotFound)
-            self.mode = FJSpringBoardCellModeEditing;
-        
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
-            
-            if(CGPointEqualToPoint(p, self.lastTouchPoint)){
-                
-                [self _makeCellDraggableAtIndex:indexOfCell];
-                
-                [self animateEmbiggeningOfDraggableCell];
-                
-            }
-        });
-        
-        return;
-    }
-    
-    
-    //don't do anything if we are in the middle of scrolling animation
-    /*
-    if(self.animatingContentOffset)
-        return;
-    */
-    
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
-    
     CGPoint contentPoint = [g locationInView:self.contentView];
     NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
-    
-    if(g.state == UIGestureRecognizerStateBegan){
+
+    if(self.mode == FJSpringBoardCellModeNormal){
         
         if(indexOfCell != NSNotFound){
             
-            [self _makeCellDraggableAtIndex:indexOfCell];
+            self.mode = FJSpringBoardCellModeEditing;
+
+            FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfCell];
             
-            [self animateEmbiggeningOfDraggableCell];
+            [cell setTapped:NO animated:NO];
             
-            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-            
+            [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
         }
-    }
     
-    //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
-    if(g.state == UIGestureRecognizerStateChanged){
-        
-        self.draggableCellView.center = p;
-        
-        //lets pause a second to see 
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
-            
-            if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5)){
-                
-                FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:p];
-                
-                if(e == FJSpringBoardViewEdgeNone){
-                    
-                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-                    
-                }else{
-                    
-                    //hit edge, scroll
-                    [self _scrollSpringBoardInDirectionOfEdge:e];
-                    
-                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
-                        
-                        //are we still on an edge? then scroll again!
-                        if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
-                            [self _scrollSpringBoardInDirectionOfEdge:e];
-                        
-                    });
-                }
-            }
-            
-        });
-        
-        [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-        
         return;
     }
     
-    
-    //we are done lets reorder or add to folder
-    if(g.state == UIGestureRecognizerStateEnded){
-        
-        [self _completeDragAction];
-        g.enabled = NO;
+    [self _processEditingLongTapWithRecognizer:g];
 
-        return;
-    }
-    
-    //we failed to start panning, lets clean up
-    if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
-        
-        [self _completeDragAction];
-        g.enabled = NO;
-
-        
-        return;
-    }
 }
 
 
 - (void)draggingSelectionLongTapReceived:(UILongPressGestureRecognizer*)g{
     
-    CGPoint p = [g locationInView:self];
-    self.lastTouchPoint = p;
-    
-    
-    //don't do anything if we are in the middle of scrolling animation
-    if(self.animatingContentOffset)
-        return;
-    
-    
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
-
-    CGPoint contentPoint = [g locationInView:self.contentView];
-    NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
-
-    if(g.state == UIGestureRecognizerStateBegan){
-    
-        if(indexOfCell != NSNotFound){
-            
-            [self _makeCellDraggableAtIndex:indexOfCell];
-            
-            [self animateEmbiggeningOfDraggableCell];
-            
-            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-
-        }
-    }
-    
-    //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
-    if(g.state == UIGestureRecognizerStateChanged){
-        
-        self.draggableCellView.center = p;
-        
-        //lets pause a second to see 
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
-            
-            if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5)){
-                
-                FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:p];
-                
-                if(e == FJSpringBoardViewEdgeNone){
-                    
-                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-                    
-                }else{
-                    
-                    //hit edge, scroll
-                    [self _scrollSpringBoardInDirectionOfEdge:e];
-                    
-                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
-                        
-                        //are we still on an edge? then scroll again!
-                        if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
-                            [self _scrollSpringBoardInDirectionOfEdge:e];
-                        
-                    });
-                }
-            }
-            
-        });
-        
-        [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-        
-        return;
-    }
-    
-
-    //we are done lets reorder or add to folder
-    if(g.state == UIGestureRecognizerStateEnded){
-        
-        [self _completeDragAction];
-       
-        return;
-    }
-    
-    //we failed to start panning, lets clean up
-    if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
-        
-               
-        [self _completeDragAction];
-
-        return;
-    }
+    [self _processEditingLongTapWithRecognizer:g];
 }
 
 
 
 - (void)dragPanningGestureReceived:(UIPanGestureRecognizer*)g{
     
+    [self _processEditingLongTapWithRecognizer:g];
+}
+
+
+- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g{
+    
+    if(self.animatingContentOffset || self.animatingReorder){
+        
+        debugLog(@"still animating");
+        [self performSelector:@selector(_processEditingLongTapWithRecognizer:) withObject:g afterDelay:0.1];
+        return;
+    }
+    debugLog(@"made it!");
+    
     CGPoint p = [g locationInView:self];
     self.lastTouchPoint = p;
-    
-    
-    //don't do anything if we are in the middle of scrolling animation
-    if(self.animatingContentOffset)
-        return;
     
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
@@ -1741,31 +1612,19 @@ typedef enum  {
     CGPoint contentPoint = [g locationInView:self.contentView];
     NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
     
-    
-    //we might be moving soon, get the drag view in place
-    if(g.state == UIGestureRecognizerStatePossible){
+    if(g.state == UIGestureRecognizerStateBegan){
         
         if(indexOfCell != NSNotFound){
             
-          
+            FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfCell];
+            
+            [cell setTapped:NO animated:NO];
+            
+            [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
+            
+            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
+            
         }
-        
-    }
-    
-    //ok we are moving update the drag cell
-    if(g.state == UIGestureRecognizerStateBegan){
-        
-        //[self animateEmbiggeningOfDraggableCellQuickly];
-                
-        self.draggableCellView.center = p;
-        
-        [self _makeCellDraggableAtIndex:indexOfCell];
-        
-        [self animateEmbiggeningOfDraggableCell];
-                
-        [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-        
-        
     }
     
     //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
@@ -1779,23 +1638,27 @@ typedef enum  {
             if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5)){
                 
                 FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:p];
-
+                
                 if(e == FJSpringBoardViewEdgeNone){
                     
                     [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-
+                    
                 }else{
                     
                     //hit edge, scroll
-                    [self _scrollSpringBoardInDirectionOfEdge:e];
-                                    
-                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
+                    if([self _scrollSpringBoardInDirectionOfEdge:e]){
                         
-                        //are we still on an edge? then scroll again!
-                        if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
-                            [self _scrollSpringBoardInDirectionOfEdge:e];
-                        
-                    });
+                        /*
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
+                            
+                            //are we still on an edge? then scroll again!
+                            if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
+                                [self _scrollSpringBoardInDirectionOfEdge:e];
+                            
+                        });
+                         
+                         */
+                    }
                 }
             }
             
@@ -1806,27 +1669,30 @@ typedef enum  {
         return;
     }
     
+    
     //we are done lets reorder or add to folder
     if(g.state == UIGestureRecognizerStateEnded){
         
+        [self _completeDragAction];
         
-        [self _completeDragAction];        
-        
-      
         return;
     }
     
     //we failed to start panning, lets clean up
     if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
         
-        [self _completeDragAction];
         
+        [self _completeDragAction];
         
         return;
     }
     
-    
-   
+    if(g.state == UIGestureRecognizerStatePossible){
+        
+        [self _completeDragAction];
+        
+        return;
+    }
     
 }
 
@@ -1841,7 +1707,7 @@ typedef enum  {
                         options:(UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction) 
                      animations:^(void) {
                          
-                         self.draggableCellView.alpha = 0.8;
+                         //self.draggableCellView.alpha = 0.7;
                          self.draggableCellView.transform = CGAffineTransformMakeScale(1.2, 1.2);
                          
                      } 
@@ -1862,7 +1728,7 @@ typedef enum  {
                         options:(UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionAllowUserInteraction) 
                      animations:^(void) {
                          
-                         self.draggableCellView.alpha = 0.8;
+                         //self.draggableCellView.alpha = 0.7;
                          self.draggableCellView.transform = CGAffineTransformMakeScale(1.2, 1.2);
                          
                      } 
@@ -1883,7 +1749,7 @@ typedef enum  {
                         options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction) 
                      animations:^(void) {
                          
-                         self.draggableCellView.alpha = 1.0;
+                         //self.draggableCellView.alpha = 1.0;
                          self.draggableCellView.transform = CGAffineTransformIdentity;
                          
 
@@ -1911,8 +1777,8 @@ typedef enum  {
     if(index == NSNotFound)
         return;
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
-    
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
+        
     if([cell isEqual:[NSNull null]]){
         
         ALWAYS_ASSERT;
@@ -1922,8 +1788,8 @@ typedef enum  {
         return;
     
     //start reordering
-    [self.indexMap beginReorderingIndex:index];
-    
+    [self.indexLoader beginReorderingIndex:index];
+            
     //create imageview to animate    
     UIGraphicsBeginImageContext(cell.bounds.size);
     [cell.layer renderInContext:UIGraphicsGetCurrentContext()];
@@ -1934,11 +1800,20 @@ typedef enum  {
     iv.frame = cell.frame;
     iv.center = [self convertPoint:cell.center fromView:self.contentView];
     self.draggableCellView = iv;
+    self.draggableCellView.alpha = CELL_DRAGGABLE_ALPHA;
     [self addSubview:iv];
     [iv release];
     
     //notify cell it is being reordered. power of… invisibility!
     cell.reordering = YES;
+    
+    double delayInSeconds = 0.05;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+        
+        [self animateEmbiggeningOfDraggableCell];
+
+    });
 }
 
 - (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point{
@@ -1947,9 +1822,14 @@ typedef enum  {
     
     //CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
     
-    //don't do anything if we are in the middle of a reordering animation
-    if(self.animatingReorder)
-        return;    
+    
+    if(self.indexLoader.originalReorderingIndex == NSNotFound){
+        
+        [self _makeCellDraggableAtIndex:dragIindex];
+        return;
+    }
+    
+    
     
     CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
     
@@ -1979,13 +1859,13 @@ typedef enum  {
 
 - (FJSpringBoardDropAction)_actionForDraggableCellAtIndex:(NSUInteger)dragIndex coveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame{
     
-    if(index == self.indexMap.currentReorderingIndex)
+    if(index == self.indexLoader.currentReorderingIndex)
         return FJSpringBoardDropActionNone;
     
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDropActionMove;
     
-    NSUInteger idx = self.indexMap.currentReorderingIndex;
+    NSUInteger idx = self.indexLoader.currentReorderingIndex;
     
     if(idx == NSNotFound)
         idx = dragIndex;
@@ -1994,7 +1874,7 @@ typedef enum  {
         return FJSpringBoardDropActionNone;
 
     
-    FJSpringBoardCell* draggableCell = [self.cells objectAtIndex:idx];
+    FJSpringBoardCell* draggableCell = [self.indexLoader.cells objectAtIndex:idx];
     
     if([draggableCell isKindOfClass:[FJSpringBoardGroupCell class]])
         return FJSpringBoardDropActionMove;
@@ -2004,7 +1884,10 @@ typedef enum  {
                                    0.15*contentFrame.size.width, 
                                    0.15*contentFrame.size.height);
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
+    
+    if(!cell.draggable)
+        return FJSpringBoardDropActionMove;
     
     CGRect rect = CGRectIntersection(insetRect, cell.frame);
     float area = rect.size.width * rect.size.height;
@@ -2027,7 +1910,7 @@ typedef enum  {
     
     NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
     
-    [self.cells enumerateObjectsAtIndexes:self.onScreenCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.indexLoader.cells enumerateObjectsAtIndexes:self.onScreenCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
     
         FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
         
@@ -2056,7 +1939,7 @@ typedef enum  {
     
     [coveredIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
-        FJSpringBoardCell* cell = [self.cells objectAtIndex:idx];
+        FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:idx];
         CGRect rect = CGRectIntersection(insetRect, cell.frame);
         float area = rect.size.width * rect.size.height;
         
@@ -2078,11 +1961,9 @@ typedef enum  {
 
 - (void)_completeDragAction{
     
-    //TODO: get rid of this, this is what leaves me "hanging". put a queue in lazy!
-    if(self.animatingReorder)
-        return;
-    
-    if(self.indexMap.originalReorderingIndex == NSNotFound)
+    debugLog(@"completing drag action...");
+
+    if(self.indexLoader.originalReorderingIndex == NSNotFound)
         return;
     
     if(self.indexOfHighlightedCell == NSNotFound){
@@ -2108,20 +1989,18 @@ typedef enum  {
     
     if([self.dataSource respondsToSelector:@selector(springBoardView:canMoveCellAtIndex:toIndex:)]){
         
-       if(![self.dataSource springBoardView:self canMoveCellAtIndex:self.indexMap.originalReorderingIndex toIndex:self.indexMap.currentReorderingIndex]){
+       if(![self.dataSource springBoardView:self canMoveCellAtIndex:self.indexLoader.originalReorderingIndex toIndex:index]){
            
            return;
        }
     }
         
-    
-
     self.animatingReorder = YES;
-    FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+    FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
 
     NSIndexSet* affectedIndexes = [im modifiedIndexesByMovingReorderingCellToCellAtIndex:index];
     
-    FJSpringBoardCell* c = [self.cells objectAtIndex:im.currentReorderingIndex];
+    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:im.currentReorderingIndex];
     
     if(![c isEqual:[NSNull null]]){
         
@@ -2149,9 +2028,9 @@ typedef enum  {
     
     [self _removeHighlight];
 
-    FJReorderingIndexMap* im = (FJReorderingIndexMap*)self.indexMap;
+    FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
 
-    NSLog(@"completing reorder...");
+    debugLog(@"completing reorder...");
     NSUInteger current = im.currentReorderingIndex;
     NSUInteger original = im.originalReorderingIndex;
     
@@ -2188,14 +2067,14 @@ typedef enum  {
     }
     
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:im.currentReorderingIndex];
-    [self.indexMap commitChanges];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:im.currentReorderingIndex];
+    [self.indexLoader commitChanges];
     
     self.animatingReorder = YES;
 
     id<FJSpringBoardViewDataSource> d = self.dataSource;
     
-    if([self.cells count] == 0){
+    if([self.indexLoader.cells count] == 0){
         
         ALWAYS_ASSERT;
     }
@@ -2254,15 +2133,12 @@ typedef enum  {
 
 - (void)_highlightGroupAtIndex:(NSUInteger)index{
     
-    if(self.animatingReorder)
-        return;
-    
     if(self.indexOfHighlightedCell == index)
         return;
     
     [self _removeHighlight];
         
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
     self.indexOfHighlightedCell = index;
     
     FJSpringBoardGroupCell* groupCell = nil;
@@ -2319,7 +2195,7 @@ typedef enum  {
     if(self.indexOfHighlightedCell == NSNotFound)
         return;
     
-    FJSpringBoardCell* cell = [self.cells objectAtIndex:indexOfHighlightedCell];
+    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfHighlightedCell];
     self.indexOfHighlightedCell = NSNotFound;
     
     FJSpringBoardGroupCell* group = [self.floatingGroupCell retain];
@@ -2376,11 +2252,11 @@ typedef enum  {
 
     FJSpringBoardCell* cell = nil;
     
-    cell = [self.cells objectAtIndex:index];
+    cell = [self.indexLoader.cells objectAtIndex:index];
     
     NSMutableIndexSet* cellsToAdd = [NSMutableIndexSet indexSet];
     
-    NSUInteger movingIndex = self.indexMap.currentReorderingIndex;
+    NSUInteger movingIndex = self.indexLoader.currentReorderingIndex;
 
     if(![cell isKindOfClass:[FJSpringBoardGroupCell class]]){
        
@@ -2414,11 +2290,10 @@ typedef enum  {
         return;
     }
     
-    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByAddingGroupCell:groupCell atIndex:index];
-    [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
+    NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByAddingGroupCell:groupCell atIndex:index];
  
     //not necesarily needed if we can figure how to not fuck up double loading these later when we scroll since the indexloader is left in the dark    
-    NSMutableIndexSet* toRemove = [toLayout mutableCopy];
+    NSMutableIndexSet* toRemove = [[toLayout mutableCopy] autorelease];
     [toRemove removeIndexes:self.onScreenCellIndexes];
     [self.indexesScrollingOutOfView addIndexes:toRemove];
     [self.indexesNeedingLayout addIndexes:toLayout];
@@ -2441,7 +2316,7 @@ typedef enum  {
         
     self.animatingReorder = YES;
     
-    FJSpringBoardGroupCell* group = [self.cells objectAtIndex:groupIndex];
+    FJSpringBoardGroupCell* group = [self.indexLoader.cells objectAtIndex:groupIndex];
 
     //from the pre method
     NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
@@ -2457,7 +2332,7 @@ typedef enum  {
     
     NSRange newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes lastIndex] + 1, [releventDeletedIndexes count]);
     
-    if([self.cells count] > self.layout.cellCount){
+    if([self.indexLoader.cells count] > self.layout.cellCount){
         
         //TODO: hey another hack!
         //compensating for the new group being added and haven't yet commited the changes
@@ -2469,20 +2344,15 @@ typedef enum  {
     [self _loadCellsAtIndexes:newIndexesToLoadAndLayout];
     [self _layoutCellsAtIndexes:newIndexesToLoadAndLayout];
     
-    
-    
-    
-    NSArray* cellsToAdd = [[self.cells objectsAtIndexes:cellIndexes] retain];
+
+    NSArray* cellsToAdd = [[self.indexLoader.cells objectsAtIndexes:cellIndexes] retain];
     
     //TODO: animate cells here
     //FJSpringBoardGroupCell* group = (FJSpringBoardGroupCell*)[self.cells objectAtIndex:groupIndex];
     
-    NSIndexSet* toLayout = [self.indexMap modifiedIndexesByRemovingCellsAtIndexes:cellIndexes];
+    NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByRemovingCellsAtIndexes:cellIndexes];
     
     [self.indexesNeedingLayout addIndexes:toLayout];
-    
-    for(int i = 0; i < [cellIndexes count]; i++)
-        [self.allIndexes removeIndex:[self.allIndexes lastIndex]];
     
     self.userInteractionEnabled = NO;
     
@@ -2498,7 +2368,7 @@ typedef enum  {
         
     }];
     
-    NSUInteger newIndex = [self.cells indexOfObject:group];
+    NSUInteger newIndex = [self.indexLoader.cells indexOfObject:group];
 
     [self _animateDraggableViewInGroupCellAtIndex:newIndex completionBlock:^{
         
@@ -2511,11 +2381,8 @@ typedef enum  {
                         options:UIViewAnimationOptionCurveEaseInOut 
                      animations:^(void) {
         
-                         [self _layoutCellsAtIndexes:[toLayout copy]];
+                         [self _layoutCellsAtIndexes:[[toLayout copy] autorelease]];
                          [self.indexesNeedingLayout removeAllIndexes];
-                                                  
-                         
-                                                                
                          
                      } 
                      completion:^(BOOL finished) {
@@ -2539,19 +2406,25 @@ typedef enum  {
                          
                          [self _updateLayout];
                          self.userInteractionEnabled = YES;
-                         [self.indexMap commitChanges];
+                         [self.indexLoader commitChanges];
                          
                          if([self.dataSource respondsToSelector:@selector(springBoardView:commitAddingCellsAtIndexes:toGroupCellAtIndex:)])
                              [self.dataSource springBoardView:self commitAddingCellsAtIndexes:cellIndexes toGroupCellAtIndex:groupIndex];
-                         
+                                                  
                          NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
                          
-                         if([self.cells count] != newNumOfCells){
+                         if([self.indexLoader.cells count] != newNumOfCells){
                              
                              ALWAYS_ASSERT;
                          }
                          
+                         NSArray* a = [[self.dataSource performIfRespondsToSelectorProxy] springBoardView:self imagesForGroupAtIndex:newIndex];
+                         [group setContentImages:a];
                          
+                         
+                         //TODO: reload images of group
+                         //[self reloadCellsAtIndexes:[NSIndexSet indexSetWithIndex:newIndex] withCellAnimation:FJSpringBoardCellAnimationFade];
+
                      }];
     
 }
@@ -2568,7 +2441,7 @@ typedef enum  {
                          
                          v.alpha = 1.0;
                          v.transform = CGAffineTransformMakeScale(0.2, 0.2);
-                         FJSpringBoardCell* c = [self.cells objectAtIndex:index];
+                         FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:index];
                          v.center = [self convertPoint:c.center fromView:self.contentView];
                          //CGRect f = [self _frameForCellAtIndex:index checkOffScreenIndexes:NO];
                          //f = [self convertRect:f fromView:self.contentView];
@@ -2595,7 +2468,7 @@ typedef enum  {
 
 - (BOOL)_scrollSpringBoardInDirectionOfEdge:(FJSpringBoardViewEdge)edge{
     
-    NSLog(@"edge!");
+    debugLog(@"edge!");
     
     if(edge == FJSpringBoardViewEdgeNone)
         return NO;
@@ -2682,6 +2555,13 @@ typedef enum  {
 #pragma mark -
 #pragma mark paging
 
+- (NSUInteger)numberOfPages{
+    
+    if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return NSNotFound;
+    
+    return [(FJSpringBoardHorizontalLayout*)self.layout pageCount];
+}
 
 - (NSUInteger)page{
     
@@ -2751,7 +2631,7 @@ typedef enum  {
 
 - (NSIndexSet *)indexesForSelectedCells{
     
-    return [self.selectedIndexes copy];
+    return [[self.selectedIndexes copy] autorelease];
 }
 
 

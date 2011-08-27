@@ -20,15 +20,19 @@
 
 @property(nonatomic, retain) UIImageView *selectionModeImageView; //shown in select mode
 @property(nonatomic, retain) UIImageView *selectedImageView; //shown when selected in select mode
-@property(nonatomic) BOOL glowsOnSelection;
+@property(nonatomic) BOOL glowsOnTap;
+
+@property(nonatomic, readonly) BOOL tapped;
 
 @property(nonatomic) BOOL selected;
 
 @property(nonatomic, retain) UIImage *deleteImage; //shown in delete mode, shown as a 30x30 image with origin = self.bounds.origin. place your content accordingly
 
 @property(nonatomic) BOOL reordering;
-@property(nonatomic) BOOL draggable;
 
+@property(nonatomic) BOOL draggable;
+@property(nonatomic) BOOL groupable; //can be added to a group, can become a group
+@property(nonatomic) BOOL tapable; 
 
 
 @end
@@ -45,31 +49,3 @@
 
 @end
 
-
-
-
-/*
-
-//Icon / Folder specific Cells
-@interface FJSpringBoardIconCell : FJSpringBoardCell{
-    
-}
-
-@property(nonatomic, retain) UIImage *image;
-@property(nonatomic, retain) NSString *name;
-
-
-
-@end
-
-@interface FJSpringBoardFolderCell : FJSpringBoardGroupCell {
-    
-}
-
-@property(nonatomic, retain) UIImage *folderImage;
-@property(nonatomic, retain) NSArray *groupImages;
-@property(nonatomic, retain) NSString *name;
-
-@end
-
-*/

@@ -5,6 +5,7 @@
 #define CELL_INVISIBLE_TOP_MARGIN 10
 #define CELL_INVISIBLE_LEFT_MARGIN 10
 
+#define CELL_DRAGGABLE_ALPHA 0.6
 
 typedef enum  {
     FJSpringBoardCellModeNormal,

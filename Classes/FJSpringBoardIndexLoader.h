@@ -10,6 +10,7 @@
 #import "FJSpringBoardUtilities.h"
 
 @class FJSpringBoardLayout;
+@class FJSpringBoardGroupCell;
 
 @interface FJSpringBoardIndexLoader : NSObject {
 
@@ -18,8 +19,19 @@
     CGPoint contentOffset;
     IndexRangeChanges lastChangeSet;
     
+    NSMutableIndexSet *allIndexes;
+
     NSMutableIndexSet* currentIndexes;
     NSMutableIndexSet* currentPages;
+    
+    NSMutableArray* mapNewToOld;
+    NSMutableArray* mapOldToNew;
+    
+    NSArray* cellsWithoutCurrentChangesApplied;
+    NSMutableArray* cells;
+    
+    NSUInteger originalReorderingIndex;
+    NSUInteger currentReorderingIndex;
     
     
     //allIndexes
@@ -29,16 +41,48 @@
     
 
 }
+- (id)initWithCount:(NSUInteger)count;
+
 @property (nonatomic, retain) FJSpringBoardLayout *layout;
 
 - (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset;
 @property(nonatomic, readonly) CGPoint contentOffset;
 
+@property(nonatomic, retain) NSMutableIndexSet *allIndexes;
 
 @property(nonatomic, retain) NSMutableIndexSet *currentIndexes;
 @property(nonatomic, readonly) IndexRangeChanges lastChangeSet;
 
 
+@property(nonatomic, retain) NSMutableArray *mapNewToOld;
+@property(nonatomic, retain) NSMutableArray *mapOldToNew;
+
+@property(nonatomic, retain) NSArray *cellsWithoutCurrentChangesApplied;
+@property(nonatomic, retain) NSMutableArray *cells;
+
+@property(nonatomic, readonly) NSUInteger originalReorderingIndex;
+@property(nonatomic, readonly) NSUInteger currentReorderingIndex;
+
+
+//map existing indexes back to the datasource
+- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
+- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
+
+//reordering
+- (void)beginReorderingIndex:(NSUInteger)index;
+- (NSIndexSet*)modifiedIndexesByMovingReorderingCellToCellAtIndex:(NSUInteger)index;
+
+//insert a new group cell
+- (NSIndexSet*)modifiedIndexesByAddingGroupCell:(FJSpringBoardGroupCell*)groupCell atIndex:(NSUInteger)index;
+
+//remove cells
+- (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes;
+
+//add cells
+- (NSIndexSet*)modifiedIndexesByAddingCellsAtIndexes:(NSIndexSet*)indexes;
+
+
+- (void)commitChanges; //resets maps
 
 
 @end

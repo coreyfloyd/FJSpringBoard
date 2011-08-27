@@ -120,7 +120,7 @@
 
 - (NSIndexSet*)visibleCellIndexesWithPaddingForContentOffset:(CGPoint)offset{
     
-    NSMutableIndexSet* vis = [[self visibleCellIndexesForContentOffset:offset] mutableCopy];
+    NSMutableIndexSet* vis = [[[self visibleCellIndexesForContentOffset:offset] mutableCopy] autorelease];
     
     NSIndexSet* prePadding = nil;
     

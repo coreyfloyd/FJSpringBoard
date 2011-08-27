@@ -18,14 +18,13 @@
 		C44F5DCF1270D07B007E9850 /* FJSpringBoardCell.m in Sources */ = {isa = PBXBuildFile; fileRef = C44F5DCE1270D07B007E9850 /* FJSpringBoardCell.m */; };
 		C47A350E127F33EE003889CA /* FJSpringBoardUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = C47A350D127F33EE003889CA /* FJSpringBoardUtilities.m */; };
 		C47A872412700C4700203213 /* FJSpringBoardView.m in Sources */ = {isa = PBXBuildFile; fileRef = C47A872312700C4700203213 /* FJSpringBoardView.m */; };
-		C4805750128B1F9B0038EFE1 /* Global.m in Sources */ = {isa = PBXBuildFile; fileRef = C480574F128B1F9B0038EFE1 /* Global.m */; };
 		C4A7D9F5128346600097CFBD /* NSObject+Proxy.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */; };
 		C4A7DAA11283569D0097CFBD /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4A7DAA01283569D0097CFBD /* QuartzCore.framework */; };
 		C4A7DAF312835A700097CFBD /* close.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DAF212835A700097CFBD /* close.png */; };
-		C4A7DDB61283FB6C0097CFBD /* FJIndexMap.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDB51283FB6C0097CFBD /* FJIndexMap.m */; };
 		C4A7DDE812848EA60097CFBD /* DemoModelObject.m in Sources */ = {isa = PBXBuildFile; fileRef = C4A7DDE712848EA60097CFBD /* DemoModelObject.m */; };
 		C4A7DFBE1285B68F0097CFBD /* checkmark_off.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DFBC1285B68F0097CFBD /* checkmark_off.png */; };
 		C4A7DFBF1285B68F0097CFBD /* clipCheckMark.png in Resources */ = {isa = PBXBuildFile; fileRef = C4A7DFBD1285B68F0097CFBD /* clipCheckMark.png */; };
+		C4ADBB951409702B00BE79D5 /* Functions.m in Sources */ = {isa = PBXBuildFile; fileRef = C4ADBB941409702B00BE79D5 /* Functions.m */; };
 		C4F082B5127A08CF00F8BDBC /* FJSpringBoardLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */; };
 		C4F08513127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */; };
 		C4F08556127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08555127CD2DC00F8BDBC /* FJSpringBoardVerticalLayout.m */; };
@@ -54,18 +53,16 @@
 		C47A350D127F33EE003889CA /* FJSpringBoardUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardUtilities.m; sourceTree = "<group>"; };
 		C47A872212700C4700203213 /* FJSpringBoardView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardView.h; sourceTree = "<group>"; };
 		C47A872312700C4700203213 /* FJSpringBoardView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardView.m; sourceTree = "<group>"; };
-		C480574E128B1F9B0038EFE1 /* Global.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Global.h; path = ../Demo/Global.h; sourceTree = "<group>"; };
-		C480574F128B1F9B0038EFE1 /* Global.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Global.m; path = ../Demo/Global.m; sourceTree = "<group>"; };
 		C4A7D9F3128346600097CFBD /* NSObject+Proxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSObject+Proxy.h"; path = "../Demo/NSObject+Proxy.h"; sourceTree = "<group>"; };
 		C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSObject+Proxy.m"; path = "../Demo/NSObject+Proxy.m"; sourceTree = "<group>"; };
 		C4A7DAA01283569D0097CFBD /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		C4A7DAF212835A700097CFBD /* close.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = close.png; sourceTree = "<group>"; };
-		C4A7DDB41283FB6C0097CFBD /* FJIndexMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJIndexMap.h; sourceTree = "<group>"; };
-		C4A7DDB51283FB6C0097CFBD /* FJIndexMap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJIndexMap.m; sourceTree = "<group>"; };
 		C4A7DDE612848EA60097CFBD /* DemoModelObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DemoModelObject.h; path = ../Demo/DemoModelObject.h; sourceTree = "<group>"; };
 		C4A7DDE712848EA60097CFBD /* DemoModelObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = DemoModelObject.m; path = ../Demo/DemoModelObject.m; sourceTree = "<group>"; };
 		C4A7DFBC1285B68F0097CFBD /* checkmark_off.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = checkmark_off.png; sourceTree = "<group>"; };
 		C4A7DFBD1285B68F0097CFBD /* clipCheckMark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = clipCheckMark.png; sourceTree = "<group>"; };
+		C4ADBB931409702B00BE79D5 /* Functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Functions.h; sourceTree = "<group>"; };
+		C4ADBB941409702B00BE79D5 /* Functions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Functions.m; sourceTree = "<group>"; };
 		C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardLayout.h; sourceTree = "<group>"; };
 		C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardLayout.m; sourceTree = "<group>"; };
 		C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardIndexLoader.h; sourceTree = "<group>"; };
@@ -159,8 +156,6 @@
 			children = (
 				C4F08511127C9B7700F8BDBC /* FJSpringBoardIndexLoader.h */,
 				C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */,
-				C4A7DDB41283FB6C0097CFBD /* FJIndexMap.h */,
-				C4A7DDB51283FB6C0097CFBD /* FJIndexMap.m */,
 			);
 			name = "Index Management";
 			sourceTree = "<group>";
@@ -194,8 +189,8 @@
 		C47A3F901281F024003889CA /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
-				C480574E128B1F9B0038EFE1 /* Global.h */,
-				C480574F128B1F9B0038EFE1 /* Global.m */,
+				C4ADBB931409702B00BE79D5 /* Functions.h */,
+				C4ADBB941409702B00BE79D5 /* Functions.m */,
 				C47A3452127F189A003889CA /* MacroUtilities.h */,
 				C4A7D9F3128346600097CFBD /* NSObject+Proxy.h */,
 				C4A7D9F4128346600097CFBD /* NSObject+Proxy.m */,
@@ -294,9 +289,8 @@
 				C4F08559127CD2EE00F8BDBC /* FJSpringBoardHorizontalLayout.m in Sources */,
 				C47A350E127F33EE003889CA /* FJSpringBoardUtilities.m in Sources */,
 				C4A7D9F5128346600097CFBD /* NSObject+Proxy.m in Sources */,
-				C4A7DDB61283FB6C0097CFBD /* FJIndexMap.m in Sources */,
 				C4A7DDE812848EA60097CFBD /* DemoModelObject.m in Sources */,
-				C4805750128B1F9B0038EFE1 /* Global.m in Sources */,
+				C4ADBB951409702B00BE79D5 /* Functions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
