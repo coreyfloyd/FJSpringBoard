@@ -133,25 +133,25 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         
     } 
     
-    if(!indexesAreContinuous(addedIndexes)){
+    if(!indexesAreContiguous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }
     
-    NSRange addedRange = rangeWithIndexes(addedIndexes);
+    NSRange addedRange = rangeWithContiguousIndexes(addedIndexes);
     
     
     
     NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, newVisibleIndexes);
     
-    if(!indexesAreContinuous(removedIndexes)){
+    if(!indexesAreContiguous(removedIndexes)){
         
         ALWAYS_ASSERT;
     }
     
-    NSRange removedRange = rangeWithIndexes(removedIndexes);
+    NSRange removedRange = rangeWithContiguousIndexes(removedIndexes);
     
-    NSRange totalRange = rangeWithIndexes(newVisibleIndexes);
+    NSRange totalRange = rangeWithContiguousIndexes(newVisibleIndexes);
     
     IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
     
@@ -232,17 +232,17 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, totalIndexes);
 
     
-    if([addedIndexes count] > 0 && !indexesAreContinuous(addedIndexes)){
+    if([addedIndexes count] > 0 && !indexesAreContiguous(addedIndexes)){
         
         ALWAYS_ASSERT;
     }    
     
-    if([removedIndexes count] > 0 && !indexesAreContinuous(removedIndexes)){
+    if([removedIndexes count] > 0 && !indexesAreContiguous(removedIndexes)){
         
         ALWAYS_ASSERT;
     }
     
-    if([addedIndexes count] > 0 && !indexesAreContinuous(totalIndexes)){
+    if([addedIndexes count] > 0 && !indexesAreContiguous(totalIndexes)){
         
         ALWAYS_ASSERT;
     }   
@@ -254,11 +254,11 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
       
     
-    NSRange addedRange = rangeWithIndexes(addedIndexes);
+    NSRange addedRange = rangeWithContiguousIndexes(addedIndexes);
     
-    NSRange removedRange = rangeWithIndexes(removedIndexes);
+    NSRange removedRange = rangeWithContiguousIndexes(removedIndexes);
     
-    NSRange totalRange = rangeWithIndexes(totalIndexes);
+    NSRange totalRange = rangeWithContiguousIndexes(totalIndexes);
     
     IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
     

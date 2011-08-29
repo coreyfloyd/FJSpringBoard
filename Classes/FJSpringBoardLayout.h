@@ -8,13 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
+@class FJSpringBoardView;
+
 @interface FJSpringBoardLayout : NSObject {
 
-    CGRect springBoardbounds;
-    CGSize cellSize;
-
-    UIEdgeInsets insets;
-
+    FJSpringBoardView* springBoard;
+    
     CGFloat horizontalCellSpacing;
     CGFloat verticalCellSpacing;
 
@@ -27,13 +26,11 @@
     CGFloat maximumRowWidth;
     NSUInteger numberOfRows;
     
-       
 }
-//set these properties to calculate layout
-@property(nonatomic) UIEdgeInsets insets; //default = 0,0,0,0
-@property(nonatomic) CGRect springBoardbounds;
 
-@property(nonatomic) CGSize cellSize;
+- (id)initWithSpringBoardView:(FJSpringBoardView*)view;
+
+@property (nonatomic, assign, readonly) FJSpringBoardView *springBoard;
 
 @property(nonatomic) BOOL distributeCellsEvenly; //default = YES
 
@@ -43,8 +40,6 @@
 - (void)reset;
 
 - (void)updateLayout;
-
-
 
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 

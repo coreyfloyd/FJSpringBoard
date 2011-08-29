@@ -8,6 +8,7 @@
 
 #import "FJSpringBoardHorizontalLayout.h"
 #import "FJSpringBoardUtilities.h"
+#import "FJSpringBoardView.h"
 
 #define NUMBER_OF_PAGES_TO_PAD 1
 
@@ -102,7 +103,7 @@
 
 - (CGSize)_pageSize{
     
-    CGSize size = self.springBoardbounds.size;
+    CGSize size = self.springBoard.bounds.size;
     
     return size;
 
@@ -112,9 +113,7 @@
 
 - (CGSize)_pageSizeWithInsetsApplied{
     
-    CGRect viewRect = self.springBoardbounds;
-    
-    viewRect = UIEdgeInsetsInsetRect(viewRect, self.insets);
+    CGRect viewRect = self.springBoard.insetBounds;
     
     CGSize size = viewRect.size;
     
@@ -126,7 +125,7 @@
 - (NSUInteger)_rowsPerPage{
     
     float totalHeight = self.pageSizeWithInsetsApplied.height;
-    float cellHeight = self.cellSize.height;
+    float cellHeight = self.springBoard.cellSize.height;
     
     float count = floorf(totalHeight / cellHeight);
     
@@ -140,7 +139,7 @@
 
 - (CGFloat)_verticalSpacing{
     
-    float space = (self.pageSizeWithInsetsApplied.height - (self.rowsPerPage * self.cellSize.height) + CELL_INVISIBLE_TOP_MARGIN)/(self.rowsPerPage-1);
+    float space = (self.pageSizeWithInsetsApplied.height - (self.rowsPerPage * self.springBoard.cellSize.height) + CELL_INVISIBLE_TOP_MARGIN)/(self.rowsPerPage-1);
     return space;
     
 }
@@ -156,9 +155,9 @@
 
 - (CGSize)_contentSize{
     
-    CGFloat pageHeight = self.springBoardbounds.size.height;
+    CGFloat pageHeight = self.springBoard.bounds.size.height;
     
-    CGFloat width = self.pageCount * self.springBoardbounds.size.width;
+    CGFloat width = self.pageCount * self.springBoard.bounds.size.width;
     CGSize s = CGSizeMake(width, pageHeight);
     return s;
     
@@ -178,9 +177,17 @@
     NSUInteger row = adjustedPosition.row;
     
     //TODO: check insets for each page… hmmm
-    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) + ((float)page * self.pageSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
-    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
+    CGFloat x = self.springBoard.springBoardInsets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.springBoard.cellSize.width) + ((float)page * self.pageSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
     
+    if(x < 0 || x == NAN){
+        ALWAYS_ASSERT;
+    }
+
+    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
+    
+    if(y < 0 || y == NAN){
+        ALWAYS_ASSERT;
+    }    
     origin.x = x;
     origin.y = y;
     
@@ -377,7 +384,7 @@
 
 - (CGFloat)_horizontalOffsetForPage:(NSUInteger)page{
     
-    return springBoardbounds.size.width * (float)page;
+    return springBoard.bounds.size.width * (float)page;
     
 }
 

@@ -47,9 +47,9 @@ IndexRangeChanges indexRangeChangesMake(NSRange total, NSRange added, NSRange re
 }
 
 
-NSRange rangeWithIndexes(NSIndexSet* indexes){
+NSRange rangeWithContiguousIndexes(NSIndexSet* indexes){
     
-    if(!indexesAreContinuous(indexes))
+    if(!indexesAreContiguous(indexes))
         return NSMakeRange(0, 0);
     
     NSUInteger firstIndex = [indexes firstIndex];
@@ -75,7 +75,7 @@ BOOL rangesAreContiguous(NSRange first, NSRange second){
     
 }
 
-BOOL indexesAreContinuous(NSIndexSet* indexes){
+BOOL indexesAreContiguous(NSIndexSet* indexes){
     
     return ((([indexes lastIndex] - [indexes firstIndex]) + 1) == [indexes count]);
 }

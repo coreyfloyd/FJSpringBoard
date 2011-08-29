@@ -8,10 +8,13 @@
 
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
+#import "FJSpringBoardView.h"
 
 #define MINIMUM_CELL_SPACING 2
 
 @interface FJSpringBoardLayout()
+
+@property (nonatomic, assign, readwrite) FJSpringBoardView *springBoard;
 
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
 @property(nonatomic, readwrite) NSUInteger cellsPerRow;
@@ -49,14 +52,11 @@
 
 @implementation FJSpringBoardLayout
 
-@synthesize insets;
-@synthesize springBoardbounds;
-@synthesize cellSize;
+@synthesize springBoard;
 @synthesize distributeCellsEvenly;
 @synthesize horizontalCellSpacing;
 @synthesize verticalCellSpacing;
 @synthesize cellCount;
-
 @synthesize cellsPerRow;
 @synthesize numberOfRows;
 @synthesize minimumRowWidth;
@@ -67,11 +67,12 @@
 #pragma mark -
 #pragma mark Initialization
 
-- (id) init
+- (id) initWithSpringBoardView:(FJSpringBoardView *)view
 {
     self = [super init];
     if (self != nil) {
     
+        self.springBoard = view;
         [self reset];
     }
     return self;
@@ -79,9 +80,6 @@
 
 - (void)reset{
     
-    self.springBoardbounds = CGRectZero;
-    self.insets = UIEdgeInsetsZero;
-    self.cellSize = CGSizeZero;
     self.horizontalCellSpacing = 0;
     self.verticalCellSpacing = 0;
     self.distributeCellsEvenly = YES;
@@ -112,14 +110,14 @@
 
 - (CGFloat)_maximumRowWidth{
     
-    return (self.springBoardbounds.size.width - self.insets.right - self.insets.right);
+    return (self.springBoard.bounds.size.width - self.springBoard.springBoardInsets.right - self.springBoard.springBoardInsets.right);
     
 }
 
 - (NSUInteger)_numberOfCellsPerRow{
     
     float totalWidth = self.maximumRowWidth;
-    float cellWidth = self.cellSize.width;
+    float cellWidth = self.springBoard.cellSize.width;
 
     float count = floorf(totalWidth / cellWidth);
     
@@ -133,7 +131,7 @@
 
 - (CGFloat)_minimumRowWidth{
     
-    return ((float)self.cellsPerRow * self.cellSize.width);
+    return ((float)self.cellsPerRow * self.springBoard.cellSize.width);
 
 }
 
@@ -183,7 +181,7 @@
     
     CGRect frame = CGRectZero;
     frame.origin = [self _originForCellAtPosition:position];
-    frame.size = self.cellSize;
+    frame.size = self.springBoard.cellSize;
     
     return frame;
     

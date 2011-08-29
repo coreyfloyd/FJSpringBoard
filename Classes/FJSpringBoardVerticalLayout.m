@@ -2,6 +2,7 @@
 
 #import "FJSpringBoardVerticalLayout.h"
 #import "FJSpringBoardUtilities.h"
+#import "FJSpringBoardView.h"
 
 #define NUMBER_OF_ROWS_TO_PAD 1
 
@@ -38,12 +39,12 @@
     
     CGRect f;
     
-    CGFloat x = self.insets.left;
+    CGFloat x = self.springBoard.springBoardInsets.left;
     
-    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height); 
+    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height); 
     
     f.origin = CGPointMake(x, y);
-    f.size = CGSizeMake(self.maximumRowWidth, self.cellSize.height); 
+    f.size = CGSizeMake(self.maximumRowWidth, self.springBoard.cellSize.height); 
     
     return f;
 }
@@ -51,9 +52,9 @@
 
 - (CGSize)_contentSize{
     
-    CGFloat cellHeight = (float)self.numberOfRows * self.cellSize.height;
+    CGFloat cellHeight = (float)self.numberOfRows * self.springBoard.cellSize.height;
     CGFloat spacingHeight = (float)(self.numberOfRows-1) * self.verticalCellSpacing;
-    CGFloat insetHeight = self.insets.top + self.insets.bottom;
+    CGFloat insetHeight = self.springBoard.springBoardInsets.top + self.springBoard.springBoardInsets.bottom;
     
     CGFloat pageHeight = (cellHeight + spacingHeight + insetHeight);
     
@@ -70,8 +71,8 @@
     int column = position.column;
     int row = position.row;
     
-    CGFloat x = self.insets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.cellSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
-    CGFloat y = self.insets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
+    CGFloat x = self.springBoard.springBoardInsets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.springBoard.cellSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
+    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
     
     origin.x = x;
     origin.y = y;
@@ -83,7 +84,7 @@
     
     CGRect viewRect;
     viewRect.origin = offset;
-    viewRect.size = self.springBoardbounds.size;
+    viewRect.size = self.springBoard.bounds.size;
         
     NSMutableIndexSet* rowsInView = [NSMutableIndexSet indexSet];
     

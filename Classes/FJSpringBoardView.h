@@ -4,7 +4,6 @@
 #import "FJSpringBoardUtilities.h"
 
 @class FJSpringBoardCell;
-@class FJSpringBoardGroupCell;
 @class FJReorderingIndexMap;
 
 @class FJSpringBoardIndexLoader;
@@ -14,13 +13,27 @@
 @protocol FJSpringBoardViewDataSource;
 
 typedef enum  {
+    FJSpringBoardCellModeNormal,
+    FJSpringBoardCellModeSelection,
+    FJSpringBoardCellModeEditing //delete + move
+} FJSpringBoardCellMode;
+
+typedef enum  {
+    FJSpringBoardCellAnimationNone,
+    FJSpringBoardCellAnimationFade
+} FJSpringBoardCellAnimation;
+
+typedef enum  {
+    FJSpringBoardCellScrollPositionMiddle
+} FJSpringBoardCellScrollPosition;
+
+typedef enum  {
     FJSpringBoardViewScrollDirectionVertical,
     FJSpringBoardViewScrollDirectionHorizontal
 } FJSpringBoardViewScrollDirection;
 
-@interface FJSpringBoardView : UIView <UIScrollViewDelegate, UIGestureRecognizerDelegate> {
+@interface FJSpringBoardView : UIScrollView <UIScrollViewDelegate, UIGestureRecognizerDelegate> {
 
-    UIScrollView* scrollView;
     UIView* contentView;
     
     UIEdgeInsets springBoardInsets;
@@ -58,7 +71,6 @@ typedef enum  {
     UIView* draggableCellView;
         
     NSUInteger indexOfHighlightedCell;
-    FJSpringBoardGroupCell* floatingGroupCell;
     
     UITapGestureRecognizer* singleTapRecognizer;
     UITapGestureRecognizer* doubleTapRecognizer;
@@ -72,12 +84,12 @@ typedef enum  {
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) id<FJSpringBoardViewDelegate, UIScrollViewDelegate> delegate;
 
-//view setup, Call reload after changing to update the layout
 @property(nonatomic) UIEdgeInsets springBoardInsets;
+@property(nonatomic, readonly) CGRect insetBounds;
 
-@property(nonatomic) CGSize cellSize;
+@property(nonatomic) CGSize cellSize; //causes reload
 
-@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection; 
+@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection; //causes reload
 
 //reload
 - (void)reloadData;
@@ -133,35 +145,32 @@ typedef enum  {
 
 
 
-@protocol FJSpringBoardViewDelegate <NSObject, FJNSObjectProxy>
+@protocol FJSpringBoardViewDelegate <NSObject>
 
 @optional
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index; //use to launch detail?
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index; //have some fun!!
+- (void)springBoardView:(FJSpringBoardView *)springBoardView didSelectCellAtIndex:(NSUInteger)index; //use to launch detail?
+
+//- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index; //have some fun!!
 
 
 @end
 
 
 
-@protocol FJSpringBoardViewDataSource <NSObject, FJNSObjectProxy>
+@protocol FJSpringBoardViewDataSource <NSObject>
 
 - (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView;
 - (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index;
 
 
 @optional
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index; 
 
 
-- (NSIndexSet*)springBoardView:(FJSpringBoardView *)springBoardView shouldDeleteCellsAtIndexes:(NSIndexSet* )indexes; //return the indexes to delete immediately
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndexes:(NSIndexSet* )indexes; 
-
-
-
-//- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
 //- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canSelectCellAtIndex:(NSUInteger )index; 
 //- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
 
@@ -173,7 +182,9 @@ typedef enum  {
 /*
  The following methods are @required to support groups
 */
-
+/*
+- (void)springBoardView:(FJSpringBoardView *)springBoardView canDropCellFromIndex:(NSUInteger )formIndex onCellAtIndex:(NSUInteger )dropIndex; 
+ 
 - (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView;
 
 //called when a new group cell has been created
@@ -182,24 +193,18 @@ typedef enum  {
 //called when adding items to group cells
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex;
 
-
 //called to get the image to be displayed inside the group cell
 - (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView imagesForGroupAtIndex:(NSUInteger)groupIndex;
-//- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
+- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
 
 
-//- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
-//- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
-
-
+- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
+*/
 
 
 
 @end
-
-@protocol FJSpringBoardViewGroupDataSource <NSObject>
-@end
-
 
 
 

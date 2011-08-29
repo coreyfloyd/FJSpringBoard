@@ -4,7 +4,7 @@
 #import "DemoModelObject.h"
 #import "FJSpringBoardCell.h"
 
-#define CELL_COUNT 84
+#define CELL_COUNT 80
 #define CELL_WIDTH 70
 #define CELL_HEIGHT 70
 @implementation FJSpringBoardDemoViewController
@@ -99,7 +99,7 @@
     
     if(cell == nil){
      
-        cell = [[[FJSpringBoardCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
+        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
         
         cell.contentView.backgroundColor = [UIColor blueColor];
         cell.backgroundView.backgroundColor = [UIColor blueColor];
@@ -134,13 +134,13 @@
     
 }
 
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndexes:(NSIndexSet* )indexes{
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index{
     
-    [self.model removeObjectsAtIndexes:indexes];
+    [self.model removeObjectAtIndex:index];
 }
 
 
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasTappedAtIndex:(NSUInteger)index{
+- (void)springBoardView:(FJSpringBoardView *)springBoardView didSelectCellAtIndex:(NSUInteger)index{
     
     NSLog(@"cell tapped at index: %i", index);
 }    
@@ -160,17 +160,6 @@
     [obj release];
 }
 
-- (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView{
-    
-    static NSString* groupID = @"Group";
-     FJSpringBoardGroupCell *cell = (FJSpringBoardGroupCell*)[self.springBoardView dequeueReusableCellWithIdentifier:groupID];
-    
-    if(cell == nil)
-        cell = [[[FJSpringBoardGroupCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:groupID] autorelease];
-    
-    return cell;
-    
-}
 
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index{
     

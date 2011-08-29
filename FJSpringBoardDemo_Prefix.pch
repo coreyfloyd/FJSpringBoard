@@ -7,5 +7,4 @@
     #import <UIKit/UIKit.h>
     #import "MacroUtilities.h"
     #import "Functions.h"
-    #import "NSObject+Proxy.h"
 #endif
