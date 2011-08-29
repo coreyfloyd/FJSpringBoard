@@ -347,53 +347,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
 }
 
-- (NSIndexSet*)modifiedIndexesByAddingGroupCell:(FJSpringBoardGroupCell*)groupCell atIndex:(NSUInteger)index{
-    
-    if(index == NSNotFound)
-        return nil;
-    
-    //insert group cell
-    [self.cells insertObject:groupCell atIndex:index];
-    [self.mapNewToOld insertObject:[NSNumber numberWithUnsignedInt:NSNotFound] atIndex:index];
-    
-    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
-    
-    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        NSNumber* val = (NSNumber*)obj;
-        
-        NSUInteger oldVal = [val unsignedIntegerValue];
-        
-        if(oldVal != NSNotFound){
-            
-            if(oldVal >= index){
-                oldVal++;
-                
-                val = [NSNumber numberWithUnsignedInteger:oldVal];
-                
-            }
-        }
-        
-        [editedValues addObject:val];
-        
-    }];
-    
-    self.mapOldToNew = editedValues;
-    
-    [self.allIndexes addIndex:([self.allIndexes lastIndex]+1)];
-
-    self.layout.cellCount = [self.cells count];
-    [self.layout updateLayout];
-    [self changesBySettingContentOffset:self.contentOffset];
-    
-    
-    NSRange affectedRange = NSMakeRange(index, [self.cells count] - index);
-    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
-    
-    return affectedIndexes;
-    
-    
-}
 
 - (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes{
     

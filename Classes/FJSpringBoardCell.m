@@ -211,18 +211,19 @@ static UIColor* _defaultBackgroundColor = nil;
         
         
         l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
-        l.minimumPressDuration = 0.1;
+        l.minimumPressDuration = 0.2;
         l.cancelsTouchesInView = NO;
         [self addGestureRecognizer:l];
         self.draggingSelectionRecognizer = l;
         [l release];
         
-    
+        /*
         UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
         p.maximumNumberOfTouches = 1;
         [self addGestureRecognizer:p];
         self.draggingRecognizer = p;
         [p release]; 
+         */
     
 
     }

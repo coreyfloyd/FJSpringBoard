@@ -72,9 +72,6 @@
 - (void)beginReorderingIndex:(NSUInteger)index;
 - (NSIndexSet*)modifiedIndexesByMovingReorderingCellToCellAtIndex:(NSUInteger)index;
 
-//insert a new group cell
-- (NSIndexSet*)modifiedIndexesByAddingGroupCell:(FJSpringBoardGroupCell*)groupCell atIndex:(NSUInteger)index;
-
 //remove cells
 - (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes;
 
