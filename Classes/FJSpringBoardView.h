@@ -71,11 +71,6 @@ typedef enum  {
     
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
-            
-    NSMutableIndexSet *indexesNeedingLayout;
-
-    NSMutableIndexSet *indexesScrollingInView;
-    NSMutableIndexSet *indexesScrollingOutOfView;
     
     NSMutableIndexSet *indexesToInsert;
     NSMutableIndexSet *indexesToDelete;
@@ -99,15 +94,6 @@ typedef enum  {
         
     NSUInteger indexOfHighlightedCell;
     
-    /*
-    UITapGestureRecognizer* singleTapRecognizer;
-    UITapGestureRecognizer* doubleTapRecognizer;
-    
-    UILongPressGestureRecognizer* editingModeRecognizer;
-    
-    UILongPressGestureRecognizer* draggingSelectionRecognizer;
-    UIPanGestureRecognizer* draggingRecognizer;
-    */
 }
 //delegate and datasource
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;

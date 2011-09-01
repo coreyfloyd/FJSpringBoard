@@ -6,6 +6,7 @@
 #import "FJSpringBoardLayout.h"
 #import <QuartzCore/QuartzCore.h>
 #import "FJSpringBoardCell.h"
+#import "FJSpringBoardUtilities.h"
 
 #define MOVE_ANIMATION_DURATION 0.25
 #define DELETE_ANIMATION_DURATION 0.50
@@ -61,25 +62,23 @@ typedef enum  {
 @property(nonatomic, retain) FJSpringBoardIndexLoader *indexLoader;
 @property(nonatomic, retain) FJSpringBoardLayout *layout;
 
-@property(nonatomic, retain) NSMutableSet *reusableCells;
-
-@property(nonatomic, retain) NSMutableIndexSet *onScreenCellIndexes; 
-
-//used to process changes due to movement
-@property(nonatomic, retain) NSMutableIndexSet *indexesScrollingInView; 
-@property(nonatomic, retain) NSMutableIndexSet *indexesScrollingOutOfView; 
 
 //used to process changes due to insertion/deletion
-@property(nonatomic, retain) NSMutableIndexSet *indexesToInsert;
-@property(nonatomic, retain) NSMutableIndexSet *indexesToDelete;
+@property(nonatomic, retain) NSMutableIndexSet *indexesToInsert; //TODO: remove
+@property(nonatomic, retain) NSMutableIndexSet *indexesToDelete; //TODO: remove
 
-//indexes of cells with modified indexes due to insertion/deletion and need frame recallculations
-@property(nonatomic, retain) NSMutableIndexSet *indexesNeedingLayout; 
-
+//mark a full reload
 @property(nonatomic) BOOL shouldReload;
+
+//mark the layout for recalculation
 @property(nonatomic) BOOL shouldRecalculateLayout;
 
-@property(nonatomic) FJSpringBoardCellAnimation layoutAnimation; //determines if changes should be animated
+//determines if changes should be animated
+@property(nonatomic) FJSpringBoardCellAnimation layoutAnimation; //TODO: remove
+
+//junk pile
+@property(nonatomic, retain) NSMutableSet *reusableCells;
+
 
 //@property(nonatomic) BOOL doubleTapped; //flag to handle double tap irregularities
 //@property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
@@ -109,19 +108,19 @@ typedef enum  {
 - (void)_clearLayoutCalculation;
 
 - (void)_calculateLayout;
-- (void)_updateIndexes;
 
 - (void)_setNeedsReload;
 - (void)_clearReload;
 
 - (void)_resetAnimatingContentOffset;
 
-- (void)_loadCellsScrollingIntoViewAtIndexes:(NSIndexSet*)indexes;
+- (void)_loadIndexes;
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
+
+- (void)_layoutCells;
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes;
 
-- (void)_unloadCellsScrollingOutOfViewAtIndexes:(NSIndexSet*)indexes;
-- (void)_removeCellsFromSpringBoardViewAtIndexes:(NSIndexSet*)indexes;
+- (void)_unloadIndexes;
 - (void)_unloadCellsAtIndexes:(NSIndexSet*)indexes;
 
 - (void)_insertCellsAtIndexes:(NSIndexSet*)indexes withCompletionBlock:(dispatch_block_t)block;
@@ -182,10 +181,7 @@ typedef enum  {
 
 @synthesize reusableCells;
 
-@synthesize indexesScrollingInView;
-@synthesize indexesNeedingLayout;
 @synthesize indexesToDelete;
-@synthesize indexesScrollingOutOfView;
 @synthesize selectedIndexes;
 @synthesize indexesToInsert;
 
@@ -200,17 +196,6 @@ typedef enum  {
 
 @synthesize indexOfHighlightedCell;
 
-//@synthesize doubleTapped;
-//@synthesize longTapped;
-/*
-@synthesize tapAndHoldRecognizer;
-@synthesize singleTapRecognizer;
-@synthesize doubleTapRecognizer;
-@synthesize editingModeRecognizer;
-@synthesize draggingSelectionRecognizer;
-@synthesize draggingRecognizer;
-*/
-
 
 #pragma mark -
 #pragma mark NSObject
@@ -219,34 +204,14 @@ typedef enum  {
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
-    /*
-    [tapAndHoldRecognizer release];
-    tapAndHoldRecognizer = nil;
-    [singleTapRecognizer release];
-    singleTapRecognizer = nil;
-    [doubleTapRecognizer release];
-    doubleTapRecognizer = nil;
-    [editingModeRecognizer release];
-    editingModeRecognizer = nil;
-    [draggingSelectionRecognizer release];
-    draggingSelectionRecognizer = nil;
-    [draggingRecognizer release];
-    draggingRecognizer = nil;    
-    */
     [contentView release];
     contentView = nil;    
     [draggableCellView release];
     draggableCellView = nil;   
     [indexesToInsert release];
     indexesToInsert = nil;
-    [indexesScrollingOutOfView release];
-    indexesScrollingOutOfView = nil;    
-    [indexesScrollingInView release];
-    indexesScrollingInView = nil;
     [indexesToDelete release];
     indexesToDelete = nil;
-    [indexesNeedingLayout release];
-    indexesNeedingLayout = nil;
     [selectedIndexes release];
     selectedIndexes = nil;    
     [reusableCells release];
@@ -268,66 +233,16 @@ typedef enum  {
         self.contentView = [[[UIView alloc] initWithFrame:self.bounds] autorelease];
         [self addSubview:self.contentView];
                 
-        self.indexesScrollingInView = [NSMutableIndexSet indexSet];
-        self.indexesNeedingLayout = [NSMutableIndexSet indexSet];
         self.selectedIndexes = [NSMutableIndexSet indexSet];
         self.indexesToInsert = [NSMutableIndexSet indexSet];
         self.indexesToDelete = [NSMutableIndexSet indexSet];
-        self.indexesScrollingOutOfView = [NSMutableIndexSet indexSet];
+        
         self.reusableCells = [NSMutableSet set];
 
         self.indexOfHighlightedCell = NSNotFound;
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
         self.mode = FJSpringBoardCellModeNormal;
 
-        
-        /*
-        UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
-        g.minimumPressDuration = 0.1;
-        g.delegate = self;
-        g.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:g];
-        self.tapAndHoldRecognizer = g;
-        [g release];
-    
-         
-        /*
-        UITapGestureRecognizer* d = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didDoubleTap:)];
-        d.numberOfTapsRequired = 2;
-        [self addGestureRecognizer:d];
-        self.doubleTapRecognizer = d;
-        [d release];
-        
-        
-        UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
-        //[t requireGestureRecognizerToFail:d];
-        [self addGestureRecognizer:t];
-        self.singleTapRecognizer = t;
-        [t release];
-        
-        UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(editingLongTapRecieved:)];
-        l.minimumPressDuration = 0.75;
-        [self addGestureRecognizer:l];
-        self.editingModeRecognizer = l;
-        [l release];
-        
-
-        l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
-        l.minimumPressDuration = 0.1;
-        l.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:l];
-        self.draggingSelectionRecognizer = l;
-        [l release];
-        
-        
-        UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
-        p.maximumNumberOfTouches = 1;
-        [self addGestureRecognizer:p];
-        self.draggingRecognizer = p;
-        [p release]; 
-       
-         */
-        
         
     }
     return self;
@@ -476,18 +391,8 @@ typedef enum  {
 
 - (NSIndexSet*)visibleCellIndexes{
     
-    return [[self.indexLoader.currentIndexes copy] autorelease];
+    return [[self.indexLoader.loadedIndexes copy] autorelease];
 
-}
-
-- (NSMutableIndexSet*)onScreenCellIndexes{
-    
-    return self.indexLoader.currentIndexes;
-}
-
-- (void)setOnScreenCellIndexes:(NSMutableIndexSet *)indexes{
-    
-    self.indexLoader.currentIndexes = indexes;
 }
 
 
@@ -551,15 +456,19 @@ typedef enum  {
     
     [self _clearReload];
     
-    //remove existing cells from view
-    [self _removeCellsFromSpringBoardViewAtIndexes:self.indexLoader.allIndexes];
+    //unload all cells
+    [self.reusableCells removeAllObjects];
     
-    //unload them (placed in reusable pool)
     [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
     
-    [self _calculateLayout]; //triggers _updateCells and _updateIndexes
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
+    
+    [self _setNeedsLayoutCalculation];
     
     [self setNeedsLayout];
+    
+    [self layoutIfNeeded];
 }
 
 
@@ -590,10 +499,8 @@ typedef enum  {
         self.pagingEnabled = NO;
     }
     
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    self.layout.cellCount = numOfCells;
+    self.layout.cellCount = [[self.indexLoader allIndexes] count];
 
-    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
     self.indexLoader.layout = self.layout;
     
     [self.layout calculateLayout];
@@ -607,34 +514,24 @@ typedef enum  {
 //called when changes occur affecting layout
 
 - (void)layoutSubviews{
-        
+            
+    //reload entire table if needed
     if(self.shouldReload)
         [self reloadData];
     
+    //recalculate layout
     if(self.shouldRecalculateLayout)
         [self _calculateLayout];
-    
-    /*
-    if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
-    
-        [UIView animateWithDuration:0.25 animations:^(void) {
-                
-            [self setContentSize:self.layout.contentSize];
 
-        }];
-        
-        
-    }else{
-        
-        [self setContentSize:self.layout.contentSize];
-
-    }
-     */
+    //unload cells that are no longer "visible"
+    [self _unloadIndexes];
     
+    //load cells that are now visible
+    [self _loadIndexes];
     
-    [self _layoutCellsAtIndexes:[[self.indexesNeedingLayout copy] autorelease]];
-    [self.indexesNeedingLayout removeAllIndexes];
-    
+    //layout cells if needed
+    [self _layoutCells];
+        
 }
 
 
@@ -656,25 +553,32 @@ typedef enum  {
 }
 
 - (void)setContentOffset:(CGPoint)offset{
+        
+    if(indexLoader){
+        
+        /*
+        if([self.loadedIndexes count] > 0 && !indexesAreContiguous(self.loadedIndexes)){
+            
+            ALWAYS_ASSERT;
+        }
+         */
+        
+        [self.indexLoader updateIndexesWithContentOffest:offset];
+                
+        //after the content offset is adjusted, layoutsubviews will be called automagically
+
+    }
+    
+        
+    CGPoint previousOffset = self.contentOffset;
+    
+    [super setContentOffset:offset];
     
     self.animatingContentOffset = YES;
     
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetAnimatingContentOffset) object:nil];
     [self performSelector:@selector(_resetAnimatingContentOffset) withObject:nil afterDelay:0.1];
-    
-    [self _updateIndexes];
 
-    /*
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        [self _updateIndexes];
-        
-    });
-     */
-    
-    CGPoint previousOffset = self.contentOffset;
-    
-    [super setContentOffset:offset];
     
     CGPoint dragCenter = self.draggableCellView.center;
     dragCenter.x += (self.contentOffset.x-previousOffset.x);
@@ -687,84 +591,25 @@ typedef enum  {
     
 }
 
-
-#pragma mark -
-#pragma mark Update Indexes
-
-- (void)_updateIndexes{
-    
-    if(indexLoader == nil)
-        return;
-    
-    IndexRangeChanges changes = [self.indexLoader changesBySettingContentOffset:self.contentOffset];
-    
-    NSRange rangeToRemove = changes.indexRangeToRemove;
-    
-    NSRange rangeToLoad = changes.indexRangeToAdd;
-    
-    if([self.onScreenCellIndexes count] > 0 && !indexesAreContiguous(self.onScreenCellIndexes)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    //check maths, newI == oldI - removed + added    
-    [self.indexesScrollingOutOfView addIndexesInRange:rangeToRemove];
-    
-    //TODO: recheck to see if cells comming into view are already loaded and laid out, remove those that are
-    [self.indexesScrollingInView addIndexesInRange:rangeToLoad];
-    
-    //unload cells that are no longer "visible"
-    [self _unloadCellsScrollingOutOfViewAtIndexes:[self.indexesScrollingOutOfView copy]];
-    
-    //load cells that are now visible
-    [self _loadCellsScrollingIntoViewAtIndexes:[self.indexesScrollingInView copy]];
-    
-    [self.indexLoader.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
-        
-        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
-            
-            return;
-        }
-        
-        cell.alpha = 1;
-        
-    }];
-         
-}
-
 #pragma mark -
 #pragma mark Load / Unload Cells
 
 
-- (void)_loadAllCellsScrollingIntoView{
-    
-    [self _loadCellsScrollingIntoViewAtIndexes:[[self.indexesScrollingInView copy] autorelease]];
-    [self.indexesScrollingInView removeAllIndexes];
-    
-}
+- (void)_loadIndexes{
+        
+    if([[self.indexLoader indexesToLoad] count] > 0){
+        
+        //unload them (placed in reusable pool)
+        [self _unloadCellsAtIndexes:[self.indexLoader indexesToLoad]];
+        
+        //create and insert in array
+        [self _loadCellsAtIndexes:[self.indexLoader indexesToLoad]];
+        
+        [self.indexLoader clearIndexesToLoad];
 
+    }
 
-- (void)_loadCellsScrollingIntoViewAtIndexes:(NSIndexSet*)indexes{
-    
-    if([indexes count] == 0)
-        return;
-    
-    //remove existing cells from view
-    [self _removeCellsFromSpringBoardViewAtIndexes:indexes];
-    
-    //unload them (placed in reusable pool)
-    [self _unloadCellsAtIndexes:indexes];
-    
-    //create and insert in array
-    [self _loadCellsAtIndexes:indexes];
-    
-    //set frame and add to view
-    [self _layoutCellsAtIndexes:indexes];
-    
-    [self.indexesScrollingInView removeIndexes:indexes];
-    
+        
 }
 
 
@@ -796,29 +641,16 @@ typedef enum  {
 }
 
 
-- (void)_loadAllCellsScrollingOutOfView{
-    
-    [self _unloadCellsScrollingOutOfViewAtIndexes:[[self.indexesScrollingOutOfView copy] autorelease]];
-    [self.indexesScrollingOutOfView removeAllIndexes];
-    
-}
-
-
-- (void)_unloadCellsScrollingOutOfViewAtIndexes:(NSIndexSet*)indexes{
-    
-    if([indexes count] == 0)
-        return;
-    
-    [self _removeCellsFromSpringBoardViewAtIndexes:indexes];
-    
-    [self _unloadCellsAtIndexes:indexes];
-    
-    [self.indexesScrollingOutOfView removeIndexes:indexes];        
-    
-    if([self.indexesScrollingOutOfView count] > 0){
+- (void)_unloadIndexes{
         
-        ALWAYS_ASSERT;
+    if([[self.indexLoader indexesToUnload] count] > 0){
+        
+        [self _unloadCellsAtIndexes:[self.indexLoader indexesToUnload]];
+        [self.indexLoader clearIndexesToUnload];
+                
     }
+
+    
 }
 
 
@@ -846,6 +678,9 @@ typedef enum  {
             
             return;
         }
+        [eachCell removeFromSuperview];
+        [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
+        eachCell.mode = FJSpringBoardCellModeNormal;
         
         [self.reusableCells addObject:eachCell];
         [self.indexLoader.cells replaceObjectAtIndex:index withObject:[NSNull null]];
@@ -856,8 +691,19 @@ typedef enum  {
 }
 
 #pragma mark -
-#pragma mark layout / remove cells from view
+#pragma mark layout cells
 
+- (void)_layoutCells{
+    
+    if([[self.indexLoader indexesToLayout] count] > 0){
+     
+        [self _layoutCellsAtIndexes:[self.indexLoader indexesToLayout]];
+        [self.indexLoader clearIndexesToLayout];  
+    }
+
+      
+
+}
 
 - (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
     
@@ -888,6 +734,8 @@ typedef enum  {
         eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
+        eachCell.alpha = 1.0;
+        
         [self.contentView addSubview:eachCell];
         
     }];
@@ -914,6 +762,8 @@ typedef enum  {
         eachCell.frame = cellFrame;
         //RECTLOG(eachCell.contentView.frame);
         
+        eachCell.alpha = 1.0;
+
         [self.contentView addSubview:eachCell];
         
         positionIndex = [positionIndexes indexGreaterThanIndex:positionIndex];
@@ -924,54 +774,13 @@ typedef enum  {
 
 }
 
-
-- (void)_removeCellsFromSpringBoardViewAtIndexes:(NSIndexSet*)indexes{
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        if(![self.indexLoader.allIndexes containsIndex:index]){
-        
-            return;
-        }
-        
-        //don't remove the index we are reordering
-        FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
-        if([im isKindOfClass:[FJSpringBoardIndexLoader class]]){
-            
-            if(index == im.currentReorderingIndex)
-                return;
-        }
-        
-        FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
-        
-        if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
-            
-            return;
-        }
-        
-        //NSLog(@"Removing Cell From View %i", index);
-        //RECTLOG(eachCell.frame);
-        
-        [eachCell removeFromSuperview];
-        [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
-        eachCell.mode = FJSpringBoardCellModeNormal;
-        //RECTLOG(eachCell.frame);
-        
-    }];
-    
-}
-
 #pragma mark -
 #pragma mark Reload Specific Indexes
 
 
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
-        
     
-    //remove existing cells from view
-    [self _removeCellsFromSpringBoardViewAtIndexes:indexSet];
-    
-    //unload them (placed in reusable pool)
+    //unload existing cells (placed in reusable pool)
     [self _unloadCellsAtIndexes:indexSet];
     
     //create and insert in array
@@ -985,7 +794,9 @@ typedef enum  {
     
     [indexSet enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
         
-        if(![self.onScreenCellIndexes containsIndex:index]){
+        //TODO: must update Index Loader, this is an action…
+    
+        if(![self.indexLoader.loadedIndexes containsIndex:index]){
             
             return;
         }
@@ -1045,7 +856,7 @@ typedef enum  {
     [self.indexesToInsert addIndexes:indexSet];
 
     self.layoutAnimation = animation; //reset on next layout update
-    
+        
     [self _insertCellsAtIndexes:indexSet withCompletionBlock:^{
         
         [self.indexesToInsert removeIndexes:indexSet];
@@ -1063,10 +874,11 @@ typedef enum  {
     if([indexes count] == 0)
         return;
     
+    [self _setNeedsLayoutCalculation];
+    
     [self _preLayoutIndexesComingIntoViewWhenAddingIndexes:indexes];
     
     NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByAddingCellsAtIndexes:indexes];
-    [self.indexesNeedingLayout addIndexes:toLayout];
 
     [self.indexLoader commitChanges];
 
@@ -1144,7 +956,7 @@ typedef enum  {
     //get indexes that are scrolling on screen if all deleted indexes were already on screen, then we need to scroll on [indexSet count]
     //otherwise we only scroll on x = number of cells in deleted indexes contained in onscreen indexes
     
-    NSUInteger firstVisIndex = [self.onScreenCellIndexes firstIndex];
+    NSUInteger firstVisIndex = [[self.indexLoader loadedIndexes] firstIndex];
     
     NSIndexSet* releventIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
@@ -1155,7 +967,7 @@ typedef enum  {
         
     }];
     
-    NSRange newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes firstIndex] - [releventIndexes count], [releventIndexes count]);
+    NSRange newRangeToLoadAndLayout = NSMakeRange([[self.indexLoader loadedIndexes] firstIndex] - [releventIndexes count], [releventIndexes count]);
     NSIndexSet* newIndexesToLoadAndLayout = [NSIndexSet indexSetWithIndexesInRange:newRangeToLoadAndLayout]; 
     
     [self _loadCellsAtIndexes:newIndexesToLoadAndLayout];
@@ -1169,7 +981,7 @@ typedef enum  {
 
 - (void)_removeIndexesGoingOutOfViewWhenAddingIndexes:(NSIndexSet*)indexes{
     
-    NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
+    NSUInteger lastVisIndex = [[self.indexLoader loadedIndexes] lastIndex];
     
     NSIndexSet* releventIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
@@ -1180,10 +992,10 @@ typedef enum  {
         
     }];
     
-    NSRange newRangeToPushAndRemove = NSMakeRange([self.onScreenCellIndexes lastIndex] + 1, [releventIndexes count]);
+    NSRange newRangeToPushAndRemove = NSMakeRange([[self.indexLoader loadedIndexes] lastIndex] + 1, [releventIndexes count]);
     NSIndexSet* newIndexesToPushAndRemove = [NSIndexSet indexSetWithIndexesInRange:newRangeToPushAndRemove]; 
     
-    [self _unloadCellsScrollingOutOfViewAtIndexes:newIndexesToPushAndRemove];
+    [self _unloadCellsAtIndexes:newIndexesToPushAndRemove];
     
 }
 
@@ -1283,9 +1095,7 @@ typedef enum  {
     NSArray* cellsToDelete = [[[self.indexLoader.cells objectsAtIndexes:indexes] retain] autorelease];
     
     NSIndexSet* toLayout = [self.indexLoader modifiedIndexesByRemovingCellsAtIndexes:indexes];
-    
-    [self.indexesNeedingLayout addIndexes:toLayout];
-    
+        
     if(self.layoutAnimation == FJSpringBoardCellAnimationNone){
         
         [self _layoutCellsAtIndexes:toLayout];
@@ -1384,7 +1194,7 @@ typedef enum  {
     //get indexes that are scrolling on screen if all deleted indexes were already on screen, then we need to scroll on [indexSet count]
     //otherwise we only scroll on x = number of cells in deleted indexes contained in onscreen indexes
     
-    NSUInteger lastVisIndex = [self.onScreenCellIndexes lastIndex];
+    NSUInteger lastVisIndex = [self.indexLoader.loadedIndexes lastIndex];
     
     NSIndexSet* releventDeletedIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
     
@@ -1395,7 +1205,7 @@ typedef enum  {
         
     }];
     
-    NSRange newRangeToLoadAndLayout = NSMakeRange([self.onScreenCellIndexes lastIndex] + 1, [releventDeletedIndexes count]);
+    NSRange newRangeToLoadAndLayout = NSMakeRange([[self.indexLoader loadedIndexes] lastIndex] + 1, [releventDeletedIndexes count]);
     NSIndexSet* newIndexesToLoadAndLayout = [NSIndexSet indexSetWithIndexesInRange:newRangeToLoadAndLayout]; 
     
     [self _loadCellsAtIndexes:newIndexesToLoadAndLayout];
@@ -1994,7 +1804,7 @@ typedef enum  {
     
     NSMutableIndexSet* coveredIndexes = [NSMutableIndexSet indexSet];
     
-    [self.indexLoader.cells enumerateObjectsAtIndexes:self.onScreenCellIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    [self.indexLoader.cells enumerateObjectsAtIndexes:[self.indexLoader loadedIndexes] options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
     
         FJSpringBoardCell* c = (FJSpringBoardCell*)obj;
         

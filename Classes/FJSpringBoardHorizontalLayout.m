@@ -337,6 +337,9 @@
 
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page{
         
+    if(page == NSNotFound)
+        return nil;
+    
     if(page >= self.pageCount)
         return nil;
     

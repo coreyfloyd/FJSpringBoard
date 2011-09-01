@@ -36,14 +36,16 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 @interface FJSpringBoardIndexLoader()
 
-@property(nonatomic, readwrite) IndexRangeChanges lastChangeSet;
 @property(nonatomic, readwrite) CGPoint contentOffset;
-@property(nonatomic, retain) NSMutableIndexSet *currentPages;
+
+@property(nonatomic, retain) NSMutableIndexSet *mutableAllIndexes;
+@property(nonatomic, retain) NSMutableIndexSet *mutableLoadedIndexes;
+@property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToLoad;
+@property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToLayout;
+@property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToUnload;
+
 @property(nonatomic, readwrite) NSUInteger originalReorderingIndex;
 @property(nonatomic, readwrite) NSUInteger currentReorderingIndex;
-
-- (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset;
-- (IndexRangeChanges)verticalChnagesBySettingContentOffset:(CGPoint)offset;
 
 
 @end
@@ -51,13 +53,17 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 @implementation FJSpringBoardIndexLoader
 
-@synthesize allIndexes;
 
 @synthesize layout;
-@synthesize lastChangeSet;
 @synthesize contentOffset;
-@synthesize currentIndexes;    
-@synthesize currentPages;
+
+
+@synthesize mutableAllIndexes;
+@synthesize mutableLoadedIndexes;    
+@synthesize mutableIndexesToLoad;
+@synthesize mutableIndexesToLayout;
+@synthesize mutableIndexesToUnload;
+
 
 @synthesize mapNewToOld;
 @synthesize mapOldToNew;
@@ -69,8 +75,14 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 - (void) dealloc
 {
-    [allIndexes release];
-    allIndexes = nil; 
+    [mutableIndexesToLoad release];
+    mutableIndexesToLoad = nil;
+    [mutableIndexesToLayout release];
+    mutableIndexesToLayout = nil;
+    [mutableIndexesToUnload release];
+    mutableIndexesToUnload = nil;
+    [mutableAllIndexes release];
+    mutableAllIndexes = nil; 
     [mapOldToNew release];
     mapOldToNew = nil;
     [cellsWithoutCurrentChangesApplied release];
@@ -81,10 +93,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     mapNewToOld = nil;
     [layout release];
     layout = nil;
-    [currentPages release];
-    currentPages = nil;
-    [currentIndexes release];
-    currentIndexes = nil;
     [super dealloc];
 }
 
@@ -92,11 +100,14 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
     self = [super init];
     if (self != nil) {
-        self.allIndexes = [NSMutableIndexSet indexSet];
-        self.currentPages = [NSMutableIndexSet indexSet];
-        self.currentIndexes = [NSMutableIndexSet indexSet];
+        
+        self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
+        self.mutableLoadedIndexes = [NSMutableIndexSet indexSet];
+        self.mutableIndexesToLayout = [NSMutableIndexSet indexSet];
+        self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
+        self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
+        
         self.cells = nullArrayOfSize(count);
-        self.allIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
 
         [self commitChanges];
         
@@ -104,173 +115,124 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     return self;
 }
 
+- (NSIndexSet*)allIndexes{
+    
+    return [[self.mutableAllIndexes copy] autorelease];
 
-- (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset{
-        
-    if([self.cells count] != [self.allIndexes count]){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    if([self.layout isKindOfClass:[FJSpringBoardVerticalLayout class]])
-        return [self verticalChnagesBySettingContentOffset:offset];
-    else
-        return [self horizontalChnagesBySettingContentOffset:offset];
-    
 }
 
-- (IndexRangeChanges)verticalChnagesBySettingContentOffset:(CGPoint)offset{
+- (void)updateIndexesWithContentOffest:(CGPoint)newOffset{
     
-    FJSpringBoardVerticalLayout* vert = (FJSpringBoardVerticalLayout*)self.layout;
-    
-    NSMutableIndexSet* newVisibleIndexes = [[[vert visibleCellIndexesWithPaddingForContentOffset:offset] mutableCopy] autorelease];
-    
-    NSIndexSet* addedIndexes = indexesAdded(self.currentIndexes, newVisibleIndexes);
-    
-    if([addedIndexes count] == 0){
+    self.contentOffset = newOffset;
+
+    if([self.layout isKindOfClass:[FJSpringBoardVerticalLayout class]]){
         
-        return indexRangeChangesMake(NSMakeRange(0, 0), NSMakeRange(0, 0), NSMakeRange(0, 0));
+        FJSpringBoardVerticalLayout* vert = (FJSpringBoardVerticalLayout*)self.layout;
         
-    } 
-    
-    if(!indexesAreContiguous(addedIndexes)){
+        NSMutableIndexSet* newVisibleIndexes = [[[vert visibleCellIndexesWithPaddingForContentOffset:newOffset] mutableCopy] autorelease];
         
-        ALWAYS_ASSERT;
+        NSIndexSet* added = indexesAdded(self.loadedIndexes, newVisibleIndexes);
+        NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newVisibleIndexes);
+                
+        [self markIndexesForLoading:added];
+        [self markIndexesForUnloading:removed];
+        
+    }else{
+        
+        FJSpringBoardHorizontalLayout* hor = (FJSpringBoardHorizontalLayout*)self.layout;
+        
+        NSUInteger currentPage = [hor pageForContentOffset:newOffset];
+        
+        NSUInteger pageCount = [hor pageCount];
+        
+        NSUInteger nextPage = NSNotFound;
+        
+        if(currentPage < pageCount-1)
+            nextPage = currentPage + 1;
+        
+        NSUInteger previousPage = NSNotFound;
+        
+        if(currentPage != 0)
+            previousPage = currentPage - 1;
+        
+        NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSet];
+        
+        [newIndexes addIndexes:[hor cellIndexesForPage:currentPage]];
+        [newIndexes addIndexes:[hor cellIndexesForPage:previousPage]];
+        [newIndexes addIndexes:[hor cellIndexesForPage:nextPage]];
+        
+        NSIndexSet* added = indexesAdded(self.loadedIndexes, newIndexes);
+        NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newIndexes);
+        
+        [self markIndexesForLoading:added];
+        [self markIndexesForUnloading:removed];
+            
     }
-    
-    NSRange addedRange = rangeWithContiguousIndexes(addedIndexes);
-    
-    
-    
-    NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, newVisibleIndexes);
-    
-    if(!indexesAreContiguous(removedIndexes)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    NSRange removedRange = rangeWithContiguousIndexes(removedIndexes);
-    
-    NSRange totalRange = rangeWithContiguousIndexes(newVisibleIndexes);
-    
-    IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
-    
-    self.contentOffset = offset;
-    self.lastChangeSet = changes;
-    self.currentIndexes = newVisibleIndexes;
-    
-    [newVisibleIndexes release];
-    
-    return changes;
     
 }
 
 
-- (IndexRangeChanges)horizontalChnagesBySettingContentOffset:(CGPoint)offset{
+- (void)markIndexesForLoading:(NSIndexSet*)indexes{
     
-    FJSpringBoardHorizontalLayout* hor = (FJSpringBoardHorizontalLayout*)self.layout;
-    
-    NSUInteger currentPage = [hor pageForContentOffset:offset];
-    
-    NSUInteger nextPage = [hor nextPageWithPreviousContentOffset:self.contentOffset currentContentOffset:offset];
-    
-    NSUInteger pageCount = [hor pageCount];
-    
-    NSIndexSet* pageIndexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, pageCount)];
-    
-    if(abs((int)(currentPage-nextPage) > 1)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    if([self.currentPages count] > 0 && ![self.currentPages containsIndex:currentPage]){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    if([self.currentPages count] == 0){
-        
-        //first load
-        if(pageCount > 1)
-            nextPage = 1;
-        
-    }   
-
-   
-    
-    [self.currentPages addIndex:currentPage];
-    [self.currentPages addIndex:nextPage];
-    
-    NSUInteger rightPage = currentPage+1;
-    NSUInteger leftPage = currentPage-1;
-    
-    if([pageIndexes containsIndex:leftPage])
-        [self.currentPages addIndex:leftPage];
-    
-    if([pageIndexes containsIndex:rightPage])
-        [self.currentPages addIndex:rightPage];
-
-         
-    //removed pages
-    if([self.currentPages count] > MAX_PAGES){
-        
-        NSUInteger pageToKill = indexWithLargestAbsoluteValueFromStartignIndex(currentPage, self.currentPages);
-        [self.currentPages removeIndex:pageToKill];
-        
-    }
-
-    //total indexes
-    NSMutableIndexSet* totalIndexes = [NSMutableIndexSet indexSet];
-    [self.currentPages enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    
-        NSIndexSet* pIndexes = [hor cellIndexesForPage:idx];
-        [totalIndexes addIndexes:pIndexes];
-    
-    }];
-    
-    NSIndexSet* addedIndexes = indexesAdded(self.currentIndexes, totalIndexes);
-    NSIndexSet* removedIndexes = indexesRemoved(self.currentIndexes, totalIndexes);
-
-    
-    if([addedIndexes count] > 0 && !indexesAreContiguous(addedIndexes)){
-        
-        ALWAYS_ASSERT;
-    }    
-    
-    if([removedIndexes count] > 0 && !indexesAreContiguous(removedIndexes)){
-        
-        ALWAYS_ASSERT;
-    }
-    
-    if([addedIndexes count] > 0 && !indexesAreContiguous(totalIndexes)){
-        
-        ALWAYS_ASSERT;
-    }   
-    
-    //NSLog(@"total indexes: %@", [totalIndexes description]);
-    //NSLog(@"pages to load: %@", [pages description]);
-    //NSLog(@"indexes to add: %@", [addedIndexes description]);
-    //NSLog(@"indexes to remove: %@", [indexesToRemove description]);
-    
-      
-    
-    NSRange addedRange = rangeWithContiguousIndexes(addedIndexes);
-    
-    NSRange removedRange = rangeWithContiguousIndexes(removedIndexes);
-    
-    NSRange totalRange = rangeWithContiguousIndexes(totalIndexes);
-    
-    IndexRangeChanges changes = indexRangeChangesMake(totalRange, addedRange, removedRange);
-    
-    self.contentOffset = offset;
-    self.lastChangeSet = changes;
-    self.currentIndexes = totalIndexes;
-    
-    return changes;
-    
-    
+    [self.mutableIndexesToLoad addIndexes:indexes];
+    [self markIndexesForLayout:indexes];
+    [self.mutableIndexesToUnload removeIndexes:indexes];
 }
 
+- (void)markIndexesForLayout:(NSIndexSet*)indexes{
+    
+    [self.mutableIndexesToLayout addIndexes:indexes];
+}
+
+- (void)markIndexesForUnloading:(NSIndexSet*)indexes{
+    
+    [self.mutableIndexesToUnload addIndexes:indexes];
+    [self.mutableIndexesToLoad removeIndexes:indexes];
+    [self.mutableIndexesToLayout removeIndexes:indexes];
+
+}
+
+- (NSIndexSet*)indexesToLoad{
+    
+    return [[self.mutableIndexesToLoad copy] autorelease];
+}
+
+- (NSIndexSet*)indexesToLayout{
+    
+    return [[self.mutableIndexesToLayout copy] autorelease];
+
+}
+
+- (NSIndexSet*)indexesToUnload{
+    
+    return [[self.mutableIndexesToUnload copy] autorelease];
+
+}
+
+- (void)clearIndexesToLoad{
+    
+    [self.mutableLoadedIndexes addIndexes:self.mutableIndexesToLoad];
+    [self.mutableIndexesToLoad removeAllIndexes];
+}
+
+- (void)clearIndexesToLayout{
+    
+    [self.mutableIndexesToLayout removeAllIndexes];
+
+}
+
+- (void)clearIndexesToUnload{
+    
+    [self.mutableLoadedIndexes removeIndexes:self.mutableIndexesToUnload];
+    [self.mutableIndexesToUnload removeAllIndexes];
+
+}
+
+- (NSIndexSet*)loadedIndexes{
+    
+    return [[self.mutableLoadedIndexes copy] autorelease];
+
+}
 
 - (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
     
@@ -413,12 +375,12 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     [self.mapNewToOld removeObjectsAtIndexes:indexes];
     
     for(int i = 0; i < [indexes count]; i++)
-        [self.allIndexes removeIndex:[self.allIndexes lastIndex]];
+        [self.mutableAllIndexes removeIndex:[self.allIndexes lastIndex]];
 
     
     self.layout.cellCount = [self.cells count];
     [self.layout calculateLayout];
-    [self changesBySettingContentOffset:self.contentOffset];
+    [self updateIndexesWithContentOffest:self.contentOffset];
         
     NSUInteger min = [indexes firstIndex];
     NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);
@@ -496,13 +458,13 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
             nextIndex++;
         }
         
-        [self.allIndexes addIndex:(nextIndex)];
+        [self.mutableAllIndexes addIndex:(nextIndex)];
 
     }
 
     self.layout.cellCount = [self.cells count];
     [self.layout calculateLayout];
-    [self changesBySettingContentOffset:self.contentOffset];
+    [self updateIndexesWithContentOffest:self.contentOffset];
     
     NSUInteger min = [indexes firstIndex];
     NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);

@@ -17,13 +17,12 @@
     FJSpringBoardLayout *layout;
     
     CGPoint contentOffset;
-    IndexRangeChanges lastChangeSet;
     
-    NSMutableIndexSet *allIndexes;
-
-    NSMutableIndexSet* currentIndexes;
-    NSMutableIndexSet* currentPages;
-    
+    NSMutableIndexSet *mutableAllIndexes;
+    NSMutableIndexSet* mutableIndexesToLoad;
+    NSMutableIndexSet* mutableIndexesToLayout;
+    NSMutableIndexSet* mutableIndexesToUnload;
+        
     NSMutableArray* mapNewToOld;
     NSMutableArray* mapOldToNew;
     
@@ -43,15 +42,37 @@
 }
 - (id)initWithCount:(NSUInteger)count;
 
+- (NSIndexSet*)allIndexes;
+
 @property (nonatomic, retain) FJSpringBoardLayout *layout;
 
-- (IndexRangeChanges)changesBySettingContentOffset:(CGPoint)offset;
+//The methods below are used to process index changes due to movement.  
+- (void)updateIndexesWithContentOffest:(CGPoint)newOffset;
 @property(nonatomic, readonly) CGPoint contentOffset;
 
-@property(nonatomic, retain) NSMutableIndexSet *allIndexes;
+//mark any indexes for updating
+- (void)markIndexesForLoading:(NSIndexSet*)indexes; //also adds to Layout
+- (void)markIndexesForLayout:(NSIndexSet*)indexes;
+- (void)markIndexesForUnloading:(NSIndexSet*)indexes;
 
-@property(nonatomic, retain) NSMutableIndexSet *currentIndexes;
-@property(nonatomic, readonly) IndexRangeChanges lastChangeSet;
+//get indexes that need updating
+//any changes that need to be processed by the springboard will be added to the index sets below
+//These changes are not expected to be animated. For animations you must use an animation action.
+- (NSIndexSet*)indexesToLoad; //need loaded from datasource
+- (NSIndexSet*)indexesToLayout; //need frames set and/or added to springboard
+- (NSIndexSet*)indexesToUnload; //need to be removed from spreingboard
+
+//mark as updated when processed
+- (void)clearIndexesToLoad; 
+- (void)clearIndexesToLayout;
+- (void)clearIndexesToUnload;
+
+//This should be equal to the actual indexes on screen!!
+//updated as the indexes are cleared above
+- (NSIndexSet*)loadedIndexes;
+
+
+
 
 
 @property(nonatomic, retain) NSMutableArray *mapNewToOld;
@@ -80,6 +101,12 @@
 
 
 - (void)commitChanges; //resets maps
+
+
+
+
+
+
 
 
 @end
