@@ -2,6 +2,21 @@
 
 #import "FJSpringBoardUtilities.h"
 
+NSRange rangeWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
+    
+    if(last < first)
+        return NSMakeRange(0, 0);
+    
+    if(first == NSNotFound || last == NSNotFound)
+        return NSMakeRange(0, 0);
+    
+    NSUInteger length = last-first + 1;
+    
+    NSRange r = NSMakeRange(first, length);
+    return r;
+    
+}
+
 
 NSIndexSet* contiguousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
     

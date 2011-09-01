@@ -131,7 +131,7 @@ typedef enum  {
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
-//- (void)moveCellAtIndex:(NSUInteger)index toIndex:(NSUInteger)newIndex;
+- (void)moveCellAtIndex:(NSUInteger)index toIndex:(NSUInteger)newIndex;
 
 //mode
 @property(nonatomic) FJSpringBoardCellMode mode; //KVO to be notified about mode changes

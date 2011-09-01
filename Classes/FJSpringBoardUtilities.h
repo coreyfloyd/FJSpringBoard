@@ -7,6 +7,7 @@
 
 NSMutableArray* nullArrayOfSize(NSUInteger size);
 
+
 BOOL rangesAreContiguous(NSRange first, NSRange second);
 
 NSRange rangeWithContiguousIndexes(NSIndexSet* indexes);
@@ -16,6 +17,8 @@ BOOL indexesAreContiguous(NSIndexSet* indexes);
 NSIndexSet* indexesRemoved(NSIndexSet* oldSet, NSIndexSet* newSet);
 
 NSIndexSet* indexesAdded(NSIndexSet* oldSet, NSIndexSet* newSet);
+
+NSRange rangeWithFirstAndLastIndexes(NSUInteger first, NSUInteger last);
 
 NSIndexSet* contiguousIndexSetWithFirstAndLastIndexes(NSUInteger first, NSUInteger last);
 

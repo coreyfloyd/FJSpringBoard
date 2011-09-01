@@ -12,6 +12,8 @@
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
 #import "FJSpringBoardCell.h"
+#import "FJSpringBoardAction.h"
+#import "FJSpringBoardActionIndexMap.h"
 
 #define MAX_PAGES 3
 
@@ -44,8 +46,9 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToLayout;
 @property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToUnload;
 
-@property(nonatomic, readwrite) NSUInteger originalReorderingIndex;
-@property(nonatomic, readwrite) NSUInteger currentReorderingIndex;
+@property (nonatomic, retain) NSIndexSet* visibleIndexes;
+
+@property (nonatomic, retain) NSMutableArray *actionQueue;
 
 
 @end
@@ -57,6 +60,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @synthesize layout;
 @synthesize contentOffset;
 
+@synthesize cells;
 
 @synthesize mutableAllIndexes;
 @synthesize mutableLoadedIndexes;    
@@ -64,17 +68,15 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @synthesize mutableIndexesToLayout;
 @synthesize mutableIndexesToUnload;
 
+@synthesize visibleIndexes;
 
-@synthesize mapNewToOld;
-@synthesize mapOldToNew;
-@synthesize cellsWithoutCurrentChangesApplied;
-@synthesize cells;
-@synthesize originalReorderingIndex;
-@synthesize currentReorderingIndex;
+@synthesize actionQueue;
 
 
 - (void) dealloc
 {
+    [actionQueue release];
+    actionQueue = nil;
     [mutableIndexesToLoad release];
     mutableIndexesToLoad = nil;
     [mutableIndexesToLayout release];
@@ -83,14 +85,8 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     mutableIndexesToUnload = nil;
     [mutableAllIndexes release];
     mutableAllIndexes = nil; 
-    [mapOldToNew release];
-    mapOldToNew = nil;
-    [cellsWithoutCurrentChangesApplied release];
-    cellsWithoutCurrentChangesApplied = nil;
     [cells release];
     cells = nil;
-    [mapNewToOld release];
-    mapNewToOld = nil;
     [layout release];
     layout = nil;
     [super dealloc];
@@ -108,8 +104,9 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
         
         self.cells = nullArrayOfSize(count);
-
-        [self commitChanges];
+        
+        self.actionQueue = [NSMutableArray array];
+            
         
     }
     return self;
@@ -130,6 +127,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         FJSpringBoardVerticalLayout* vert = (FJSpringBoardVerticalLayout*)self.layout;
         
         NSMutableIndexSet* newVisibleIndexes = [[[vert visibleCellIndexesWithPaddingForContentOffset:newOffset] mutableCopy] autorelease];
+        self.visibleIndexes = newVisibleIndexes;
         
         NSIndexSet* added = indexesAdded(self.loadedIndexes, newVisibleIndexes);
         NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newVisibleIndexes);
@@ -156,6 +154,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
             previousPage = currentPage - 1;
         
         NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSet];
+        self.visibleIndexes = newIndexes;
         
         [newIndexes addIndexes:[hor cellIndexesForPage:currentPage]];
         [newIndexes addIndexes:[hor cellIndexesForPage:previousPage]];
@@ -234,264 +233,68 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 }
 
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
-    
-    NSNumber* newNum = [self.mapOldToNew objectAtIndex:oldIndex];
-    
-    return [newNum unsignedIntegerValue];
-    
-    
+
+- (void)addToActionQueue:(id)actionQueueObject
+{
+    [[self actionQueue] addObject:actionQueueObject];
 }
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex{
-    
-    NSNumber* newNum = [self.mapNewToOld objectAtIndex:newIndex];
-    
-    return [newNum unsignedIntegerValue];
+- (void)removeFromActionQueue:(id)actionQueueObject
+{
+    [[self actionQueue] removeObject:actionQueueObject];
 }
 
 
-- (void)beginReorderingIndex:(NSUInteger)index{
+- (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    self.originalReorderingIndex = index;
-    self.currentReorderingIndex = index;
-}
-
-- (NSIndexSet*)modifiedIndexesByMovingReorderingCellToCellAtIndex:(NSUInteger)index{
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
     
-    if(self.currentReorderingIndex == index)
-        return nil;
-    
-    if(index == NSNotFound)
-        return nil;
-    if(self.currentReorderingIndex == NSNotFound)
-        return nil;
-    
-    id obj = [[self.cells objectAtIndex:self.currentReorderingIndex] retain];
-    [self.cells removeObjectAtIndex:self.currentReorderingIndex];
-    [self.cells insertObject:obj atIndex:index];
-    [obj release];
-    
-    obj = [[self.mapNewToOld objectAtIndex:self.currentReorderingIndex] retain];
-    [self.mapNewToOld removeObjectAtIndex:self.currentReorderingIndex];
-    [self.mapNewToOld insertObject:obj atIndex:index];
-    [obj release];
-    
-    obj = [[self.mapOldToNew objectAtIndex:index] retain];
-    [self.mapOldToNew removeObjectAtIndex:index];
-    [self.mapOldToNew insertObject:obj atIndex:self.currentReorderingIndex];
-    [obj release];
-    
-    
-    NSLog(@"moving from index: %i to index: %i", self.currentReorderingIndex, index);
-    
-    NSUInteger startIndex = NSNotFound;
-    NSUInteger lastIndex = NSNotFound;
-    
-    //moving forward
-    if(index > self.currentReorderingIndex){
+        FJSpringBoardAction* a = [FJSpringBoardAction actionForReloadingCellAtIndex:idx animation:animation];
+        [self addToActionQueue:a];
         
-        startIndex = self.currentReorderingIndex;
-        lastIndex = index;
-        
-        //backwards    
-    }else{
-        
-        startIndex = index;
-        lastIndex = self.currentReorderingIndex;
-        
-    }
-    
-    self.currentReorderingIndex = index;
-    
-    NSIndexSet* affectedIndexes = contiguousIndexSetWithFirstAndLastIndexes(startIndex, lastIndex); 
-    
-    return affectedIndexes;
+    }];
     
 }
-
-
-- (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes{
+- (void)queueActionByMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    if([indexes count] == 0)
-        return nil;
+    FJSpringBoardAction *a = [FJSpringBoardAction actionForMovingCellAtIndex:startIndex toIndex:endIndex animation:animation];
+    [self addToActionQueue:a];
     
-    NSMutableArray* nulls = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    for(int i = 0; i< [indexes count]; i++){
-        
-        [nulls addObject:[NSNumber numberWithUnsignedInt:NSNotFound]];
-    }
-    
-    
-    NSMutableIndexSet* oldIndexes = [NSMutableIndexSet indexSet];
+}
+- (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
     [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
         
-        NSUInteger old = [self oldIndexForNewIndex:idx];
-        [oldIndexes addIndex:old];    
-    }];
-    
-    [self.mapOldToNew replaceObjectsAtIndexes:oldIndexes withObjects:nulls];
-    
-    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
-    
-    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        NSNumber* val = (NSNumber*)obj;
-        
-        NSUInteger oldVal = [val unsignedIntegerValue];
-        
-        if(oldVal != NSNotFound){
-            
-            __block int numToDecrement = 0;
-            
-            [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-                
-                if(oldVal > idx)
-                    numToDecrement++;
-            }];
-            
-            oldVal = oldVal-numToDecrement;
-            
-            val = [NSNumber numberWithUnsignedInteger:oldVal];
-            
-        }
-        
-        
-        [editedValues addObject:val];
+        FJSpringBoardAction* a = [FJSpringBoardAction actionForInsertingCellAtIndex:idx animation:animation];
+        [self addToActionQueue:a];
         
     }];
     
-    self.mapOldToNew = editedValues;
+}
+- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    /*
-     for (int i = 0; i < [indexes count]; i++) {
-     [self.mapOldToNew removeLastObject];
-     }
-     */
-    
-    //remove cells
-    [self.cells removeObjectsAtIndexes:indexes];
-    [self.mapNewToOld removeObjectsAtIndexes:indexes];
-    
-    for(int i = 0; i < [indexes count]; i++)
-        [self.mutableAllIndexes removeIndex:[self.allIndexes lastIndex]];
-
-    
-    self.layout.cellCount = [self.cells count];
-    [self.layout calculateLayout];
-    [self updateIndexesWithContentOffest:self.contentOffset];
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+       
+        FJSpringBoardAction* a = [FJSpringBoardAction actionForDeletingCellAtIndex:idx animation:animation];
+        [self addToActionQueue:a];
         
-    NSUInteger min = [indexes firstIndex];
-    NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);
-    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
-    
-    return affectedIndexes;
+    }];
     
 }
 
-- (NSIndexSet*)modifiedIndexesByAddingCellsAtIndexes:(NSIndexSet*)indexes{
+- (NSArray*)animationsByProcessingActionQueue{
     
     
-    if([indexes count] == 0)
-        return nil;
+    ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
     
-    NSArray* nulls = nullArrayOfSize([indexes count]);
+    NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
+    FJSpringBoardActionIndexMap* map = [[FJSpringBoardActionIndexMap alloc] initWithCellCount:[self.allIndexes count] actionableIndexRange:range springBoardActions:self.actionQueue];
     
-    
-    //insert cells
-    [self.cells insertObjects:nulls atIndexes:indexes];
-    
-    NSMutableArray* notfounds = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    for(int i = 0; i< [indexes count]; i++){
+    NSArray* actions = [map mappedCellActions];
         
-        [notfounds addObject:[NSNumber numberWithUnsignedInt:NSNotFound]];
-    }
+    //TODO: need to get new count so we can update the layout
     
     
-    [self.mapNewToOld insertObjects:notfounds atIndexes:indexes];
     
-    
-    NSMutableArray* editedValues = [NSMutableArray arrayWithCapacity:[self.mapOldToNew count]];
-    
-    [self.mapOldToNew enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        NSNumber* val = (NSNumber*)obj;
-        
-        NSUInteger oldVal = [val unsignedIntegerValue];
-        
-        if(oldVal != NSNotFound){
-            
-            NSUInteger numberOfInsertedCellsBeforeIndex = [[indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
-                
-                if(oldVal >= idx)
-                    return YES;
-                
-                return NO;
-                
-            }] count];
-            
-            
-            oldVal+=numberOfInsertedCellsBeforeIndex;
-            
-            val = [NSNumber numberWithUnsignedInteger:oldVal];
-            
-        }
-        
-        [editedValues addObject:val];
-        
-    }];
-    
-    self.mapOldToNew = editedValues;
-        
-    for(int i = 0; i < [indexes count]; i++){
-        
-        NSUInteger nextIndex = [self.allIndexes lastIndex];
-        
-        if(nextIndex == NSNotFound){
-            
-            nextIndex = 0;
-   
-        }else{
-            
-            nextIndex++;
-        }
-        
-        [self.mutableAllIndexes addIndex:(nextIndex)];
-
-    }
-
-    self.layout.cellCount = [self.cells count];
-    [self.layout calculateLayout];
-    [self updateIndexesWithContentOffest:self.contentOffset];
-    
-    NSUInteger min = [indexes firstIndex];
-    NSRange affectedRange = NSMakeRange(min, [self.cells count] - min);
-    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange]; 
-    
-    return affectedIndexes;
-    
-    
-}
-
-
-- (void)commitChanges{
-    
-    self.cellsWithoutCurrentChangesApplied = [[self.cells copy] autorelease];
-    self.currentReorderingIndex = NSNotFound;
-    self.originalReorderingIndex = NSNotFound;
-    
-    self.mapNewToOld = [NSMutableArray arrayWithCapacity:[self.cells count]];
-    
-    [self.cellsWithoutCurrentChangesApplied enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        NSNumber* n = [NSNumber numberWithUnsignedInteger:idx];
-        [self.mapNewToOld addObject:n];
-        
-    }];
-    
-    self.mapOldToNew = [self.mapNewToOld mutableCopy];
     
 }
 

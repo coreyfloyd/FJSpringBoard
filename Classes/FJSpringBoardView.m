@@ -95,6 +95,8 @@ typedef enum  {
 
 @property(nonatomic) NSUInteger indexOfHighlightedCell;
 
+@property(nonatomic) NSUInteger reorderingIndex;
+
 /*
 @property(nonatomic, retain) UILongPressGestureRecognizer *tapAndHoldRecognizer;
 @property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
@@ -195,7 +197,7 @@ typedef enum  {
 @synthesize lastTouchPoint;
 
 @synthesize indexOfHighlightedCell;
-
+@synthesize reorderingIndex;
 
 #pragma mark -
 #pragma mark NSObject
@@ -240,6 +242,7 @@ typedef enum  {
         self.reusableCells = [NSMutableSet set];
 
         self.indexOfHighlightedCell = NSNotFound;
+        self.reorderingIndex = NSNotFound;
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
         self.mode = FJSpringBoardCellModeNormal;
 
@@ -625,9 +628,9 @@ typedef enum  {
     
     [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
        
-        NSUInteger realIndex = [self.indexLoader oldIndexForNewIndex:index];
+        //NSUInteger realIndex = [self.indexLoader oldIndexForNewIndex:index];
         
-        FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:realIndex];
+        FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:index];
         [cell retain];
         
         cell.index = index;
@@ -664,14 +667,10 @@ typedef enum  {
         }
         
         //don't unload the index we are reordering
-        FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
-        if([im isKindOfClass:[FJSpringBoardIndexLoader class]]){
+        if(index == self.reorderingIndex)
+            return;
+
             
-            if(index == im.currentReorderingIndex)
-                return;
-        }
-        
-        
         FJSpringBoardCell* eachCell = [self.indexLoader.cells objectAtIndex:index];
         
         if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
@@ -836,6 +835,7 @@ typedef enum  {
     if([indexSet count] == 0)
         return;
     
+    /*
     
     NSUInteger firstIndex = [indexSet firstIndex];
     
@@ -864,6 +864,8 @@ typedef enum  {
 
         
     }];
+     
+     */
             
 }
 
@@ -874,6 +876,7 @@ typedef enum  {
     if([indexes count] == 0)
         return;
     
+    /*
     [self _setNeedsLayoutCalculation];
     
     [self _preLayoutIndexesComingIntoViewWhenAddingIndexes:indexes];
@@ -943,7 +946,7 @@ typedef enum  {
                          block();               
                          
                      }];
-    
+    */
     
 }
 
@@ -1011,6 +1014,8 @@ typedef enum  {
     if([indexSet count] == 0)
         return;
     
+    /*
+    
     NSIndexSet* idxs = [indexSet indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
         
         return [self.indexLoader.allIndexes containsIndex:idx];
@@ -1040,12 +1045,13 @@ typedef enum  {
         
     }];
 
-       
+       */
 }
 
 
 - (void)_deleteCell:(FJSpringBoardCell*)cell{
     
+    /*
     NSUInteger index = [self.indexLoader.cells indexOfObject:cell];
     
     if(index == NSNotFound){
@@ -1081,7 +1087,8 @@ typedef enum  {
         } 
         
     }];
-    
+ 
+     */
 }
 
 
@@ -1089,6 +1096,8 @@ typedef enum  {
     
     if([indexes count] == 0)
         return;
+    
+    /*
     
     [self _preLayoutIndexesComingIntoViewWhenRemovingIndexes:indexes];
     
@@ -1183,7 +1192,7 @@ typedef enum  {
                          block();    
                      }];
 
-    
+    */
     
 }
 
@@ -1219,28 +1228,6 @@ typedef enum  {
 
 
 - (void)setMode:(FJSpringBoardCellMode)aMode{
-    
-    /*
-    if(aMode == FJSpringBoardCellModeNormal){
-        
-        self.singleTapRecognizer.enabled = YES;
-        //self.doubleTapRecognizer.enabled = YES;
-        self.editingModeRecognizer.enabled = YES;
-        
-        self.draggingRecognizer.enabled = NO;
-        self.draggingSelectionRecognizer.enabled = NO;
-        
-        
-    }else{
-        
-        self.singleTapRecognizer.enabled = NO;
-        //self.doubleTapRecognizer.enabled = NO;
-        self.editingModeRecognizer.enabled = YES; //to get the first drag
-        
-        self.draggingRecognizer.enabled = YES;
-        self.draggingSelectionRecognizer.enabled = YES;
-    }
-    */
     
     if(mode == aMode)
         return;
@@ -1724,7 +1711,7 @@ typedef enum  {
     //CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
     
     
-    if(self.indexLoader.originalReorderingIndex == NSNotFound){
+    if(self.reorderingIndex == NSNotFound){
         
         [self _makeCellDraggableAtIndex:dragIindex];
         return;
@@ -1760,13 +1747,14 @@ typedef enum  {
 
 - (FJSpringBoardDragAction)_actionForDraggableCellAtIndex:(NSUInteger)dragIndex coveredCellIndex:(NSUInteger)index obscuredContentFrame:(CGRect)contentFrame{
     
-    if(index == self.indexLoader.currentReorderingIndex)
+    //TODO: drag index is the same as reorderingIndex. fix this.
+    if(index == self.reorderingIndex)
         return FJSpringBoardDragActionNone;
     
     if(![self.dataSource respondsToSelector:@selector(emptyGroupCellForSpringBoardView:)])
         return FJSpringBoardDragActionMove;
     
-    NSUInteger idx = self.indexLoader.currentReorderingIndex;
+    NSUInteger idx = self.reorderingIndex;
     
     //if no currently dragging index, 
     if(idx == NSNotFound)
@@ -1781,7 +1769,7 @@ typedef enum  {
     
     FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:index];
     
-    if(!cell.draggable)
+    //if(cell is not droppable)
         return FJSpringBoardDragActionMove;
     
     CGRect rect = CGRectIntersection(insetRect, cell.frame);
@@ -1857,7 +1845,7 @@ typedef enum  {
     
     debugLog(@"completing drag action...");
 
-    if(self.indexLoader.originalReorderingIndex == NSNotFound)
+    if(self.reorderingIndex == NSNotFound)
         return;
     
     if(self.indexOfHighlightedCell == NSNotFound){
@@ -1879,6 +1867,8 @@ typedef enum  {
     if(index == NSNotFound)
         return;
     
+    /*
+    
     [self _removeHighlight];
     
     self.animatingReorder = YES;
@@ -1886,7 +1876,7 @@ typedef enum  {
 
     NSIndexSet* affectedIndexes = [im modifiedIndexesByMovingReorderingCellToCellAtIndex:index];
     
-    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:im.currentReorderingIndex];
+    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:self.reorderingIndex];
     
     if(![c isEqual:[NSNull null]]){
         
@@ -1907,11 +1897,13 @@ typedef enum  {
                          //[self _updateLayout];
                          
                      }];
-    
+ 
+     */
 }
 
 - (void)_completeReorder{
     
+    /*
     [self _removeHighlight];
 
     FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
@@ -1978,6 +1970,8 @@ typedef enum  {
         
         
     }];
+    
+     */
     
 }
 

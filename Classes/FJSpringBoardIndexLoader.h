@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardUtilities.h"
+#import "FJSpringBoardView.h"
 
 @class FJSpringBoardLayout;
 @class FJSpringBoardGroupCell;
@@ -22,23 +23,13 @@
     NSMutableIndexSet* mutableIndexesToLoad;
     NSMutableIndexSet* mutableIndexesToLayout;
     NSMutableIndexSet* mutableIndexesToUnload;
-        
-    NSMutableArray* mapNewToOld;
-    NSMutableArray* mapOldToNew;
     
-    NSArray* cellsWithoutCurrentChangesApplied;
+    NSIndexSet *visibleIndexes; //visible means should be loaded due to layout not neccesarily in the view port.
     NSMutableArray* cells;
-    
-    NSUInteger originalReorderingIndex;
-    NSUInteger currentReorderingIndex;
-    
-    
-    //allIndexes
-    //visibleIndexes
-    //paddedIndexes
-    //loadedIndexes = vis + padded
-    
 
+
+    NSMutableArray* actionQueue;
+    
 }
 - (id)initWithCount:(NSUInteger)count;
 
@@ -49,6 +40,8 @@
 //The methods below are used to process index changes due to movement.  
 - (void)updateIndexesWithContentOffest:(CGPoint)newOffset;
 @property(nonatomic, readonly) CGPoint contentOffset;
+
+@property(nonatomic, retain) NSMutableArray *cells;
 
 //mark any indexes for updating
 - (void)markIndexesForLoading:(NSIndexSet*)indexes; //also adds to Layout
@@ -72,35 +65,13 @@
 - (NSIndexSet*)loadedIndexes;
 
 
+- (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
+- (void)queueActionByMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex withAnimation:(FJSpringBoardCellAnimation)animation;
+- (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
+- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
 
+- (NSArray*)animationsByProcessingActionQueue;
 
-
-@property(nonatomic, retain) NSMutableArray *mapNewToOld;
-@property(nonatomic, retain) NSMutableArray *mapOldToNew;
-
-@property(nonatomic, retain) NSArray *cellsWithoutCurrentChangesApplied;
-@property(nonatomic, retain) NSMutableArray *cells;
-
-@property(nonatomic, readonly) NSUInteger originalReorderingIndex;
-@property(nonatomic, readonly) NSUInteger currentReorderingIndex;
-
-
-//map existing indexes back to the datasource
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
-
-//reordering
-- (void)beginReorderingIndex:(NSUInteger)index;
-- (NSIndexSet*)modifiedIndexesByMovingReorderingCellToCellAtIndex:(NSUInteger)index;
-
-//remove cells
-- (NSIndexSet*)modifiedIndexesByRemovingCellsAtIndexes:(NSIndexSet*)indexes;
-
-//add cells
-- (NSIndexSet*)modifiedIndexesByAddingCellsAtIndexes:(NSIndexSet*)indexes;
-
-
-- (void)commitChanges; //resets maps
 
 
 
