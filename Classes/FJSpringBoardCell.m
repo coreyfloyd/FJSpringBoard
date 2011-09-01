@@ -69,6 +69,8 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 
 @property (nonatomic, retain, readwrite) UIView *contentView;
 
+@property (nonatomic, retain) UIButton *deleteButton;
+
 @property (nonatomic, copy, readwrite) NSString *reuseIdentifier;
 
 @property(nonatomic, readwrite) BOOL reordering;
@@ -84,7 +86,6 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 - (void)_stopWiggle;
 - (void)_removeDeleteButton;
 - (void)_addDeleteButton;
-- (void)_updateView;
 
 @property(nonatomic, retain) UILongPressGestureRecognizer *tapAndHoldRecognizer;
 @property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
@@ -123,9 +124,11 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize editingModeRecognizer;
 @synthesize draggingSelectionRecognizer;
 @synthesize draggingRecognizer;
-
+@synthesize deleteButton;
 - (void) dealloc
 {
+    [deleteButton release];
+    deleteButton = nil;
     [tapAndHoldRecognizer release];
     tapAndHoldRecognizer = nil;
     [singleTapRecognizer release];
@@ -155,36 +158,42 @@ static UIColor* _defaultBackgroundColor = nil;
 + (void)initialize{
     
     _deleteImage = [[UIImage imageNamed:@"close.png"] retain];
-    _defaultBackgroundColor = [UIColor clearColor];
+    _defaultBackgroundColor = [UIColor whiteColor];
     
 }
 
 
-- (id)initWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
     
     CGRect minFrame;
     minFrame.origin = CGPointZero;
     minFrame.size = size;
-    minFrame.size.width += CELL_INVISIBLE_TOP_MARGIN;
-    minFrame.size.height += CELL_INVISIBLE_LEFT_MARGIN;
     
     self = [super initWithFrame:minFrame];
     if (self != nil) {
                 
-        CGRect contentFrame;
-        contentFrame.origin.x = CELL_INVISIBLE_LEFT_MARGIN;
-        contentFrame.origin.y = CELL_INVISIBLE_TOP_MARGIN;
-        contentFrame.size = size;
+        CGRect contentFrame = minFrame;
                         
         self.backgroundColor = [UIColor clearColor];
         
-        self.backgroundView = [[[UIView alloc] initWithFrame:contentFrame] autorelease];
-        self.backgroundView.backgroundColor = _defaultBackgroundColor;
-        [self addSubview:self.backgroundView];
-
         self.contentView = [[[UIView alloc] initWithFrame:contentFrame] autorelease];
-        self.contentView.backgroundColor = [UIColor clearColor];
+        self.contentView.backgroundColor = _defaultBackgroundColor;
+        contentView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
         [self addSubview:self.contentView];
+        
+        self.backgroundView = [[[UIView alloc] initWithFrame:contentFrame] autorelease]; //adds to view
+        self.backgroundView.backgroundColor = _defaultBackgroundColor;
+
+#ifdef DEBUG_LAYOUT
+        
+        self.backgroundColor = [UIColor greenColor];
+        self.layer.borderColor = [UIColor blackColor].CGColor;
+        self.layer.borderWidth = 2.0;
+        self.backgroundView.backgroundColor = [UIColor yellowColor];
+        self.contentView.layer.borderColor = [UIColor orangeColor].CGColor;
+        self.contentView.layer.borderWidth = 2.0;
+        
+#endif
         
         self.showsDeleteButton = YES;
         self.reuseIdentifier = identifier;
@@ -250,8 +259,47 @@ static UIColor* _defaultBackgroundColor = nil;
 }
 
 
+#pragma mark - Setters
+
+- (void)setBackgroundView:(UIView *)bv{
+    
+    if(backgroundView == bv)
+        return;
+    
+    [backgroundView removeFromSuperview];
+    bv.frame = self.contentView.frame;
+    contentView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
+    [backgroundView release];
+    backgroundView = [bv retain];
+    [self insertSubview:backgroundView belowSubview:contentView];
+    
+}
+
+/*
+- (void)setFrame:(CGRect)f{
+    
+    [super setFrame:f];
+    
+    CGRect contentFrame = self.contentView.frame;
+    contentFrame.origin = CGPointMake(CELL_INVISIBLE_LEFT_MARGIN, CELL_INVISIBLE_TOP_MARGIN);
+    
+    backgroundView.frame = contentFrame;
+    contentView.frame = contentFrame;
+    
+    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);    
+    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);   
+    
+    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));    
+
+}
+ */
+
+
 - (void)setMode:(FJSpringBoardCellMode)aMode{
     
+    mode = aMode;
+
     if(aMode == FJSpringBoardCellModeNormal){
         
         self.singleTapRecognizer.enabled = YES;
@@ -259,21 +307,22 @@ static UIColor* _defaultBackgroundColor = nil;
         self.draggingRecognizer.enabled = NO;
         self.draggingSelectionRecognizer.enabled = NO;
         
+        [self _stopWiggle];
+        [self _removeDeleteButton];
+        
     }else{
         
         self.singleTapRecognizer.enabled = NO;
         self.editingModeRecognizer.enabled = YES; //to get the first drag
         self.draggingRecognizer.enabled = YES;
         self.draggingSelectionRecognizer.enabled = YES;
-    }
-
-    if(mode == aMode)
-        return;
         
-    mode = aMode;
-    
-    [self _updateView];
-    
+        if(draggable)
+            [self _startWiggle];
+        
+        if(showsDeleteButton)
+            [self _addDeleteButton];
+    }
 }
 
 
@@ -284,7 +333,18 @@ static UIColor* _defaultBackgroundColor = nil;
     
     reordering = flag;
     
-    [self _updateView];
+    if(reordering){
+        
+        self.selected = NO;
+        self.tappedAndHeld = NO;
+        self.alpha = 0;
+        
+    }else{
+        
+        self.alpha = 1;
+
+    }
+    
     
 }
 
@@ -295,22 +355,16 @@ static UIColor* _defaultBackgroundColor = nil;
     
     selected = flag;
     
-    [self _updateView];
-    
+    //TODO: update selection
 }
 
 - (void)setSelected:(BOOL)flag animated:(BOOL)animated{
     
-    if(selected == flag)
-        return;
-    
-    selected = flag;
-    
     if(animated)
         [UIView beginAnimations:@"SelectionAnimation" context:nil];
     
-    [self _updateView];
-    
+    [self setSelected:flag];
+        
     if(animated)
         [UIView commitAnimations];
     
@@ -322,8 +376,15 @@ static UIColor* _defaultBackgroundColor = nil;
         return;
     
     tappedAndHeld = flag;
-
-    [self _updateView];
+    
+    if(tappedAndHeld){
+        
+        self.alpha = CELL_DRAGGABLE_ALPHA;
+        
+    }else{
+        
+        self.alpha = 1;
+    }
 
 }
 
@@ -334,7 +395,16 @@ static UIColor* _defaultBackgroundColor = nil;
     
     draggable = flag;
 
-    [self _updateView];
+    if(self.mode == FJSpringBoardCellModeNormal){
+        
+        [self _stopWiggle];
+        
+    }else{
+        
+        if(draggable)
+            [self _startWiggle];
+    
+    }
 
 }
 
@@ -345,8 +415,16 @@ static UIColor* _defaultBackgroundColor = nil;
     
     showsDeleteButton = flag;
 
-    [self _updateView];
-
+    if(self.mode == FJSpringBoardCellModeNormal){
+        
+        [self _removeDeleteButton];
+        
+    }else{
+        
+        if(showsDeleteButton)
+            [self _addDeleteButton];
+    }
+    
 }
 
 
@@ -357,34 +435,36 @@ static UIColor* _defaultBackgroundColor = nil;
         self.deleteImage = _deleteImage;
     }
     
-    UIButton* b  = (UIButton*)[self viewWithTag:1001];
-
-    if(b == nil)
-        b  = [UIButton buttonWithType:UIButtonTypeCustom];
+    if(self.deleteButton == nil)
+        self.deleteButton = [UIButton buttonWithType:UIButtonTypeCustom];
     
-    b.tag = 1001;
-    b.frame = CGRectMake(0, 0, 44, 44);
-    b.center = self.contentView.frame.origin;
-    [b setImage:self.deleteImage forState:UIControlStateNormal];
-    b.contentMode = UIViewContentModeCenter;
+    self.deleteButton.frame = CGRectMake(0, 0, 44, 44);
+    self.deleteButton.center = self.contentView.frame.origin;
+    [self.deleteButton setImage:self.deleteImage forState:UIControlStateNormal];
+    self.deleteButton.contentMode = UIViewContentModeCenter;
     //[b setImageEdgeInsets:UIEdgeInsetsMake(0, 0, 14, 14)];
-    [b addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
-    [self insertSubview:b aboveSubview:self.contentView];
+    [self.deleteButton addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
+    [self insertSubview:self.deleteButton aboveSubview:self.contentView];
     
 }
 
 - (void)_removeDeleteButton{
     
-    [[self viewWithTag:1001] removeFromSuperview];
+    [self.deleteButton removeFromSuperview];
 }
 
 - (void)_startWiggle{
+    
+    [self _stopWiggle];
+    
     CAAnimation *wiggle = wiggleAnimation();
-    recursivelyApplyAnimationToAllSubviewLayers(self, wiggle, @"wiggle");	    
+    recursivelyApplyAnimationToAllSubviewLayers(self, wiggle, @"wiggle");
+
 
 }
 
 - (void)_stopWiggle{
+    
     recursivelyRemoveAnimationFromAllSubviewLayers(self, @"wiggle");
 }
 
@@ -406,22 +486,8 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
-
+/*
 - (void)_updateView{
-    
-    if(mode == FJSpringBoardCellModeEditing){
-        
-        if(draggable)
-            [self _startWiggle];
-        
-        if(showsDeleteButton)
-            [self _addDeleteButton];
-        
-    }else if(mode == FJSpringBoardCellModeNormal){
-        
-        [self _stopWiggle];
-        [self _removeDeleteButton];
-    }
     
     
     if(reordering){
@@ -448,6 +514,7 @@ static UIColor* _defaultBackgroundColor = nil;
     }
     
 }
+*/
 
 #pragma mark -
 #pragma mark Touches
@@ -488,6 +555,8 @@ static UIColor* _defaultBackgroundColor = nil;
     [self setTappedAndHeld:NO];
     
     [self.springBoardView cellWasLongTapped:self];
+    
+    [self _processEditingLongTapWithRecognizer:g];
     
 }
 

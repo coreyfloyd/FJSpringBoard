@@ -417,7 +417,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
     
     self.layout.cellCount = [self.cells count];
-    [self.layout updateLayout];
+    [self.layout calculateLayout];
     [self changesBySettingContentOffset:self.contentOffset];
         
     NSUInteger min = [indexes firstIndex];
@@ -501,7 +501,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     }
 
     self.layout.cellCount = [self.cells count];
-    [self.layout updateLayout];
+    [self.layout calculateLayout];
     [self changesBySettingContentOffset:self.contentOffset];
     
     NSUInteger min = [indexes firstIndex];

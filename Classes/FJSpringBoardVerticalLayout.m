@@ -12,9 +12,14 @@
 @property(nonatomic, readwrite) NSUInteger cellsPerRow;
 
 @property(nonatomic) CGFloat minimumRowWidth;
-@property(nonatomic) CGFloat maximumRowWidth;
+@property(nonatomic) CGFloat rowWidth;
+
+@property (nonatomic) float veritcalCellSpacing;
+@property (nonatomic) float horizontalCellSpacing;
 
 @property(nonatomic, readwrite) CGSize contentSize;
+
+- (CGRect)_frameForRow:(NSUInteger)row;
 
 - (CGSize)_contentSize;
 
@@ -27,24 +32,35 @@
 @implementation FJSpringBoardVerticalLayout
 
 
-- (void)updateLayout{
+- (void)calculateLayout{
     
-    [super updateLayout];
+    [super calculateLayout];
+    
+    self.veritcalCellSpacing = self.horizontalCellSpacing;
+
     self.contentSize = [self _contentSize];
 
     
 }
 
-- (CGRect)_frameForRow:(NSUInteger)row{
+- (float)_rowWidth{
+    
+    return self.springBoard.bounds.size.width;
+}
+
+
+
+- (CGRect):(NSUInteger)row{
     
     CGRect f;
     
-    CGFloat x = self.springBoard.springBoardInsets.left;
+    //TODO: handle contentInset
+    CGFloat x = 0;
     
-    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height); 
+    CGFloat y = ((float)row * self.springBoard.cellSize.height) + ((float)(row+1) * self.veritcalCellSpacing); 
     
     f.origin = CGPointMake(x, y);
-    f.size = CGSizeMake(self.maximumRowWidth, self.springBoard.cellSize.height); 
+    f.size = CGSizeMake(self.rowWidth, self.springBoard.cellSize.height); 
     
     return f;
 }
@@ -52,28 +68,39 @@
 
 - (CGSize)_contentSize{
     
-    CGFloat cellHeight = (float)self.numberOfRows * self.springBoard.cellSize.height;
-    CGFloat spacingHeight = (float)(self.numberOfRows-1) * self.verticalCellSpacing;
-    CGFloat insetHeight = self.springBoard.springBoardInsets.top + self.springBoard.springBoardInsets.bottom;
+    CGFloat pageHeight = ((float)self.numberOfRows * self.springBoard.cellSize.height) + ((float)(self.numberOfRows+1) * self.veritcalCellSpacing);
+    CGFloat pageWidth = self.springBoard.bounds.size.width;
     
-    CGFloat pageHeight = (cellHeight + spacingHeight + insetHeight);
-    
-    CGFloat pageWidth = self.maximumRowWidth;
-
     return CGSizeMake(pageWidth, pageHeight);
     
 }
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position{
+        
+    float widthOfCellsInRowBeforeCell = self.springBoard.cellSize.width * position.column;
     
-    CGPoint origin = CGPointZero;
+    float widthOfSpacesInRowBeforeCell = self.horizontalCellSpacing * (position.column + 1);
     
-    int column = position.column;
-    int row = position.row;
     
-    CGFloat x = self.springBoard.springBoardInsets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.springBoard.cellSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
-    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
+    CGFloat x = widthOfCellsInRowBeforeCell + widthOfSpacesInRowBeforeCell;
     
+    if(x < 0 || x == NAN){
+        ALWAYS_ASSERT;
+    }
+
+    float heightOfCellsInColumnBeforeCell = self.springBoard.cellSize.height * position.row;
+    
+    float heightOfSpacesInColumnBeforeCell = self.veritcalCellSpacing * (position.row + 1);
+    
+    float heighInColumnBeforeCell = heightOfCellsInColumnBeforeCell + heightOfSpacesInColumnBeforeCell;
+    
+    CGFloat y = heighInColumnBeforeCell; 
+    
+    if(y < 0 || y == NAN){
+        ALWAYS_ASSERT;
+    }   
+    
+    CGPoint origin;
     origin.x = x;
     origin.y = y;
     

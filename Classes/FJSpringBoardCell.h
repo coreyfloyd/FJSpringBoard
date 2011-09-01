@@ -7,9 +7,9 @@
 @interface FJSpringBoardCell : UIView <UIGestureRecognizerDelegate> {
 
 }
-- (id)initWithContentSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier;
 
-@property(nonatomic, retain) UIView *backgroundView; //default is plain white background, you can set this to whatever you like
+@property(nonatomic, retain) UIView *backgroundView; //default is plain white background, you can set this to whatever you like, will autmatically be resized to the content size.
 @property(nonatomic, retain, readonly) UIView *contentView; //add content here
 
 @property(nonatomic, copy, readonly) NSString *reuseIdentifier;

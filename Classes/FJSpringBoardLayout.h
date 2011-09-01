@@ -14,17 +14,14 @@
 
     FJSpringBoardView* springBoard;
     
-    CGFloat horizontalCellSpacing;
-    CGFloat verticalCellSpacing;
-
-    BOOL distributeCellsEvenly;
-    
     NSUInteger cellCount;
     
     NSUInteger cellsPerRow;
-    CGFloat minimumRowWidth;
-    CGFloat maximumRowWidth;
+    CGFloat rowWidth;
     NSUInteger numberOfRows;
+    
+    float veritcalCellSpacing;
+    float horizontalCellSpacing;
     
 }
 
@@ -32,19 +29,16 @@
 
 @property (nonatomic, assign, readonly) FJSpringBoardView *springBoard;
 
-@property(nonatomic) BOOL distributeCellsEvenly; //default = YES
-
 @property(nonatomic) NSUInteger cellCount;
 
 //reset all properties
 - (void)reset;
 
-- (void)updateLayout;
+//makes layout calculations based on the current geometry and caches the results
+- (void)calculateLayout;
+
 
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
-
-@property(nonatomic, readonly) CGFloat horizontalCellSpacing; 
-@property(nonatomic, readonly) CGFloat verticalCellSpacing; 
 
 @property(nonatomic, readonly) CGSize contentSize;
 

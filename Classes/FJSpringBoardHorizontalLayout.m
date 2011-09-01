@@ -20,10 +20,12 @@
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
 @property(nonatomic, readwrite) NSUInteger cellsPerRow;
 
-@property (nonatomic) CGFloat minimumRowWidth;
-@property (nonatomic) CGFloat maximumRowWidth;
+@property(nonatomic, readwrite) CGSize cellSizeWithAccesories;
 
-@property(nonatomic, readwrite) CGFloat verticalCellSpacing; 
+@property (nonatomic) CGFloat rowWidth;
+
+@property (nonatomic) float veritcalCellSpacing;
+@property (nonatomic) float horizontalCellSpacing;
 
 @property(nonatomic, readwrite) CGSize contentSize;
 
@@ -41,21 +43,13 @@
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
 
-- (CellPosition)_pageAdjustedCellPosition:(CellPosition)position;
-
 - (CGFloat)_horizontalOffsetForPage:(NSUInteger)page;
 - (NSUInteger)_pageForCellAtPosition:(CellPosition)position;
 
-
-- (NSUInteger)_rowsPerPage;
 - (CGSize)_pageSizeWithInsetsApplied;
-- (CGSize)_pageSize;
 - (NSUInteger)_numberOfPages;
-- (NSUInteger)_cellsPerPage;
 
 - (CGSize)_contentSize;
-
-- (CGFloat)_verticalSpacing;
 
 @end
 
@@ -80,120 +74,53 @@
 }
 
 
-- (void)updateLayout{
+- (void)calculateLayout{
      
-    [super updateLayout];
+    [super calculateLayout];
 
-    self.pageSize = [self _pageSize];
+    self.pageSize = self.springBoard.bounds.size;
     self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied];
     
-    self.rowsPerPage = [self _rowsPerPage];
+    float pageHeight = self.pageSizeWithInsetsApplied.height;
+    float minimumCellheight = self.cellSizeWithAccesories.height;
+    float rowsInOnePage = floorf(pageHeight / minimumCellheight);
+    self.rowsPerPage = (NSUInteger)rowsInOnePage;
     
-    if(distributeCellsEvenly)
-        self.verticalCellSpacing = [self _verticalSpacing];
+    self.cellsPerPage = self.rowsPerPage * self.cellsPerRow;
     
-    self.cellsPerPage = [self _cellsPerPage];
+    self.veritcalCellSpacing = (pageHeight - (self.rowsPerPage * self.springBoard.cellSize.height))/(self.rowsPerPage+1);
+    
     self.pageCount = [self _numberOfPages];
         
     self.contentSize = [self _contentSize];
 
 }
 
-
-
-- (CGSize)_pageSize{
+- (float)_rowWidth{
     
-    CGSize size = self.springBoard.bounds.size;
-    
-    return size;
-
-    
+    return (self.springBoard.bounds.size.width - self.springBoard.pageInsets.left - self.springBoard.pageInsets.right);
 }
 
+
+- (NSUInteger)_numberOfPages{
+    
+    return ceilf((float)((float)self.cellCount / (float)self.cellsPerPage));
+    
+}
 
 - (CGSize)_pageSizeWithInsetsApplied{
     
-    CGRect viewRect = self.springBoard.insetBounds;
-    
-    CGSize size = viewRect.size;
-    
-    return size;
-    
+    return UIEdgeInsetsInsetRect(self.springBoard.bounds, self.springBoard.pageInsets).size;
 }
-
-
-- (NSUInteger)_rowsPerPage{
-    
-    float totalHeight = self.pageSizeWithInsetsApplied.height;
-    float cellHeight = self.springBoard.cellSize.height;
-    
-    float count = floorf(totalHeight / cellHeight);
-    
-    if((totalHeight - (count * cellHeight)) < (2*(count-1)))
-        count--;
-    
-    return (NSUInteger)count;
-    
-}
-
-
-- (CGFloat)_verticalSpacing{
-    
-    float space = (self.pageSizeWithInsetsApplied.height - (self.rowsPerPage * self.springBoard.cellSize.height) + CELL_INVISIBLE_TOP_MARGIN)/(self.rowsPerPage-1);
-    return space;
-    
-}
-
-
-- (NSUInteger)_cellsPerPage{
-    
-    return (self.rowsPerPage * self.cellsPerRow);
-        
-}
-
 
 
 - (CGSize)_contentSize{
     
-    CGFloat pageHeight = self.springBoard.bounds.size.height;
+    CGFloat pageHeight = self.pageSize.height;
+    CGFloat width = self.pageCount * self.pageSize.width;
     
-    CGFloat width = self.pageCount * self.springBoard.bounds.size.width;
-    CGSize s = CGSizeMake(width, pageHeight);
-    return s;
-    
+    return CGSizeMake(width, pageHeight);
 }
-
-
-
-- (CGPoint)_originForCellAtPosition:(CellPosition)position{
-    
-    CGPoint origin = CGPointZero;
-    
-    NSUInteger page = [self _pageForCellAtPosition:position];
-    
-    CellPosition adjustedPosition = [self _pageAdjustedCellPosition:position];
-    
-    NSUInteger column = adjustedPosition.column;
-    NSUInteger row = adjustedPosition.row;
-    
-    //TODO: check insets for each page… hmmm
-    CGFloat x = self.springBoard.springBoardInsets.left + ((float)column * self.horizontalCellSpacing) + ((float)column * self.springBoard.cellSize.width) + ((float)page * self.pageSize.width) - CELL_INVISIBLE_LEFT_MARGIN;
-    
-    if(x < 0 || x == NAN){
-        ALWAYS_ASSERT;
-    }
-
-    CGFloat y = self.springBoard.springBoardInsets.top + ((float)row * self.verticalCellSpacing) + ((float)row * self.springBoard.cellSize.height) - CELL_INVISIBLE_TOP_MARGIN; 
-    
-    if(y < 0 || y == NAN){
-        ALWAYS_ASSERT;
-    }    
-    origin.x = x;
-    origin.y = y;
-    
-    return origin;
-}
-
 
 - (NSUInteger)_pageForCellAtPosition:(CellPosition)position{
     
@@ -212,38 +139,58 @@
 }
 
 
-
-- (NSUInteger)_numberOfPages{
-            
-    return ceilf((float)((float)self.cellCount / (float)self.cellsPerPage));
+- (CellPagePosition)_cellPagePositionForCellPosition:(CellPosition)position{
     
+    CellPagePosition p;
+    p.index = position.index;
+    p.column = position.column;
+    p.page = [self _pageForCellAtPosition:position];
+    
+    NSUInteger numberOfRowsBeforePage = self.rowsPerPage * (p.page);
+    p.row = position.row - numberOfRowsBeforePage;
+    
+    return p;
 }
 
 
-- (CellPosition)_pageAdjustedCellPosition:(CellPosition)position{
-    
-    NSUInteger index = position.index;
 
-    NSUInteger page = [self _pageForCellAtPosition:position];
+- (CGPoint)_originForCellAtPosition:(CellPosition)position{
     
-    if(page == 0)
-        return position;
+    
+    CellPagePosition pagePosition = [self _cellPagePositionForCellPosition:position];;
+    
+    float widthOfPagesBeforePage = pagePosition.page * self.pageSize.width;
 
-    NSUInteger numberOfCellsBeforePage = 0;
+    float widthOfCellsInRowBeforeCell = self.springBoard.cellSize.width * pagePosition.column;
     
-    if(page > 0){
-        numberOfCellsBeforePage = self.cellsPerPage * (page);
+    float widthOfSpacesInRowBeforeCell = self.horizontalCellSpacing * (pagePosition.column + 1);
+
+    float widthInRowBeforeCell = widthOfCellsInRowBeforeCell + widthOfSpacesInRowBeforeCell;
+            
+    CGFloat x = widthOfPagesBeforePage + widthInRowBeforeCell;
+    
+    if(x < 0 || x == NAN){
+        ALWAYS_ASSERT;
     }
     
-    NSUInteger adjustedIndex = index - numberOfCellsBeforePage;
+    float heightOfCellsInColumnBeforeCell = self.springBoard.cellSize.height * pagePosition.row;
     
-    CellPosition adjustedPosition = [self _positionForCellAtIndex:adjustedIndex];
+    float heightOfSpacesInColumnBeforeCell = self.veritcalCellSpacing * (pagePosition.row + 1);
     
-    return adjustedPosition;
+    float heighInColumnBeforeCell = heightOfCellsInColumnBeforeCell + heightOfSpacesInColumnBeforeCell;
+
+    CGFloat y = heighInColumnBeforeCell; 
     
+    if(y < 0 || y == NAN){
+        ALWAYS_ASSERT;
+    }   
+    
+    CGPoint origin;
+    origin.x = x;
+    origin.y = y;
+    
+    return origin;
 }
-
-
 
 - (NSUInteger)pageForContentOffset:(CGPoint)offset{
         

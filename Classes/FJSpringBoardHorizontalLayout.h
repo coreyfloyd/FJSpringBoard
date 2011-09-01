@@ -28,7 +28,7 @@
 
 - (NSUInteger)previousPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns last logical page
 
-- (NSUInteger)removalPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns page which should be unloaded. returns NSUIntegerMax if no pages should be removed
+- (NSUInteger)removalPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset; //returns page which should be unloaded. returns NSNotFound if no pages should be removed
 
 
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page;

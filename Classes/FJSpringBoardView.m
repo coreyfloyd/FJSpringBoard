@@ -76,14 +76,13 @@ typedef enum  {
 //indexes of cells with modified indexes due to insertion/deletion and need frame recallculations
 @property(nonatomic, retain) NSMutableIndexSet *indexesNeedingLayout; 
 
-@property(nonatomic) BOOL layoutIsDirty; //flag to indicate layout has changed requiring visible indexes and their frames to be recalculated
-
 @property(nonatomic) BOOL shouldReload;
+@property(nonatomic) BOOL shouldRecalculateLayout;
 
 @property(nonatomic) FJSpringBoardCellAnimation layoutAnimation; //determines if changes should be animated
 
 //@property(nonatomic) BOOL doubleTapped; //flag to handle double tap irregularities
-@property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
+//@property(nonatomic) BOOL longTapped; //flag to handle long tap irregularities
 
 @property(nonatomic, retain) UIView *draggableCellView;
 @property(nonatomic) BOOL animatingReorder; //flag to indicate a reordering animation is occuring
@@ -97,23 +96,25 @@ typedef enum  {
 
 @property(nonatomic) NSUInteger indexOfHighlightedCell;
 
+/*
 @property(nonatomic, retain) UILongPressGestureRecognizer *tapAndHoldRecognizer;
 @property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
-//@property(nonatomic, retain) UITapGestureRecognizer *doubleTapRecognizer;
+@property(nonatomic, retain) UITapGestureRecognizer *doubleTapRecognizer;
 @property(nonatomic, retain) UILongPressGestureRecognizer *editingModeRecognizer;
 @property(nonatomic, retain) UILongPressGestureRecognizer *draggingSelectionRecognizer;
 @property(nonatomic, retain) UIPanGestureRecognizer *draggingRecognizer;
+*/
 
+- (void)_setNeedsLayoutCalculation;
+- (void)_clearLayoutCalculation;
 
-- (void)_configureLayout;
+- (void)_calculateLayout;
 - (void)_updateIndexes;
 
 - (void)_setNeedsReload;
 - (void)_clearReload;
 
 - (void)_resetAnimatingContentOffset;
-//- (void)_setContentOffset:(CGPoint)offset animated:(BOOL)animate;
-//- (void)_setContentOffset:(CGPoint)offset;
 
 - (void)_loadCellsScrollingIntoViewAtIndexes:(NSIndexSet*)indexes;
 - (void)_loadCellsAtIndexes:(NSIndexSet*)indexes;
@@ -135,7 +136,7 @@ typedef enum  {
 - (NSUInteger)_indexOfCellAtPoint:(CGPoint)point checkOffScreenCells:(BOOL)flag;
 - (CGRect)_frameForCellAtIndex:(NSUInteger)index checkOffScreenIndexes:(BOOL)flag;
 
-- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g;
+//- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g;
 //dragging and dropping
 - (void)_makeCellDraggableAtIndex:(NSUInteger)index;
 - (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point;
@@ -168,12 +169,13 @@ typedef enum  {
 @synthesize dataSource;
 @synthesize delegate;
 
-@synthesize springBoardInsets;
+@synthesize pageInsets;
 @synthesize cellSize;
 @synthesize mode;
 @synthesize scrollDirection;
 
 @synthesize shouldReload;
+@synthesize shouldRecalculateLayout;
 
 @synthesize indexLoader;
 @synthesize layout;
@@ -187,11 +189,7 @@ typedef enum  {
 @synthesize selectedIndexes;
 @synthesize indexesToInsert;
 
-@synthesize layoutIsDirty;
 @synthesize layoutAnimation;
-
-//@synthesize doubleTapped;
-@synthesize longTapped;
 
 @synthesize animatingReorder;
 @synthesize draggableCellView;
@@ -202,13 +200,16 @@ typedef enum  {
 
 @synthesize indexOfHighlightedCell;
 
+//@synthesize doubleTapped;
+//@synthesize longTapped;
+/*
 @synthesize tapAndHoldRecognizer;
 @synthesize singleTapRecognizer;
-//@synthesize doubleTapRecognizer;
+@synthesize doubleTapRecognizer;
 @synthesize editingModeRecognizer;
 @synthesize draggingSelectionRecognizer;
 @synthesize draggingRecognizer;
-
+*/
 
 
 #pragma mark -
@@ -218,18 +219,20 @@ typedef enum  {
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
+    /*
     [tapAndHoldRecognizer release];
     tapAndHoldRecognizer = nil;
     [singleTapRecognizer release];
     singleTapRecognizer = nil;
-    //[doubleTapRecognizer release];
-    //doubleTapRecognizer = nil;
+    [doubleTapRecognizer release];
+    doubleTapRecognizer = nil;
     [editingModeRecognizer release];
     editingModeRecognizer = nil;
     [draggingSelectionRecognizer release];
     draggingSelectionRecognizer = nil;
     [draggingRecognizer release];
     draggingRecognizer = nil;    
+    */
     [contentView release];
     contentView = nil;    
     [draggableCellView release];
@@ -275,7 +278,8 @@ typedef enum  {
 
         self.indexOfHighlightedCell = NSNotFound;
         self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
-        
+        self.mode = FJSpringBoardCellModeNormal;
+
         
         /*
         UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
@@ -324,43 +328,23 @@ typedef enum  {
        
          */
         
-        self.mode = FJSpringBoardCellModeNormal;
         
     }
     return self;
 }
 
-/*
-- (void)setFrame:(CGRect)aFrame{
+- (void)setFrame:(CGRect)f{
     
-    [super setFrame:aFrame];
+    [super setFrame:f];
     
-    [self _updateLayout];
-    
+    [self _setNeedsLayoutCalculation];
 }
 
-- (void)setBounds:(CGRect)aFrame{
+- (void)setPageInsets:(UIEdgeInsets)insets{
     
-    [super setBounds:aFrame];
-    
-    [self _updateLayout];
-}
-*/
-
-- (CGRect)insetBounds{
-    
-    CGRect viewRect = self.bounds;
-    viewRect = UIEdgeInsetsInsetRect(viewRect, self.springBoardInsets);
-    return viewRect;
-    
-}
-
-- (void)setSpringBoardInsets:(UIEdgeInsets)insets{
-    
-    springBoardInsets = insets;
+    pageInsets = insets;
     
     [self setNeedsLayout];
-    //[self _updateLayout];
 }
 
 -(void)setCellSize:(CGSize)aSize{
@@ -375,7 +359,9 @@ typedef enum  {
     
     scrollDirection = direction;
     
-    [self _configureLayout];
+    [self _setNeedsLayoutCalculation];
+        
+    [self setNeedsLayout];
 
 }
 
@@ -571,7 +557,9 @@ typedef enum  {
     //unload them (placed in reusable pool)
     [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
     
-    [self _configureLayout]; //triggers _updateCells and _updateIndexes
+    [self _calculateLayout]; //triggers _updateCells and _updateIndexes
+    
+    [self setNeedsLayout];
 }
 
 
@@ -579,8 +567,20 @@ typedef enum  {
 #pragma mark -
 #pragma mark configure layout
 
+- (void)_setNeedsLayoutCalculation{
+    
+    self.shouldRecalculateLayout = YES;
+    
+}
+- (void)_clearLayoutCalculation{
+    
+    self.shouldRecalculateLayout = NO;
+}
+
 //only called on reload
-- (void)_configureLayout{
+- (void)_calculateLayout{
+    
+    [self _clearLayoutCalculation];
       
     if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         self.layout = [[[FJSpringBoardHorizontalLayout alloc] initWithSpringBoardView:self] autorelease];
@@ -595,21 +595,26 @@ typedef enum  {
 
     self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
     self.indexLoader.layout = self.layout;
-        
-    [self setNeedsLayout];
+    
+    [self.layout calculateLayout];
+    
+    CGRect f = CGRectMake(0, 0, self.layout.contentSize.width, self.layout.contentSize.height);
+    self.contentView.frame = f; 
+    [self setContentSize:self.layout.contentSize];
+
 }
 
 //called when changes occur affecting layout
 
 - (void)layoutSubviews{
-    
-    //self.layoutIsDirty = YES;
-    
+        
     if(self.shouldReload)
         [self reloadData];
     
-    [self.layout updateLayout];
+    if(self.shouldRecalculateLayout)
+        [self _calculateLayout];
     
+    /*
     if(self.layoutAnimation != FJSpringBoardCellAnimationNone){
     
         [UIView animateWithDuration:0.25 animations:^(void) {
@@ -624,14 +629,11 @@ typedef enum  {
         [self setContentSize:self.layout.contentSize];
 
     }
+     */
+    
     
     [self _layoutCellsAtIndexes:[[self.indexesNeedingLayout copy] autorelease]];
     [self.indexesNeedingLayout removeAllIndexes];
-    
-    /*
-    if(self.layoutIsDirty)
-        [self _updateIndexes];
-    */
     
 }
 
@@ -651,9 +653,6 @@ typedef enum  {
     }
     
     [super setContentSize:size];
-    CGRect f = CGRectMake(0, 0, size.width, size.height);
-    self.contentView.frame = f;
-
 }
 
 - (void)setContentOffset:(CGPoint)offset{
@@ -733,8 +732,6 @@ typedef enum  {
         
     }];
          
-    //self.layoutIsDirty = NO;
-
 }
 
 #pragma mark -

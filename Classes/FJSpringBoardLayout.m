@@ -16,21 +16,21 @@
 
 @property (nonatomic, assign, readwrite) FJSpringBoardView *springBoard;
 
+@property(nonatomic, readwrite) CGSize cellSizeWithAccesories;
+
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
 @property(nonatomic, readwrite) NSUInteger cellsPerRow;
 
-@property(nonatomic, readwrite) CGFloat horizontalCellSpacing; 
-@property(nonatomic, readwrite) CGFloat verticalCellSpacing; 
+@property (nonatomic) float veritcalCellSpacing;
+@property (nonatomic) float horizontalCellSpacing;
 
 @property(nonatomic, readwrite) CGSize contentSize;
 
-@property (nonatomic) CGFloat minimumRowWidth;
-@property (nonatomic) CGFloat maximumRowWidth;
+@property (nonatomic) CGFloat rowWidth;
 
+- (float)_rowWidth;
 
 - (CGSize)_contentSize;
-
-- (NSUInteger)_numberOfCellsPerRow;
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position;
 - (CGRect)_frameForCellAtPosition:(CellPosition)position;
@@ -40,28 +40,20 @@
 - (NSIndexSet*)_cellIndexesWithRowIndexes:(NSIndexSet*)rowIndexes;
 - (NSIndexSet*)_cellIndexesInRowAtIndex:(NSUInteger)rowIndex;
 
-- (NSUInteger)_numberOfRows;
-- (CGFloat)_minimumRowWidth;
-- (CGFloat)_maximumRowWidth;
-
-- (CGFloat)_horizontalSpacing;
-
-
 
 @end
 
 @implementation FJSpringBoardLayout
 
 @synthesize springBoard;
-@synthesize distributeCellsEvenly;
-@synthesize horizontalCellSpacing;
-@synthesize verticalCellSpacing;
 @synthesize cellCount;
 @synthesize cellsPerRow;
 @synthesize numberOfRows;
-@synthesize minimumRowWidth;
-@synthesize maximumRowWidth;
+@synthesize rowWidth;
 @synthesize contentSize;
+@synthesize cellSizeWithAccesories;
+@synthesize veritcalCellSpacing;
+@synthesize horizontalCellSpacing;
 
 
 #pragma mark -
@@ -80,75 +72,39 @@
 
 - (void)reset{
     
-    self.horizontalCellSpacing = 0;
-    self.verticalCellSpacing = 0;
-    self.distributeCellsEvenly = YES;
-    
     self.cellCount = 0;
     
     self.cellsPerRow = 0;
     self.numberOfRows = 0;
-    self.maximumRowWidth = 0;
-    self.minimumRowWidth = 0;
+    self.rowWidth = 0.0;
     self.contentSize = CGSizeZero;
 
 }
 
-- (void)updateLayout{
+- (void)calculateLayout{
     
-    self.maximumRowWidth = [self _maximumRowWidth];
-    self.cellsPerRow = [self _numberOfCellsPerRow];
-    self.minimumRowWidth = [self _minimumRowWidth];
+    self.rowWidth = [self _rowWidth];
     
-    if(distributeCellsEvenly)
-        self.horizontalCellSpacing = [self _horizontalSpacing];
+    CGSize s = self.springBoard.cellSize;
+    s.width += CELL_INVISIBLE_LEFT_MARGIN;
+    s.height += CELL_INVISIBLE_TOP_MARGIN;
+    self.cellSizeWithAccesories = s;
     
-    self.numberOfRows = [self _numberOfRows];
+    float minimumCellWidth = self.cellSizeWithAccesories.width;
+    float cellsInOneRow = floorf(self.rowWidth / minimumCellWidth);
+    self.cellsPerRow = (NSUInteger)cellsInOneRow;
     
-}
+    self.horizontalCellSpacing = (self.rowWidth - (self.cellsPerRow * self.springBoard.cellSize.width))/(self.cellsPerRow+1);
 
-
-- (CGFloat)_maximumRowWidth{
+    self.numberOfRows = (NSUInteger)ceilf((float)((float)self.cellCount / (float)self.cellsPerRow));
     
-    return (self.springBoard.bounds.size.width - self.springBoard.springBoardInsets.right - self.springBoard.springBoardInsets.right);
-    
-}
-
-- (NSUInteger)_numberOfCellsPerRow{
-    
-    float totalWidth = self.maximumRowWidth;
-    float cellWidth = self.springBoard.cellSize.width;
-
-    float count = floorf(totalWidth / cellWidth);
-    
-    if((totalWidth - (count * cellWidth)) < (MINIMUM_CELL_SPACING*(count-1)))
-       count--;
-    
-    return (NSUInteger)count;
-    
-}
-
-
-- (CGFloat)_minimumRowWidth{
-    
-    return ((float)self.cellsPerRow * self.springBoard.cellSize.width);
 
 }
 
-- (CGFloat)_horizontalSpacing{
+- (float)_rowWidth{
     
-    float space = (self.maximumRowWidth + CELL_INVISIBLE_LEFT_MARGIN - self.minimumRowWidth)/(self.cellsPerRow-1);
-    return space;
-    
+    return 0.0;
 }
-
-- (NSUInteger)_numberOfRows{
-    
-    return (NSUInteger)ceilf((float)((float)self.cellCount / (float)self.cellsPerRow));    
-}
-
-
-
 
 #pragma mark -
 #pragma mark Frame/Position Calculation
@@ -161,6 +117,7 @@
     return frame;
 }
 
+//this calculation is independant of the layout
 - (CellPosition)_positionForCellAtIndex:(NSUInteger)index{
     
     CellPosition pos;
@@ -187,6 +144,7 @@
     
 }
 
+//overidden by subclasses
 - (CGPoint)_originForCellAtPosition:(CellPosition)position{
         
     return CGPointZero;
@@ -194,14 +152,9 @@
 }
 
 
-- (CGRect)_frameForRow:(NSUInteger)row{
-    
-    return CGRectZero;
-}
-
-
 #pragma mark -
 
+//overidden by subclasses
 - (CGSize)_contentSize{
     
     return CGSizeZero;    

@@ -1,4 +1,5 @@
 
+#define DEBUG_LAYOUT
 
 #define CELL_INVISIBLE_TOP_MARGIN 10
 #define CELL_INVISIBLE_LEFT_MARGIN 10
@@ -31,3 +32,10 @@ typedef struct {
     NSUInteger row;
     NSUInteger column;
 } CellPosition;
+
+typedef struct {
+    NSUInteger index;
+    NSUInteger page;
+    NSUInteger row;
+    NSUInteger column;
+} CellPagePosition;

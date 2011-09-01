@@ -99,7 +99,7 @@
     
     if(cell == nil){
      
-        cell = [[[FJSpringBoardCell alloc] initWithContentSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
+        cell = [[[FJSpringBoardCell alloc] initWithSize:CGSizeMake(CELL_WIDTH, CELL_HEIGHT) reuseIdentifier:cellID] autorelease];
         
         cell.contentView.backgroundColor = [UIColor blueColor];
         cell.backgroundView.backgroundColor = [UIColor blueColor];
