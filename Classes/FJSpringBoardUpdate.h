@@ -7,8 +7,9 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "SMModelObject.h"
 
-@interface FJSpringBoardUpdate : NSObject{
+@interface FJSpringBoardUpdate : SMModelObject{
         
     NSSet* reloads;
     NSSet* insertions;
