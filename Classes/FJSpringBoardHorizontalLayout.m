@@ -369,6 +369,30 @@
     return cellIndexes;
 }
 
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+    
+    NSUInteger page = [self pageForContentOffset:offset];
+    
+    NSUInteger previousPage = 0;
+    
+    if(page > 0)
+       previousPage = page-1;
+    
+    NSUInteger nextPage = page+1;
+    
+    NSMutableIndexSet* set = [NSMutableIndexSet indexSet];
+    [set addIndexes:[self cellIndexesForPage:page]];
+    [set addIndexes:[self cellIndexesForPage:previousPage]];
+    [set addIndexes:[self cellIndexesForPage:nextPage]];
+    
+    ASSERT_TRUE(indexesAreContiguous(set));
+    NSRange r = rangeWithContiguousIndexes(set);
+    
+    return r;
+}
+
+
+
 
 
 @end

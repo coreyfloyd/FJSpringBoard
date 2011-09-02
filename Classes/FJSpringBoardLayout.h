@@ -37,6 +37,7 @@
 //makes layout calculations based on the current geometry and caches the results
 - (void)calculateLayout;
 
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset;
 
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 

@@ -126,10 +126,34 @@
         }
     }
     
+    NSUInteger lowest = [rowsInView firstIndex];
+    
+    if(lowest > 0)
+        lowest--;
+    
+    [rowsInView addIndex:lowest];
+    
+    NSUInteger highest = [rowsInView lastIndex];
+    highest++;
+    
+    [rowsInView addIndex:highest];
+    
     NSIndexSet* cellIndexes = [self _cellIndexesWithRowIndexes:rowsInView];
     
     return cellIndexes;
     
+    
+}
+
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+    
+    NSIndexSet* cellIndexes = [self visibleCellIndexesForContentOffset:offset];
+    
+    ASSERT_TRUE(indexesAreContiguous(cellIndexes));
+    
+    NSRange r = rangeWithContiguousIndexes(cellIndexes);
+    
+    return r;
     
 }
 
@@ -144,37 +168,5 @@
     
     return row;
 }
-
-
-- (NSIndexSet*)visibleCellIndexesWithPaddingForContentOffset:(CGPoint)offset{
-    
-    NSMutableIndexSet* vis = [[[self visibleCellIndexesForContentOffset:offset] mutableCopy] autorelease];
-    
-    NSIndexSet* prePadding = nil;
-    
-    NSUInteger first = [vis firstIndex];
-    
-    NSInteger row = [self _rowForCellAtIndex:first];
-    
-    if(row < NSNotFound){
-                    
-        prePadding = [self _cellIndexesInRowAtIndex:((NSUInteger)(row-1))];
-        
-    }
-    
-    NSUInteger last = [vis lastIndex];
-
-    row = [self _rowForCellAtIndex:last];
-    
-    NSIndexSet* postPadding = [self _cellIndexesInRowAtIndex:((NSUInteger)(row+1))];
-
-    [vis addIndexes:prePadding];
-    
-    [vis addIndexes:postPadding];
-    
-    return vis;
-    
-}
-
 
 @end

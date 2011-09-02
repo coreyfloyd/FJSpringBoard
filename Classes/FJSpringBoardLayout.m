@@ -205,7 +205,11 @@
     
 }
 
-
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+    
+    return NSMakeRange(0, 0);
+    
+}
 
 
 @end

@@ -17,8 +17,6 @@
 
 - (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset;
 
-- (NSIndexSet*)visibleCellIndexesWithPaddingForContentOffset:(CGPoint)offset; //gives indexes with 1 row of padding on top and bottom
-
 
 
 @end

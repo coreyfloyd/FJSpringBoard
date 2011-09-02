@@ -111,53 +111,19 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 - (void)updateIndexesWithContentOffest:(CGPoint)newOffset{
     
     self.contentOffset = newOffset;
-
-    if([self.layout isKindOfClass:[FJSpringBoardVerticalLayout class]]){
         
-        FJSpringBoardVerticalLayout* vert = (FJSpringBoardVerticalLayout*)self.layout;
-        
-        NSMutableIndexSet* newVisibleIndexes = [[[vert visibleCellIndexesWithPaddingForContentOffset:newOffset] mutableCopy] autorelease];
-        self.visibleIndexes = newVisibleIndexes;
-        
-        NSIndexSet* added = indexesAdded(self.loadedIndexes, newVisibleIndexes);
-        NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newVisibleIndexes);
-                
-        [self markIndexesForLoading:added];
-        [self markIndexesForUnloading:removed];
-        
-    }else{
-        
-        FJSpringBoardHorizontalLayout* hor = (FJSpringBoardHorizontalLayout*)self.layout;
-        
-        NSUInteger currentPage = [hor pageForContentOffset:newOffset];
-        
-        NSUInteger pageCount = [hor pageCount];
-        
-        NSUInteger nextPage = NSNotFound;
-        
-        if(currentPage < pageCount-1)
-            nextPage = currentPage + 1;
-        
-        NSUInteger previousPage = NSNotFound;
-        
-        if(currentPage != 0)
-            previousPage = currentPage - 1;
-        
-        NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSet];
-        self.visibleIndexes = newIndexes;
-        
-        [newIndexes addIndexes:[hor cellIndexesForPage:currentPage]];
-        [newIndexes addIndexes:[hor cellIndexesForPage:previousPage]];
-        [newIndexes addIndexes:[hor cellIndexesForPage:nextPage]];
-        
-        NSIndexSet* added = indexesAdded(self.loadedIndexes, newIndexes);
-        NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newIndexes);
-        
-        [self markIndexesForLoading:added];
-        [self markIndexesForUnloading:removed];
-            
-    }
+    NSRange visRange = [self.layout visibleRangeForContentOffset:newOffset];
     
+    NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:visRange];
+    
+    self.visibleIndexes = newIndexes;
+    
+    NSIndexSet* added = indexesAdded(self.loadedIndexes, newIndexes);
+    NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newIndexes);
+    
+    [self markIndexesForLoading:added];
+    [self markIndexesForUnloading:removed];
+
 }
 
 
