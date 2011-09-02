@@ -8,4 +8,5 @@
     #import "MacroUtilities.h"
     #import "Functions.h"
     #import "NSArrayHelper.h"
+    #import "SMModelObject.h"
 #endif
