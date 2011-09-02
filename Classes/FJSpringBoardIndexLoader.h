@@ -9,13 +9,14 @@
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardUtilities.h"
 #import "FJSpringBoardView.h"
+#import "SMModelObject.h"
 
 @class FJSpringBoardLayout;
 @class FJSpringBoardGroupCell;
 @class FJSpringBoardIndexLoader;
 @class FJSpringBoardUpdate;
 
-@interface FJSpringBoardIndexLoader : NSObject {
+@interface FJSpringBoardIndexLoader : SMModelObject {
 
     FJSpringBoardLayout *layout;
     
