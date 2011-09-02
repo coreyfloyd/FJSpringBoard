@@ -234,12 +234,18 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 
 - (void)shiftExistinCellActionsInAffectedRange:(NSRange)affectedRange{
     
+    debugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
+    
+    debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
+
     //only cells whose new positions will be in the actionable range need to have actions, lets figure that out
     //lets get the intersection, this should be only be the indexes that "end up" on screen
     NSRange rangeThatRequiresActions = NSIntersectionRange(actionableIndexRange, affectedRange);
     
+    debugLog(@"range to shift that is in view: %i - %i", rangeThatRequiresActions.location, NSMaxRange(rangeThatRequiresActions));
+
     NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:rangeThatRequiresActions];
-    
+
     //lets update the cell actions of the cells we are shuffling
     [self.newToOld enumerateObjectsAtIndexes:indexesThatRequireAction options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
@@ -251,12 +257,12 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
         if(!affectedCell){
             
             affectedCell = [[FJSpringBoardCellAction alloc] init];
-            affectedCell.oldSpringBoardIndex = oldIndex;
             [self.cellActions addObject:affectedCell];
             [affectedCell autorelease];
             
         }
         
+        affectedCell.oldSpringBoardIndex = oldIndex;
         affectedCell.newSpringBoardIndex = idx;
         
     }];
@@ -323,6 +329,8 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 
 
 - (void)applyDeletionAction:(FJSpringBoardAction*)deletion{
+    
+    debugLog(@"applying dleetion action at index: %i", deletion.index);
         
     //update new to old map: easy, remove the object from the new array
     [self.newToOld removeObjectAtIndex:deletion.index];
@@ -400,6 +408,8 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 }
 - (void)applyInsertionAction:(FJSpringBoardAction*)insertion{
     
+    debugLog(@"applying insertion action at index: %i", insertion.index);
+
     //update new to old map: easy, the new object did not exist in the old array
     [self.newToOld insertObject:[NSNumber numberWithInt:NSNotFound] atIndex:insertion.index];
     
@@ -415,6 +425,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     //make an index set
     NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
     
+    debugLog(@"all affected indexes (new): %@", affectedIndexes);
+
+    
     //lets map these to the old indexes
     NSMutableIndexSet* oldAffectedIndexes = [NSMutableIndexSet indexSet];
     
@@ -427,7 +440,8 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check
 
-    
+    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+
     //make a temporary home for the updated old index objects
     NSMutableArray* affectedObjects = [NSMutableArray array];
     
@@ -451,6 +465,8 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     //put updated mappings back into array
     [self.oldToNew replaceObjectsAtIndexes:oldAffectedIndexes withObjects:affectedObjects];
     
+    debugLog(@"map new to old: %@", [self.newToOld description]);
+    debugLog(@"map old to new: %@", [self.oldToNew description]);
 
     //Maps are done!
     
@@ -499,9 +515,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 }
 
 
-- (NSArray*)mappedCellActions{
+- (NSSet*)mappedCellActions{
     
-    return [[self cellActions] mutableCopy];
+    return [[[self cellActions] copy] autorelease];
     
 }
 

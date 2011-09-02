@@ -21,7 +21,7 @@
 //maps are created in the init method, I know, we should be lazy, but I am too lazy to be lazy.
 - (id)initWithCellCount:(NSUInteger)count actionableIndexRange:(NSRange)indexRange springBoardActions:(NSArray*)actions;
 
-- (NSArray*)mappedCellActions; //get actions
+- (NSSet*)mappedCellActions; //get actions
 
 
 

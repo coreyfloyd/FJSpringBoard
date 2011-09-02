@@ -13,6 +13,7 @@
 @class FJSpringBoardLayout;
 @class FJSpringBoardGroupCell;
 @class FJSpringBoardIndexLoader;
+@class FJSpringBoardUpdate;
 
 @interface FJSpringBoardIndexLoader : NSObject {
 
@@ -22,7 +23,6 @@
     
     NSMutableIndexSet *mutableAllIndexes;
     NSMutableIndexSet* mutableIndexesToLoad;
-    NSMutableIndexSet* mutableIndexesToLayout;
     NSMutableIndexSet* mutableIndexesToUnload;
     
     NSIndexSet *visibleIndexes; //visible means should be loaded due to layout not neccesarily in the view port.
@@ -44,20 +44,17 @@
 
 
 //mark any indexes for updating
-- (void)markIndexesForLoading:(NSIndexSet*)indexes; //also adds to Layout
-- (void)markIndexesForLayout:(NSIndexSet*)indexes;
+- (void)markIndexesForLoading:(NSIndexSet*)indexes; 
 - (void)markIndexesForUnloading:(NSIndexSet*)indexes;
 
 //get indexes that need updating
 //any changes that need to be processed by the springboard will be added to the index sets below
 //These changes are not expected to be animated. For animations you must use an animation action.
 - (NSIndexSet*)indexesToLoad; //need loaded from datasource
-- (NSIndexSet*)indexesToLayout; //need frames set and/or added to springboard
 - (NSIndexSet*)indexesToUnload; //need to be removed from spreingboard
 
 //mark as updated when processed
 - (void)clearIndexesToLoad; 
-- (void)clearIndexesToLayout;
 - (void)clearIndexesToUnload;
 
 //This should be equal to the actual indexes on screen!!
@@ -71,7 +68,7 @@
 - (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
 
 
-- (NSArray*)processActionQueueAndGetCellActions;
+- (FJSpringBoardUpdate*)processActionQueueAndGetUpdate;
 
 - (void)clearActionQueueAndUpdateCellCount:(NSUInteger)count;
 

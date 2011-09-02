@@ -15,6 +15,7 @@
 #import "FJSpringBoardAction.h"
 #import "FJSpringBoardActionIndexMap.h"
 #import "FJSpringBoardCellAction.h"
+#import "FJSpringBoardUpdate.h"
 
 #define MAX_PAGES 3
 
@@ -44,7 +45,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @property(nonatomic, retain) NSMutableIndexSet *mutableAllIndexes;
 @property(nonatomic, retain) NSMutableIndexSet *mutableLoadedIndexes;
 @property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToLoad;
-@property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToLayout;
 @property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToUnload;
 
 @property (nonatomic, retain) NSIndexSet* visibleIndexes;
@@ -64,7 +64,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @synthesize mutableAllIndexes;
 @synthesize mutableLoadedIndexes;    
 @synthesize mutableIndexesToLoad;
-@synthesize mutableIndexesToLayout;
 @synthesize mutableIndexesToUnload;
 
 @synthesize visibleIndexes;
@@ -78,8 +77,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     actionQueue = nil;
     [mutableIndexesToLoad release];
     mutableIndexesToLoad = nil;
-    [mutableIndexesToLayout release];
-    mutableIndexesToLayout = nil;
     [mutableIndexesToUnload release];
     mutableIndexesToUnload = nil;
     [mutableAllIndexes release];
@@ -96,7 +93,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         
         self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
         self.mutableLoadedIndexes = [NSMutableIndexSet indexSet];
-        self.mutableIndexesToLayout = [NSMutableIndexSet indexSet];
         self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
         
@@ -168,20 +164,13 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 - (void)markIndexesForLoading:(NSIndexSet*)indexes{
     
     [self.mutableIndexesToLoad addIndexes:indexes];
-    [self markIndexesForLayout:indexes];
     [self.mutableIndexesToUnload removeIndexes:indexes];
-}
-
-- (void)markIndexesForLayout:(NSIndexSet*)indexes{
-    
-    [self.mutableIndexesToLayout addIndexes:indexes];
 }
 
 - (void)markIndexesForUnloading:(NSIndexSet*)indexes{
     
     [self.mutableIndexesToUnload addIndexes:indexes];
     [self.mutableIndexesToLoad removeIndexes:indexes];
-    [self.mutableIndexesToLayout removeIndexes:indexes];
 
 }
 
@@ -190,11 +179,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     return [[self.mutableIndexesToLoad copy] autorelease];
 }
 
-- (NSIndexSet*)indexesToLayout{
-    
-    return [[self.mutableIndexesToLayout copy] autorelease];
-
-}
 
 - (NSIndexSet*)indexesToUnload{
     
@@ -206,12 +190,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
     [self.mutableLoadedIndexes addIndexes:self.mutableIndexesToLoad];
     [self.mutableIndexesToLoad removeAllIndexes];
-}
-
-- (void)clearIndexesToLayout{
-    
-    [self.mutableIndexesToLayout removeAllIndexes];
-
 }
 
 - (void)clearIndexesToUnload{
@@ -275,19 +253,20 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
 }
 
-- (NSArray*)processActionQueueAndGetCellActions{
+- (FJSpringBoardUpdate*)processActionQueueAndGetUpdate{
     
     ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
     
     NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
     FJSpringBoardActionIndexMap* map = [[FJSpringBoardActionIndexMap alloc] initWithCellCount:[self.allIndexes count] actionableIndexRange:range springBoardActions:self.actionQueue];
     
-    NSArray* actions = [map mappedCellActions];
+    NSSet* actions = [map mappedCellActions];
     
+    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellActions:actions];
     
-    return actions;
-    
-    
+    return [update autorelease];
+
+
 }
 
 - (void)clearActionQueueAndUpdateCellCount:(NSUInteger)count{
