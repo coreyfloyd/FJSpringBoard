@@ -12,6 +12,7 @@
 
 @class FJSpringBoardLayout;
 @class FJSpringBoardGroupCell;
+@class FJSpringBoardIndexLoader;
 
 @interface FJSpringBoardIndexLoader : NSObject {
 
@@ -29,7 +30,7 @@
 
 
     NSMutableArray* actionQueue;
-    
+        
 }
 - (id)initWithCount:(NSUInteger)count;
 
@@ -41,7 +42,6 @@
 - (void)updateIndexesWithContentOffest:(CGPoint)newOffset;
 @property(nonatomic, readonly) CGPoint contentOffset;
 
-@property(nonatomic, retain) NSMutableArray *cells;
 
 //mark any indexes for updating
 - (void)markIndexesForLoading:(NSIndexSet*)indexes; //also adds to Layout
@@ -70,8 +70,10 @@
 - (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
 
-- (NSArray*)animationsByProcessingActionQueue;
 
+- (NSArray*)processActionQueueAndGetCellActions;
+
+- (void)clearActionQueueAndUpdateCellCount:(NSUInteger)count;
 
 
 

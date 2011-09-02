@@ -375,7 +375,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     ASSERT_TRUE([oldAffectedIndexes count] == [affectedObjects count]); //sanity check
     
     //put updated mappings back into array
-    [self.oldToNew replaceObjectsInRange:affectedRange withObjectsFromArray:affectedObjects];
+    [self.oldToNew replaceObjectsAtIndexes:oldAffectedIndexes withObjects:affectedObjects];
     
     //lets update the deleted object to point to NSNotFound, no longer present in the new array
     [self.oldToNew replaceObjectAtIndex:deletion.index withObject:[NSNumber numberWithInt:NSNotFound]];
@@ -449,7 +449,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     ASSERT_TRUE([oldAffectedIndexes count] == [affectedObjects count]); //sanity check
     
     //put updated mappings back into array
-    [self.oldToNew replaceObjectsInRange:affectedRange withObjectsFromArray:affectedObjects];
+    [self.oldToNew replaceObjectsAtIndexes:oldAffectedIndexes withObjects:affectedObjects];
     
 
     //Maps are done!

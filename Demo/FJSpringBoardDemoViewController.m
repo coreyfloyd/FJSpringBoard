@@ -4,9 +4,9 @@
 #import "DemoModelObject.h"
 #import "FJSpringBoardCell.h"
 
-#define CELL_COUNT 80
-#define CELL_WIDTH 70
-#define CELL_HEIGHT 70
+#define CELL_COUNT 40
+#define CELL_WIDTH 57
+#define CELL_HEIGHT 57
 @implementation FJSpringBoardDemoViewController
 
 @synthesize model;
@@ -73,9 +73,9 @@
     f.origin.y += 40;
     f.size.height -= 40;
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
-    self.springBoardView.backgroundColor = [UIColor redColor];
+    self.springBoardView.backgroundColor = [UIColor lightGrayColor];
     self.springBoardView.cellSize = CGSizeMake(CELL_WIDTH, CELL_HEIGHT);
-    self.springBoardView.springBoardInsets = UIEdgeInsetsMake(15, 15, 15, 15);
+    //self.springBoardView.pageInsets = UIEdgeInsetsMake(15, 15, 15, 15);
     self.springBoardView.delegate = self;
     self.springBoardView.dataSource = self;
     self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;

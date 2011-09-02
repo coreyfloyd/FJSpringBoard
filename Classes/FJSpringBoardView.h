@@ -72,14 +72,11 @@ typedef enum  {
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
     
-    NSMutableIndexSet *indexesToInsert;
-    NSMutableIndexSet *indexesToDelete;
-    
     NSMutableIndexSet *selectedIndexes;
     
     NSMutableSet *reusableCells; //reusable cells
     
-    BOOL layoutIsDirty;
+    BOOL suspendLayoutUpdates;
 
     BOOL doubleTapped;
     BOOL longTapped;

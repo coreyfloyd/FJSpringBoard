@@ -7,4 +7,5 @@
     #import <UIKit/UIKit.h>
     #import "MacroUtilities.h"
     #import "Functions.h"
+    #import "NSArrayHelper.h"
 #endif

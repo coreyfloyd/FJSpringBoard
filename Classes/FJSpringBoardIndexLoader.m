@@ -14,6 +14,7 @@
 #import "FJSpringBoardCell.h"
 #import "FJSpringBoardAction.h"
 #import "FJSpringBoardActionIndexMap.h"
+#import "FJSpringBoardCellAction.h"
 
 #define MAX_PAGES 3
 
@@ -60,8 +61,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @synthesize layout;
 @synthesize contentOffset;
 
-@synthesize cells;
-
 @synthesize mutableAllIndexes;
 @synthesize mutableLoadedIndexes;    
 @synthesize mutableIndexesToLoad;
@@ -85,8 +84,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     mutableIndexesToUnload = nil;
     [mutableAllIndexes release];
     mutableAllIndexes = nil; 
-    [cells release];
-    cells = nil;
     [layout release];
     layout = nil;
     [super dealloc];
@@ -103,11 +100,8 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
         self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
         
-        self.cells = nullArrayOfSize(count);
-        
         self.actionQueue = [NSMutableArray array];
             
-        
     }
     return self;
 }
@@ -281,8 +275,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
 }
 
-- (NSArray*)animationsByProcessingActionQueue{
-    
+- (NSArray*)processActionQueueAndGetCellActions{
     
     ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
     
@@ -290,11 +283,20 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     FJSpringBoardActionIndexMap* map = [[FJSpringBoardActionIndexMap alloc] initWithCellCount:[self.allIndexes count] actionableIndexRange:range springBoardActions:self.actionQueue];
     
     NSArray* actions = [map mappedCellActions];
-        
-    //TODO: need to get new count so we can update the layout
     
     
+    return actions;
     
+    
+}
+
+- (void)clearActionQueueAndUpdateCellCount:(NSUInteger)count{
+    
+    [self.actionQueue removeAllObjects];
+    
+    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
+
+    //TODO: if we had any cells to reload we are fucked. we should go to a delegate pattern so the index loader can call the 
     
 }
 
