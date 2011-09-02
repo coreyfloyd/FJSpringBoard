@@ -353,6 +353,7 @@
         firstIndex += numberOfCellsBeforePage;
     }
     
+    /*
     if(firstIndex >= self.cellCount)
         return nil;
 
@@ -361,6 +362,7 @@
         numOfCellsOnPage = self.cellCount - numberOfCellsBeforePage;
         
     }
+    */
     
     NSRange cellRange = NSMakeRange(firstIndex, numOfCellsOnPage);
 
@@ -373,7 +375,7 @@
     
     NSUInteger page = [self pageForContentOffset:offset];
     
-    NSUInteger previousPage = 0;
+    NSUInteger previousPage = page;
     
     if(page > 0)
        previousPage = page-1;
