@@ -32,8 +32,8 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 @property (nonatomic, retain) NSMutableSet *cellActions;
 
 
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex;
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex;
+- (NSUInteger)mapNewIndexToOldIndex:(NSUInteger)oldIndex;
+- (NSUInteger)mapOldIndexToNewIndex:(NSUInteger)newIndex;
 
 - (void)purgeActionsOutsideOfActionableRange;
 
@@ -112,7 +112,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     return self;
 }
 
-- (NSUInteger)newIndexForOldIndex:(NSUInteger)oldIndex{
+- (NSUInteger)mapNewIndexToOldIndex:(NSUInteger)oldIndex{
     
     NSNumber* newNum = [self.oldToNew objectAtIndex:oldIndex];
     
@@ -120,7 +120,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     
 }
-- (NSUInteger)oldIndexForNewIndex:(NSUInteger)newIndex{
+- (NSUInteger)mapOldIndexToNewIndex:(NSUInteger)newIndex{
     
     NSNumber* newNum = [self.newToOld objectAtIndex:newIndex];
     
@@ -253,6 +253,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
         NSUInteger oldIndex = [val unsignedIntegerValue];
         
         FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:idx];
+
+        debugLog(@"action before shift: %@",[affectedCell description]);
+
         
         if(!affectedCell){
             
@@ -264,6 +267,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
         
         affectedCell.oldSpringBoardIndex = oldIndex;
         affectedCell.newSpringBoardIndex = idx;
+        
+        debugLog(@"action after shift: %@",[affectedCell description]);
+
         
     }];
 
@@ -330,10 +336,15 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 
 - (void)applyDeletionAction:(FJSpringBoardAction*)deletion{
     
-    debugLog(@"applying dleetion action at index: %i", deletion.index);
+    
+    debugLog(@"applying deletion action %@", [deletion description]);
         
+    NSUInteger newDeletionIndex = [self mapOldIndexToNewIndex:deletion.index];
+    
+    debugLog(@"mapping deletion index to new index before we make changes: %i", newDeletionIndex);
+
     //update new to old map: easy, remove the object from the new array
-    [self.newToOld removeObjectAtIndex:deletion.index];
+    [self.newToOld removeObjectAtIndex:newDeletionIndex];
     
     //update old to new map: hardish, need to find all affected indexes and decrease by 1
     
@@ -342,17 +353,19 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     //lets get the affected range in the new array
     NSUInteger lastIndex = [self.newToOld lastIndex];
-    NSRange affectedRange = rangeWithFirstAndLastIndexes(deletion.index, lastIndex);
+    NSRange affectedRange = rangeWithFirstAndLastIndexes(newDeletionIndex, lastIndex);
     
     //make an index set
     NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
     
+    debugLog(@"all affected indexes (new): %@", affectedIndexes);
+
     //lets map these to the old indexes
     NSMutableIndexSet* oldAffectedIndexes = [NSMutableIndexSet indexSet];
     
     [affectedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
         
-        NSUInteger oldIndex = [self oldIndexForNewIndex:idx];
+        NSUInteger oldIndex = [self mapNewIndexToOldIndex:idx];
         [oldAffectedIndexes addIndex:oldIndex];
         
     }];
@@ -363,6 +376,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     //make a temporary home for the updated old index objects
     NSMutableArray* affectedObjects = [NSMutableArray array];
     
+
+    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+
     
     //add 1 to each
     [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
@@ -380,6 +396,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
         
     }];
     
+
     ASSERT_TRUE([oldAffectedIndexes count] == [affectedObjects count]); //sanity check
     
     //put updated mappings back into array
@@ -387,6 +404,10 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     //lets update the deleted object to point to NSNotFound, no longer present in the new array
     [self.oldToNew replaceObjectAtIndex:deletion.index withObject:[NSNumber numberWithInt:NSNotFound]];
+    
+    
+    debugLog(@"map new to old: %@", [self.newToOld description]);
+    debugLog(@"map old to new: %@", [self.oldToNew description]);
     
     //Maps are done!
     
@@ -408,10 +429,14 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
 }
 - (void)applyInsertionAction:(FJSpringBoardAction*)insertion{
     
-    debugLog(@"applying insertion action at index: %i", insertion.index);
+    debugLog(@"applying insertion action %@", [insertion description]);
+    
+    NSUInteger actualIndex = [self mapOldIndexToNewIndex:insertion.index];
+    
+    debugLog(@"mapping insertion index to new index before we make changes: %i", actualIndex);
 
     //update new to old map: easy, the new object did not exist in the old array
-    [self.newToOld insertObject:[NSNumber numberWithInt:NSNotFound] atIndex:insertion.index];
+    [self.newToOld insertObject:[NSNumber numberWithInt:NSNotFound] atIndex:actualIndex];
     
     //update old to new map: hardish, need to find all affected indexes and increase by 1
     
@@ -420,7 +445,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     //lets get the affected range in the new array
     NSUInteger lastIndex = [self.newToOld lastIndex];
-    NSRange affectedRange = rangeWithFirstAndLastIndexes(insertion.index+1, lastIndex);
+    NSRange affectedRange = rangeWithFirstAndLastIndexes(actualIndex+1, lastIndex);
     
     //make an index set
     NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
@@ -433,7 +458,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     [affectedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
         
-        NSUInteger oldIndex = [self oldIndexForNewIndex:idx];
+        NSUInteger oldIndex = [self mapNewIndexToOldIndex:idx];
         [oldAffectedIndexes addIndex:oldIndex];
         
     }];
@@ -479,7 +504,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     [insertedCell markNeedsLoaded];
     insertedCell.animation = insertion.animation;
     insertedCell.oldSpringBoardIndex = NSNotFound;
-    insertedCell.newSpringBoardIndex = insertion.index;
+    insertedCell.newSpringBoardIndex = actualIndex;
     
     //insert the action
     [self.cellActions addObject:insertedCell];
