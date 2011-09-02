@@ -9,13 +9,14 @@
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardView.h"
 #import <QuartzCore/QuartzCore.h>
+#import "SMModelObject.h"
 
 @class FJSpringBoardCell;
 @class FJSpringBoardLayout;
 
 
 
-@interface FJSpringBoardCellAction : NSObject{
+@interface FJSpringBoardCellAction : SMModelObject{
 
     BOOL needsLoaded; //should load a new cell from the model and replace the existing n the springboard
     FJSpringBoardCellAnimation animation;

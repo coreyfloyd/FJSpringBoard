@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardView.h"
+#import "SMModelObject.h"
 
 @class FJSpringBoardActionIndexMap;
 
@@ -20,7 +21,7 @@ typedef enum{
 }FJSpringBoardActionType;
 
 
-@interface FJSpringBoardAction : NSObject{
+@interface FJSpringBoardAction : SMModelObject{
     
     FJSpringBoardActionType action;
     FJSpringBoardCellAnimation animation;

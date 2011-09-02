@@ -10,7 +10,7 @@
 
 @class FJSpringBoardView;
 
-@interface FJSpringBoardLayout : NSObject {
+@interface FJSpringBoardLayout : SMModelObject {
 
     FJSpringBoardView* springBoard;
     

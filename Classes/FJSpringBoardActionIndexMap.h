@@ -7,8 +7,9 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "SMModelObject.h"
 
-@interface FJSpringBoardActionIndexMap : NSObject{
+@interface FJSpringBoardActionIndexMap : SMModelObject{
     
     NSMutableArray* oldToNew;
     NSMutableArray* newToOld;
