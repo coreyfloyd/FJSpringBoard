@@ -19,7 +19,8 @@
 {
     self = [super init];
     if (self) {
-        // Initialization code here.
+        self.oldSpringBoardIndex = NSNotFound;
+        self.newSpringBoardIndex = NSNotFound;
     }
     
     return self;
@@ -30,4 +31,6 @@
     needsLoaded = YES;
     
 }
+
+
 @end

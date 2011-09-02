@@ -58,6 +58,15 @@
     return [a autorelease];
 }
 
+- (id)init {
+    self = [super init];
+    if (self) {
+        self.index = NSNotFound;
+        self.newIndex = NSNotFound;
+    }
+    return self;
+}
+
 - (void)buildCellActionsAndApplyToMap:(FJSpringBoardActionIndexMap*)map{
     
     
