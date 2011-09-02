@@ -7,62 +7,110 @@
 //
 
 #import "FJSpringBoardAction.h"
+#import "FJSpringBoardActionItem.h"
 
 @implementation FJSpringBoardAction
 
 @synthesize action;
 @synthesize animation;
-@synthesize index;
-@synthesize newIndex;
+@synthesize actionItems;
 
 
-+ (FJSpringBoardAction*)actionForReloadingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim{
+- (void)dealloc {
     
-    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionReload;
-    a.animation = anim;
-    a.index = idx;
-    
-    return [a autorelease];
+    [actionItems release];
+    actionItems = nil;
+    [super dealloc];
 }
-
-+ (FJSpringBoardAction*)actionForMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim{
-    
-    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionMove;
-    a.animation = anim;
-    a.index = startIndex;
-    a.newIndex = endIndex;
-    
-    return [a autorelease];
-}
-
-+ (FJSpringBoardAction*)actionForInsertingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim{
-    
-    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionInsert;
-    a.animation = anim;
-    a.index = idx;
-    
-    return [a autorelease];
-}
-
-+ (FJSpringBoardAction*)actionForDeletingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim{
-    
++ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
     a.action = FJSpringBoardActionDelete;
     a.animation = anim;
-    a.index = idx;
+
+    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
     
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
+        item.index = idx;
+        [items addObject:item];
+        [item release];
+        
+    }];
+    
+    a.actionItems = items;
     return [a autorelease];
+
 }
+
++ (FJSpringBoardAction*)insertionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
+    
+    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
+    a.action = FJSpringBoardActionInsert;
+    a.animation = anim;
+    
+    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
+        item.index = idx;
+        [items addObject:item];
+        [item release];
+        
+    }];
+
+    a.actionItems = items;
+    return [a autorelease];
+
+}
+
+
++ (FJSpringBoardAction*)reloadActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
+    
+    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
+    a.action = FJSpringBoardActionReload;
+    a.animation = anim;
+    
+    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
+        item.index = idx;
+        [items addObject:item];
+        [item release];
+        
+    }];
+    
+    a.actionItems = items;
+    return [a autorelease];
+
+}
+
++ (FJSpringBoardAction*)moveActionWithStartIndex:(NSUInteger)startIndex endIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim{
+    
+    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
+    a.action = FJSpringBoardActionReload;
+    a.animation = anim;
+    
+    FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
+    item.index = startIndex;
+    item.newIndex = endIndex;
+    
+    a.actionItems = [NSArray arrayWithObject:item];
+    [item release];
+
+    return [a autorelease];
+    
+}
+
 
 - (id)init {
     self = [super init];
     if (self) {
-        self.index = NSNotFound;
-        self.newIndex = NSNotFound;
+
     }
     return self;
 }

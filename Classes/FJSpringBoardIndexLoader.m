@@ -184,38 +184,22 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 - (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    
-        FJSpringBoardAction* a = [FJSpringBoardAction actionForReloadingCellAtIndex:idx animation:animation];
-        [self addToActionQueue:a];
-        
-    }];
+    [self addToActionQueue:[FJSpringBoardAction reloadActionWithIndexes:indexes animation:animation]];
     
 }
 - (void)queueActionByMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    FJSpringBoardAction *a = [FJSpringBoardAction actionForMovingCellAtIndex:startIndex toIndex:endIndex animation:animation];
-    [self addToActionQueue:a];
+    [self addToActionQueue:[FJSpringBoardAction moveActionWithStartIndex:startIndex endIndex:endIndex animation:animation]];
     
 }
 - (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardAction* a = [FJSpringBoardAction actionForInsertingCellAtIndex:idx animation:animation];
-        [self addToActionQueue:a];
-        
-    }];
+    [self addToActionQueue:[FJSpringBoardAction insertionActionWithIndexes:indexes animation:animation]];
     
 }
 - (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-       
-        FJSpringBoardAction* a = [FJSpringBoardAction actionForDeletingCellAtIndex:idx animation:animation];
-        [self addToActionQueue:a];
-        
-    }];
+    [self addToActionQueue:[FJSpringBoardAction deletionActionWithIndexes:indexes animation:animation]];
     
 }
 

@@ -37,52 +37,38 @@
         NSMutableSet* del = [NSMutableSet set];
         NSMutableSet* mov = [NSMutableSet set];
         
-        
         [actions enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-            
+        
             FJSpringBoardCellAction* action = obj;
-
-            if(action.oldSpringBoardIndex == NSNotFound && action.newSpringBoardIndex == NSNotFound){
-                
-                //cell is being inserted and subsequesntly deleted. should be rare
-                
-                NSLog(@"cell inserted and deleted in smae update batch!");;
-                
-                
-            }else if(action.oldSpringBoardIndex == NSNotFound && action.newSpringBoardIndex != NSNotFound){
-                
-                //this is a new cell it is not on screen
-                [ins addObject:action];
-                
-
-            }else if(action.oldSpringBoardIndex != NSNotFound && action.newSpringBoardIndex == NSNotFound){
-                
-                //cell is being deleted
-                [del addObject:action];
-
-                
-            }else if(action.oldSpringBoardIndex == action.newSpringBoardIndex){
-
-                //cell is being reloaded
-                [rel addObject:action];
-
-                
-            }else if(action.oldSpringBoardIndex != NSNotFound && action.newSpringBoardIndex != NSNotFound){
-                
-                //cell is being moved
-                [mov addObject:action];
-
-            }else{
-                
-                ALWAYS_ASSERT;
+            
+            [action finalizeType];
+            
+            switch (action.type) {
+                case FJSpringBoardCellActionNone:
+                    break;
+                case FJSpringBoardCellActionInsert:
+                    [ins addObject:action];
+                    break;
+                case FJSpringBoardCellActionDelete:
+                    [del addObject:action];
+                    break;
+                case FJSpringBoardCellActionReload:
+                    [rel addObject:action];
+                    break;
+                case FJSpringBoardCellActionMove:
+                    [mov addObject:action];
+                    break;
+                default:
+                    ALWAYS_ASSERT;
+                    break;
             }
             
         }];
         
-        self.reloads = rel;
-        self.insertions = ins;
-        self.deletions = del;
-        self.moves = mov;
+        self.reloads = [[rel allObjects] sortedArrayUsingSelector:@selector(compare:)];
+        self.insertions = [[ins allObjects] sortedArrayUsingSelector:@selector(compare:)]; 
+        self.deletions = [[del allObjects] sortedArrayUsingSelector:@selector(compare:)];
+        self.moves = [[mov allObjects] sortedArrayUsingSelector:@selector(compare:)];
         
     }
     

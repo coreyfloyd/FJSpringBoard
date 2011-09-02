@@ -11,16 +11,16 @@
 
 @interface FJSpringBoardUpdate : SMModelObject{
         
-    NSSet* reloads;
-    NSSet* insertions;
-    NSSet* deletions;
-    NSSet* moves; //weird duck, couldd possibly include a reload
+    NSArray* reloads;
+    NSArray* insertions;
+    NSArray* deletions;
+    NSArray* moves; //weird duck, couldd possibly include a reload
     
 }
-@property (nonatomic, copy) NSSet *reloads;
-@property (nonatomic, copy) NSSet *insertions;
-@property (nonatomic, copy) NSSet *deletions;
-@property (nonatomic, copy) NSSet *moves;
+@property (nonatomic, copy) NSArray *reloads;
+@property (nonatomic, copy) NSArray *insertions;
+@property (nonatomic, copy) NSArray *deletions;
+@property (nonatomic, copy) NSArray *moves;
 
 - (id)initWithCellActions:(NSSet*)actions;
 

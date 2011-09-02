@@ -25,22 +25,20 @@ typedef enum{
     
     FJSpringBoardActionType action;
     FJSpringBoardCellAnimation animation;
-    NSUInteger index;
-    NSUInteger newIndex;    
+    NSArray* actionItems;
     
 }
 @property (nonatomic) FJSpringBoardActionType action;
 @property (nonatomic) FJSpringBoardCellAnimation animation;
-@property (nonatomic) NSUInteger index;
-@property (nonatomic) NSUInteger newIndex;
+@property (nonatomic, copy) NSArray *actionItems;
 
-+ (FJSpringBoardAction*)actionForReloadingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim;
++ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim; 
 
-+ (FJSpringBoardAction*)actionForMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim;
++ (FJSpringBoardAction*)insertionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim; 
 
-+ (FJSpringBoardAction*)actionForInsertingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim;
++ (FJSpringBoardAction*)reloadActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim; 
 
-+ (FJSpringBoardAction*)actionForDeletingCellAtIndex:(NSUInteger)idx animation:(FJSpringBoardCellAnimation)anim;
++ (FJSpringBoardAction*)moveActionWithStartIndex:(NSUInteger)startIndex endIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim; 
 
 - (void)buildCellActionsAndApplyToMap:(FJSpringBoardActionIndexMap*)map;
 

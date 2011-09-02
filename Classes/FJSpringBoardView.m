@@ -850,11 +850,11 @@ typedef enum  {
     
 }
 
-- (void)_processDeletionActions:(NSSet*)deletions{
+- (void)_processDeletionActions:(NSArray*)deletions{
     
     NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
     
-    [deletions enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+    [deletions enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
         FJSpringBoardCellAction* action = obj;
         
@@ -894,10 +894,9 @@ typedef enum  {
 }
 
 
-- (void)_processMoveActions:(NSSet*)moves{
+- (void)_processMoveActions:(NSArray*)moves{
     
-    
-    [moves enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+    [moves enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
         FJSpringBoardCellAction* action = obj;
         
@@ -927,7 +926,7 @@ typedef enum  {
     [UIView animateWithDuration:MOVE_ANIMATION_DURATION 
                      animations:^(void) {
                          
-                         [moves enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                         [moves enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
                              FJSpringBoardCellAction* action = obj;
 
@@ -943,7 +942,7 @@ typedef enum  {
                          
                          NSMutableIndexSet* needsReload = [NSMutableIndexSet indexSet];
                          
-                         [moves enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                         [moves enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
                              FJSpringBoardCellAction* action = obj;
 
@@ -1000,12 +999,11 @@ typedef enum  {
     
 }
 
-- (void)_processInsertionActions:(NSSet*)insertions{
+- (void)_processInsertionActions:(NSArray*)insertions{
         
     NSMutableIndexSet* insetionIndexes = [NSMutableIndexSet indexSet];
 
-
-    [insertions enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+    [insertions enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
         FJSpringBoardCellAction* action = obj;
         
@@ -1061,12 +1059,13 @@ typedef enum  {
 
 }
 
-- (void)_processReloadActions:(NSSet*)reloads{
+- (void)_processReloadActions:(NSArray*)reloads{
         
     [UIView animateWithDuration:RELOAD_ANIMATION_DURATION 
                      animations:^(void) {
                          
-                         [reloads enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                         [reloads enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+
                          
                              FJSpringBoardCellAction* action = obj;
                              FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
@@ -1081,7 +1080,7 @@ typedef enum  {
                          
                      } completion:^(BOOL finished) {
                          
-                         [reloads enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                         [reloads enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
                              FJSpringBoardCellAction* action = obj;
                              [self _removeCellAtIndex:action.newSpringBoardIndex];
@@ -1093,7 +1092,7 @@ typedef enum  {
                          [UIView animateWithDuration:RELOAD_ANIMATION_DURATION 
                                           animations:^(void) {
                                               
-                                              [reloads enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                                              [reloads enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                                                   
                                                   FJSpringBoardCellAction* action = obj;
                                                   FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
@@ -1117,16 +1116,16 @@ typedef enum  {
 
 - (void)_processUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)completion{
     
-    NSSet* deletions = [update deletions];
+    NSArray* deletions = [update deletions];
     [self _processDeletionActions:deletions];
         
-    NSSet* moves = [update moves];
+    NSArray* moves = [update moves];
     [self _processMoveActions:moves];
        
-    NSSet* insertions = [update insertions];
+    NSArray* insertions = [update insertions];
     [self _processInsertionActions:insertions];
     
-    NSSet* reloads = [update reloads];
+    NSArray* reloads = [update reloads];
     [self _processReloadActions:reloads];
            
     self.suspendLayoutUpdates = YES;

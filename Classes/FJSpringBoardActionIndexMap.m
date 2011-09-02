@@ -8,7 +8,12 @@
 
 #import "FJSpringBoardActionIndexMap.h"
 #import "FJSpringBoardAction.h"
+#import "FJSpringBoardActionItem.h"
+
+#import "FJIndexMapItem.h"
+
 #import "FJSpringBoardCellAction.h"
+
 
 NSMutableArray* indexArrayOfSize(NSUInteger size){
     
@@ -16,7 +21,12 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     for (int i = 0; i < size; i++) {
         
-        [a addObject:[NSNumber numberWithInt:i]];
+        FJIndexMapItem* item = [[FJIndexMapItem alloc] init];
+        item.mappedIndex = i;
+        
+        [a addObject:item];
+        
+        [item release];
     }
     
     return a;
@@ -71,7 +81,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     if (self) {
         
         NSMutableArray* map = indexArrayOfSize(count);
-        NSMutableArray* map2 = [[map mutableCopy] autorelease]; 
+        NSMutableArray* map2 = indexArrayOfSize(count); 
         self.oldToNew = map;
         self.newToOld = map2;
         
@@ -112,19 +122,19 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     return self;
 }
 
-- (NSUInteger)mapNewIndexToOldIndex:(NSUInteger)oldIndex{
+- (NSUInteger)mapNewIndexToOldIndex:(NSUInteger)newIndex{
     
-    NSNumber* newNum = [self.oldToNew objectAtIndex:oldIndex];
+    FJIndexMapItem* newNum = [self.newToOld objectAtIndex:newIndex];
     
-    return [newNum unsignedIntegerValue];
+    return [newNum mappedIndex];
     
     
 }
-- (NSUInteger)mapOldIndexToNewIndex:(NSUInteger)newIndex{
+- (NSUInteger)mapOldIndexToNewIndex:(NSUInteger)oldIndex{
     
-    NSNumber* newNum = [self.newToOld objectAtIndex:newIndex];
+    FJIndexMapItem* newNum = [self.oldToNew objectAtIndex:oldIndex];
     
-    return [newNum unsignedIntegerValue];
+    return [newNum mappedIndex];
 }
 
 - (void)addCellAction:(id)aCellAction
@@ -232,178 +242,234 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
 }
 
-- (void)shiftExistinCellActionsInAffectedRange:(NSRange)affectedRange{
-    
-    debugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
+
+- (void)shiftIndexesInAffectedRange:(NSRange)affectedRange by:(NSUInteger)num{
     
     debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
-
-    //only cells whose new positions will be in the actionable range need to have actions, lets figure that out
-    //lets get the intersection, this should be only be the indexes that "end up" on screen
-    NSRange rangeThatRequiresActions = NSIntersectionRange(actionableIndexRange, affectedRange);
     
-    debugLog(@"range to shift that is in view: %i - %i", rangeThatRequiresActions.location, NSMaxRange(rangeThatRequiresActions));
-
-    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:rangeThatRequiresActions];
-
+    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
+    
+    NSMutableArray* actions = [NSMutableArray arrayWithCapacity:[indexesThatRequireAction count]];
+    
     //lets update the cell actions of the cells we are shuffling
     [self.newToOld enumerateObjectsAtIndexes:indexesThatRequireAction options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
-        NSNumber* val = (NSNumber*)obj;
-        NSUInteger oldIndex = [val unsignedIntegerValue];
+        FJIndexMapItem* item = obj;
         
-        FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:idx];
-
-        debugLog(@"action before shift: %@",[affectedCell description]);
-
+        FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:idx]; 
+        //performance: we can sort and do this faster if needed
         
         if(!affectedCell){
             
             affectedCell = [[FJSpringBoardCellAction alloc] init];
+            affectedCell.oldSpringBoardIndex = item.mappedIndex;
+            affectedCell.newSpringBoardIndex = item.mappedIndex;
             [self.cellActions addObject:affectedCell];
             [affectedCell autorelease];
             
         }
         
-        affectedCell.oldSpringBoardIndex = oldIndex;
-        affectedCell.newSpringBoardIndex = idx;
+        [actions addObject:affectedCell];
         
-        debugLog(@"action after shift: %@",[affectedCell description]);
-
         
     }];
-
+    
+    
+    [actions enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCellAction* affectedCell = obj;
+        
+        debugLog(@"action before shift: %@",[affectedCell description]);
+        
+        affectedCell.newSpringBoardIndex += num;
+        
+        debugLog(@"action after shift: %@",[affectedCell description]);
+        
+    }];
+    
+    
 }
 
+- (void)rightShiftIndexesInAffectedRange:(NSRange)affectedRange{
+    
+    [self shiftIndexesInAffectedRange:affectedRange by:1];
+    
+}
+
+- (void)leftShiffIndexesInAffectedRange:(NSRange)affectedRange{
+    
+    [self shiftIndexesInAffectedRange:affectedRange by:-1];
+    
+}
+
+
+- (void)updateOldToNewMapByShiftingItemsInNewRange:(NSRange)rangeOfItemesInNewArray by:(NSUInteger)num{
+    
+    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:rangeOfItemesInNewArray];
+    
+    //storage for the mapped Indexes
+    NSMutableIndexSet* oldAffectedIndexes = [NSMutableIndexSet indexSet];
+    
+    //map the indexes
+    [affectedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        NSUInteger oldIndex = [self mapNewIndexToOldIndex:idx];
+        [oldAffectedIndexes addIndex:oldIndex];
+        
+    }];       
+    
+    ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check
+    
+    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+    
+    //add 1 to each
+    [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJIndexMapItem* item = obj;
+        item.mappedIndex += num;
+        
+    }];
+    
+}
+
+- (void)updateOldToNewMapByRightShiftingItemsInNewRange:(NSRange)rangeOfItemesInNewArray{
+    
+    [self updateOldToNewMapByShiftingItemsInNewRange:rangeOfItemesInNewArray by:1];
+    
+}
+- (void)updateOldToNewMapByLeftShiftingItemsInNewRange:(NSRange)rangeOfItemesInNewArray{
+    
+    [self updateOldToNewMapByShiftingItemsInNewRange:rangeOfItemesInNewArray by:-1];
+    
+}
 
 
 - (void)applyMoveAction:(FJSpringBoardAction*)move{
     
-    //update new to old map: medium easy, remove and insert
-    NSNumber* obj = [[self.newToOld objectAtIndex:move.index] retain];
-    [self.newToOld removeObjectAtIndex:move.index];
-    [self.newToOld insertObject:obj atIndex:move.newIndex];
+    ASSERT_TRUE([move.actionItems count] == 1);
     
-    //update old to new map: medium easy, do the opposite of above. Some sort of mathematical phenomenon er something
-    obj = [[self.oldToNew objectAtIndex:move.newIndex] retain];
-    [self.newToOld removeObjectAtIndex:move.newIndex];
-    [self.newToOld insertObject:obj atIndex:move.index];
+    [move.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = obj;
+        
+        FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:item.index];    
+        
+        if(!affectedCell){
+            
+            affectedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
+            affectedCell.oldSpringBoardIndex = item.index;
+            
+        }
+        
+        [affectedCell markNeedsLoaded];
+        affectedCell.newSpringBoardIndex = item.newIndex;
+        affectedCell.animation = move.animation;
+        
+        [item updatedAffectedRangeWithIndexCount:[self.newToOld count]];
+        
+        [self leftShiffIndexesInAffectedRange:item.affectedRange];
+
+        //update new to old map: medium easy, remove and insert
+        FJIndexMapItem* mapItem = [[self.newToOld objectAtIndex:item.index] retain];
+        [self.newToOld removeObjectAtIndex:item.index];
+        [self.newToOld insertObject:mapItem atIndex:item.newIndex];
+        
+        //update old to new map: medium easy, do the opposite of above. Some sort of mathematical phenomenon er something
+        mapItem = [[self.oldToNew objectAtIndex:item.newIndex] retain];
+        [self.newToOld removeObjectAtIndex:item.newIndex];
+        [self.newToOld insertObject:obj atIndex:item.index];
+        
+        [self addCellAction:affectedCell];
+        
+    }];
 
     
-    //lets get the affected range in the new array
-    NSUInteger startIndex = NSNotFound;
-    NSUInteger lastIndex = NSNotFound;
-    
-    //moving forward
-    if(move.newIndex > move.index){
+       
         
-        startIndex = move.index;
-        lastIndex = move.newIndex;
-        
-    //backwards    
-    }else{
-        
-        startIndex = move.newIndex;
-        lastIndex = move.index;
-        
-    }
-
-    NSRange affectedRange = rangeWithFirstAndLastIndexes(startIndex, lastIndex);
-    
-    //now lets take care of the affected cell actions
-    [self shiftExistinCellActionsInAffectedRange:affectedRange];
-    
 }
 
 - (void)applyReloadAction:(FJSpringBoardAction*)reload{
 
-    FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:reload.index];    
-    
-    if(!affectedCell){
+    [reload.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
-        affectedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
-        affectedCell.oldSpringBoardIndex = reload.index;
-        affectedCell.newSpringBoardIndex = reload.index;
-        [self.cellActions addObject:affectedCell];
+        FJSpringBoardActionItem* item = obj;
         
-    }
+        FJSpringBoardCellAction* affectedCell = [self actionForNewIndex:item.index];    
+        
+        if(!affectedCell){
+            
+            affectedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
+            affectedCell.oldSpringBoardIndex = item.index;
+            [self.cellActions addObject:affectedCell];
+            
+        }
+        
+        [affectedCell markNeedsLoaded];
+        affectedCell.newSpringBoardIndex = item.index;
+        affectedCell.animation = reload.animation;
+        
+    }];
     
-    [affectedCell markNeedsLoaded];
-    affectedCell.animation = reload.animation;
-
+  
 }
 
 
 - (void)applyDeletionAction:(FJSpringBoardAction*)deletion{
     
-    
     debugLog(@"applying deletion action %@", [deletion description]);
+    
+    //hold indexes for fast lookup later
+    NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
+    
+    //tmep storage for actions, adding these before completing the mappings will mess up our calculations
+    NSMutableSet* deletionCellActions = [NSMutableSet setWithCapacity:[deletion.actionItems count]];
+    
+    [deletion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
-    NSUInteger newDeletionIndex = [self mapOldIndexToNewIndex:deletion.index];
-    
-    debugLog(@"mapping deletion index to new index before we make changes: %i", newDeletionIndex);
-
-    //update new to old map: easy, remove the object from the new array
-    [self.newToOld removeObjectAtIndex:newDeletionIndex];
-    
-    //update old to new map: hardish, need to find all affected indexes and decrease by 1
-    
-    //NSUInteger length = [self.oldToNew lastIndex]-insertion.index + 1;//could use count, but this more readable
-    //NSRange affectedRange = NSMakeRange(insertion.index, length);
-    
-    //lets get the affected range in the new array
-    NSUInteger lastIndex = [self.newToOld lastIndex];
-    NSRange affectedRange = rangeWithFirstAndLastIndexes(newDeletionIndex, lastIndex);
-    
-    //make an index set
-    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
-    
-    debugLog(@"all affected indexes (new): %@", affectedIndexes);
-
-    //lets map these to the old indexes
-    NSMutableIndexSet* oldAffectedIndexes = [NSMutableIndexSet indexSet];
-    
-    [affectedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        FJSpringBoardActionItem* item = obj;
         
-        NSUInteger oldIndex = [self mapNewIndexToOldIndex:idx];
-        [oldAffectedIndexes addIndex:oldIndex];
+        NSUInteger actualIndex = item.index;
+        
+        //add index
+        [deletionIndexes addIndex:actualIndex];
+        
+        //create and add cell action
+        FJSpringBoardCellAction* deletedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
+        deletedCell.animation = deletion.animation;
+        deletedCell.oldSpringBoardIndex = actualIndex;
+        deletedCell.newSpringBoardIndex = NSNotFound;
+
+        
+        [deletionCellActions addObject:deletedCell];
+        [deletedCell release];
+        
+        
+        //lets get the affected range 
+        [item updatedAffectedRangeWithIndexCount:[self.newToOld count]];
+        
+        //now lets take shift of the affected cells
+        [self leftShiffIndexesInAffectedRange:item.affectedRange];
         
     }];
     
-    ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check
     
     
-    //make a temporary home for the updated old index objects
-    NSMutableArray* affectedObjects = [NSMutableArray array];
+    //now we need to update the maps
     
-
-    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+    //update new to old map: easy, remove the objects from the new array
+    [self.newToOld removeObjectsAtIndexes:deletionIndexes];
 
     
-    //add 1 to each
-    [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+    //update old to new map: hardish, need to find all old affected indexes and decrease by 1
+    [deletion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
         
-        ASSERT_TRUE(idx > 0); //0 should never be touched, will break us (if idx 0 was removed in the new array, the lowest this idx should be is 1
-        
-        NSNumber* val = (NSNumber*)obj;
-        
-        NSUInteger oldIndex = [val unsignedIntegerValue];
-        NSUInteger newIndex = oldIndex - 1; //action is to remove 1 to affected indexes
-        
-        val = [NSNumber numberWithUnsignedInteger:newIndex];
-        
-        [affectedObjects addObject:val];
+        FJSpringBoardActionItem* item = obj;
+                
+        //get the affected indexes from the range we calculated earlier
+        [self updateOldToNewMapByLeftShiftingItemsInNewRange:item.affectedRange];
+
         
     }];
-    
-
-    ASSERT_TRUE([oldAffectedIndexes count] == [affectedObjects count]); //sanity check
-    
-    //put updated mappings back into array
-    [self.oldToNew replaceObjectsAtIndexes:oldAffectedIndexes withObjects:affectedObjects];
-    
-    //lets update the deleted object to point to NSNotFound, no longer present in the new array
-    [self.oldToNew replaceObjectAtIndex:deletion.index withObject:[NSNumber numberWithInt:NSNotFound]];
     
     
     debugLog(@"map new to old: %@", [self.newToOld description]);
@@ -412,104 +478,96 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     //Maps are done!
     
     
-    //now lets take care of the affected cell actions
-    [self shiftExistinCellActionsInAffectedRange:affectedRange];
-
-    //lets create the action for the deleted cell
-    FJSpringBoardCellAction* deletedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
-    deletedCell.animation = deletion.animation;
-    deletedCell.oldSpringBoardIndex = deletion.index;
-    deletedCell.newSpringBoardIndex = NSNotFound;
+    //finally. lets add the actions for the new cells
+    [deletionCellActions enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        
+        [self addCellAction:obj];
+        
+    }];
     
-    //insert the action
-    [self.cellActions addObject:deletedCell];    
 
-
-    
 }
 - (void)applyInsertionAction:(FJSpringBoardAction*)insertion{
     
     debugLog(@"applying insertion action %@", [insertion description]);
     
-    NSUInteger actualIndex = [self mapOldIndexToNewIndex:insertion.index];
+    //hold indexes for fast lookup later
+    NSMutableIndexSet* insertionIndexes = [NSMutableIndexSet indexSet];
     
-    debugLog(@"mapping insertion index to new index before we make changes: %i", actualIndex);
+    //tmep storage for actions, adding these before completing the mappings will mess up our calculations
+    NSMutableSet* insertionCellActions = [NSMutableSet setWithCapacity:[insertion.actionItems count]];
+        
+    [insertion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = obj;
+        
+        NSUInteger actualIndex = item.index;
+        
+        //add index
+        [insertionIndexes addIndex:actualIndex];
+        
+        //create and add cell action
+        FJSpringBoardCellAction* insertedCell = [[FJSpringBoardCellAction alloc] init];
+        [insertedCell markNeedsLoaded];
+        insertedCell.animation = insertion.animation;
+        insertedCell.oldSpringBoardIndex = NSNotFound;
+        insertedCell.newSpringBoardIndex = actualIndex;
+        
+        [insertionCellActions addObject:insertedCell];
+        [insertedCell release];
 
+        
+        //lets get the affected range 
+        [item updatedAffectedRangeWithIndexCount:[self.newToOld count]];
+        
+        //now lets take shift of the affected cells
+        [self rightShiftIndexesInAffectedRange:item.affectedRange];
+        
+    }];
+    
+    
+    
+    //now we need to update the maps
+    
     //update new to old map: easy, the new object did not exist in the old array
-    [self.newToOld insertObject:[NSNumber numberWithInt:NSNotFound] atIndex:actualIndex];
+    NSMutableArray* insertionObjectsForNewMap = [NSMutableArray arrayWithCapacity:[insertionIndexes count]];
+    for (int i = 0; i<[insertionIndexes count]; i++) {
+        
+        FJIndexMapItem* item = [[FJIndexMapItem alloc] init];
+        item.mappedIndex = NSNotFound;
+        
+        [insertionObjectsForNewMap addObject:item];
+        
+        [item release];
+    }
+        
     
-    //update old to new map: hardish, need to find all affected indexes and increase by 1
-    
-    //NSUInteger length = [self.oldToNew lastIndex]-insertion.index + 1;//could use count, but this more readable
-    //NSRange affectedRange = NSMakeRange(insertion.index, length);
-    
-    //lets get the affected range in the new array
-    NSUInteger lastIndex = [self.newToOld lastIndex];
-    NSRange affectedRange = rangeWithFirstAndLastIndexes(actualIndex+1, lastIndex);
-    
-    //make an index set
-    NSIndexSet* affectedIndexes = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
-    
-    debugLog(@"all affected indexes (new): %@", affectedIndexes);
+    //update old to new map: hardish, need to find all old affected indexes and increase by 1
+    [insertion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardActionItem* item = obj;
+                        
+        //get the affected indexes from the range we calculated earlier
+        [self updateOldToNewMapByRightShiftingItemsInNewRange:item.affectedRange];
 
-    
-    //lets map these to the old indexes
-    NSMutableIndexSet* oldAffectedIndexes = [NSMutableIndexSet indexSet];
-    
-    [affectedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        NSUInteger oldIndex = [self mapNewIndexToOldIndex:idx];
-        [oldAffectedIndexes addIndex:oldIndex];
-        
     }];
     
-    ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check
+    [self.newToOld insertObjects:insertionObjectsForNewMap atIndexes:insertionIndexes];
 
-    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
-
-    //make a temporary home for the updated old index objects
-    NSMutableArray* affectedObjects = [NSMutableArray array];
-    
-    
-    //add 1 to each
-    [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        NSNumber* val = (NSNumber*)obj;
-        
-        NSUInteger oldIndex = [val unsignedIntegerValue];
-        NSUInteger newIndex = oldIndex + 1; //action is to add 1 to affected indexes
-        
-        val = [NSNumber numberWithUnsignedInteger:newIndex];
-        
-        [affectedObjects addObject:val];
-        
-    }];
-    
-    ASSERT_TRUE([oldAffectedIndexes count] == [affectedObjects count]); //sanity check
-    
-    //put updated mappings back into array
-    [self.oldToNew replaceObjectsAtIndexes:oldAffectedIndexes withObjects:affectedObjects];
-    
     debugLog(@"map new to old: %@", [self.newToOld description]);
     debugLog(@"map old to new: %@", [self.oldToNew description]);
-
+    
     //Maps are done!
     
-      
-    //now lets take care of the affected cell actions
-    [self shiftExistinCellActionsInAffectedRange:affectedRange];
     
-    //finally. lets create the action for the new cell
-    FJSpringBoardCellAction* insertedCell = [[[FJSpringBoardCellAction alloc] init] autorelease];
-    [insertedCell markNeedsLoaded];
-    insertedCell.animation = insertion.animation;
-    insertedCell.oldSpringBoardIndex = NSNotFound;
-    insertedCell.newSpringBoardIndex = actualIndex;
-    
-    //insert the action
-    [self.cellActions addObject:insertedCell];
+    //finally. lets add the actions for the new cells
+    [insertionCellActions enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        
+        [self addCellAction:obj];
 
-    
+    }];
+        
+        
 }
 
 - (void)purgeActionsOutsideOfActionableRange{
@@ -519,6 +577,9 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
      However, if it is later bumped onscreen by another action, we would lose the information about the insertion.
      So we do want to purge actions outside of the affected range after we are done create actions.
      */
+    
+    debugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
+
     
     NSSet* actionsToRemove = [[self cellActions] objectsPassingTest:^BOOL(id obj, BOOL *stop) {
        
