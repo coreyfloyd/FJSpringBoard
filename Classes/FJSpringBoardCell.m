@@ -617,6 +617,21 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
+- (NSString*)description{
+    
+    NSString* desc = [super description];
+    
+    //desc = [desc stringByAppendingString:@"\n"];
+
+    desc = [desc stringByAppendingFormat:@" tag: %i", self.contentView.tag];
+
+    desc = [desc stringByAppendingFormat:@" index: %i", self.index];
+    
+    return desc;
+    
+}
+
+
     
 @end
 

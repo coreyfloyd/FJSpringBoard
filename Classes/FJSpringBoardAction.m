@@ -115,14 +115,6 @@
     return self;
 }
 
-- (void)buildCellActionsAndApplyToMap:(FJSpringBoardActionIndexMap*)map{
-    
-    
-    
-    
-    
-}
-
 
 
 @end

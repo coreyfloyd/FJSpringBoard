@@ -16,7 +16,7 @@
     NSRange actionableIndexRange;
     
     NSArray* springBoardActions;
-    NSMutableSet* cellActions; //actions are stored at the new index of a cell
+    NSMutableSet* cellActions;
     
 }
 //maps are created in the init method, I know, we should be lazy, but I am too lazy to be lazy.

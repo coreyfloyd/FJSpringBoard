@@ -32,7 +32,7 @@ typedef enum{
     NSUInteger newSpringBoardIndex; //index that the cell will be moved to, if NSNotFound this cell is being deleted, can be used to get info from the model
     
 }
-@property (nonatomic) FJSpringBoardCellActionType type;
+@property (nonatomic) FJSpringBoardCellActionType type; //not set, but calculated after all actions are applied
 @property (nonatomic, readonly) BOOL needsLoaded;
 @property (nonatomic) FJSpringBoardCellAnimation animation;
 @property (nonatomic) NSUInteger oldSpringBoardIndex;

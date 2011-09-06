@@ -40,8 +40,6 @@ typedef enum{
 
 + (FJSpringBoardAction*)moveActionWithStartIndex:(NSUInteger)startIndex endIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim; 
 
-- (void)buildCellActionsAndApplyToMap:(FJSpringBoardActionIndexMap*)map;
-
 
 
 @end
