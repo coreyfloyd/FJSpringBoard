@@ -65,6 +65,7 @@ typedef enum  {
 @property(nonatomic, retain) FJSpringBoardLayout *layout;
 
 @property(nonatomic, retain) NSMutableArray *cells; //has [NSNull null] for any unloaded cells
+@property (nonatomic, copy) NSMutableArray *cellsWithoutProcessedActions;
 
 //junk pile
 @property(nonatomic, retain) NSMutableSet *reusableCells;
@@ -103,6 +104,9 @@ typedef enum  {
 
 - (void)_updateModeForCellsAtIndexes:(NSIndexSet*)indexes;
 
+
+- (void)_setupActionQueue;
+- (void)_processActionQueue;
 - (void)_processUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)completion;
 
 
@@ -467,75 +471,64 @@ typedef enum  {
     
 }
 
-#pragma mark -
-#pragma mark Reuse Dequeued Cell
 
-- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier{
-    
-    if([self.reusableCells count] == 0)
-        return nil;
-    
-    NSSet* c = [self.reusableCells objectsWithOptions:NSEnumerationConcurrent passingTest:^(id obj, BOOL *stop) {
-        
-        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
-        if([cell.reuseIdentifier isEqualToString:identifier]){
-            *stop = YES;
-            return YES;
-        }
-        
-        return NO;
-        
-    }];
-    
-    FJSpringBoardCell* cell = [[[c anyObject] retain] autorelease];
-    
-    if(cell == nil)
-        return nil;
-    
-    [self.reusableCells removeObject:cell];
-    
-    return cell;
-    
-}
 
 
 #pragma mark -
-#pragma mark Reload
+#pragma mark UIScrollView
 
-- (void)_setNeedsReload{
+- (void)setContentSize:(CGSize)size{
     
-    self.shouldReload = YES;
+    if(!CGSizeEqualToSize(size, self.contentSize)){
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+            [self flashScrollIndicators];
+            
+        });
+    }
+    
+    [super setContentSize:size];
 }
 
-- (void)_clearReload{
+- (void)setContentOffset:(CGPoint)offset{
     
-    self.shouldReload = NO;
+    if(indexLoader){
+        
+        /*
+         if([self.loadedIndexes count] > 0 && !indexesAreContiguous(self.loadedIndexes)){
+         
+         ALWAYS_ASSERT;
+         }
+         */
+        
+        [self.indexLoader updateIndexesWithContentOffest:offset];
+        
+        //after the content offset is adjusted, layoutsubviews will be called automagically
+        
+    }
+    
+    
+    CGPoint previousOffset = self.contentOffset;
+    
+    [super setContentOffset:offset];
+    
+    self.animatingContentOffset = YES;
+    
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetAnimatingContentOffset) object:nil];
+    [self performSelector:@selector(_resetAnimatingContentOffset) withObject:nil afterDelay:0.1];
+    
+    
+    CGPoint dragCenter = self.draggableCellView.center;
+    dragCenter.x += (self.contentOffset.x-previousOffset.x);
+    self.draggableCellView.center = dragCenter;
 }
 
-- (void)reloadData{
+- (void)_resetAnimatingContentOffset{
     
-    [self _clearReload];
+    self.animatingContentOffset = NO;
     
-    //unload all cells
-    [self _removeCellsAtIndexes:self.indexLoader.allIndexes];
-    [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
-    
-    //remove cache
-    [self.reusableCells removeAllObjects];
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    
-    self.cells = nullArrayOfSize(numOfCells);
-    
-    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
-    
-    [self _setNeedsLayoutCalculation];
-    
-    [self setNeedsLayout];
-    
-    [self layoutIfNeeded];
 }
-
 
 
 #pragma mark -
@@ -650,63 +643,45 @@ typedef enum  {
 }
 
 
-
-
 #pragma mark -
-#pragma mark UIScrollView
+#pragma mark Reload
 
-- (void)setContentSize:(CGSize)size{
+- (void)_setNeedsReload{
     
-    if(!CGSizeEqualToSize(size, self.contentSize)){
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            
-            [self flashScrollIndicators];
-            
-        });
-    }
-    
-    [super setContentSize:size];
+    self.shouldReload = YES;
 }
 
-- (void)setContentOffset:(CGPoint)offset{
-        
-    if(indexLoader){
-        
-        /*
-        if([self.loadedIndexes count] > 0 && !indexesAreContiguous(self.loadedIndexes)){
-            
-            ALWAYS_ASSERT;
-        }
-         */
-        
-        [self.indexLoader updateIndexesWithContentOffest:offset];
-                
-        //after the content offset is adjusted, layoutsubviews will be called automagically
-
-    }
+- (void)_clearReload{
     
-        
-    CGPoint previousOffset = self.contentOffset;
-    
-    [super setContentOffset:offset];
-    
-    self.animatingContentOffset = YES;
-    
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetAnimatingContentOffset) object:nil];
-    [self performSelector:@selector(_resetAnimatingContentOffset) withObject:nil afterDelay:0.1];
-
-    
-    CGPoint dragCenter = self.draggableCellView.center;
-    dragCenter.x += (self.contentOffset.x-previousOffset.x);
-    self.draggableCellView.center = dragCenter;
+    self.shouldReload = NO;
 }
 
-- (void)_resetAnimatingContentOffset{
+- (void)reloadData{
     
-    self.animatingContentOffset = NO;
+    [self _clearReload];
     
+    //unload all cells
+    [self _removeCellsAtIndexes:self.indexLoader.allIndexes];
+    [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
+    
+    //remove cache
+    [self.reusableCells removeAllObjects];
+    
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    
+    self.cells = nullArrayOfSize(numOfCells);
+    
+    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCount:numOfCells] autorelease];
+    
+    [self _setNeedsLayoutCalculation];
+    
+    [self setNeedsLayout];
+    
+    [self layoutIfNeeded];
 }
+
+
+
 
 #pragma mark -
 #pragma mark Load  Cells
@@ -734,6 +709,93 @@ typedef enum  {
     [cell release];    
     
 }
+
+
+#pragma mark -
+#pragma mark Layout cells
+
+- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        if([self.indexLoader.allIndexes containsIndex:idx])
+            return YES;
+        return NO;
+        
+    }];
+    
+    [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+        
+        if([eachCell isEqual:[NSNull null]]){
+            
+            return;
+        }
+        
+        eachCell.index = index;
+        
+        [self _layoutCell:eachCell atIndex:index];
+        
+    }];
+    
+    [self _updateModeForCellsAtIndexes:actualIndexes];
+}
+
+
+- (void)_layoutCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger)index{
+    
+    //NSLog(@"Laying Out Cell %i", index);
+    //RECTLOG(cell.contentView.frame);
+    
+    CGRect cellFrame = [self.layout frameForCellAtIndex:index];
+    cell.frame = cellFrame;
+    cell.alpha = 1.0;
+    
+    //RECTLOG(eachCell.contentView.frame);
+    
+    [self.contentView addSubview:cell];
+    
+}
+
+
+#pragma mark - Remove Cells From Springboard
+
+- (void)_removeCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+        
+        if([self.indexLoader.allIndexes containsIndex:idx])
+            return YES;
+        return NO;
+        
+    }];
+    
+    [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+        
+        [self _removeCellAtIndex:index];
+        
+        
+    }];
+    
+    [self _updateModeForCellsAtIndexes:actualIndexes];
+}
+
+
+
+- (void)_removeCellAtIndex:(NSUInteger)index{
+    
+    FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+    
+    if([eachCell isKindOfClass:[NSNull class]])
+        return;
+    
+    [eachCell removeFromSuperview];
+    
+}
+
+
+
 
 #pragma mark - Unloading Cells
 
@@ -774,87 +836,36 @@ typedef enum  {
     
 }
 
+
 #pragma mark -
-#pragma mark layout cells
+#pragma mark Reuse Dequeued Cell
 
-- (void)_layoutCellsAtIndexes:(NSIndexSet*)indexes{
+- (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier{
     
-    NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
+    if([self.reusableCells count] == 0)
+        return nil;
+    
+    NSSet* c = [self.reusableCells objectsWithOptions:NSEnumerationConcurrent passingTest:^(id obj, BOOL *stop) {
         
-        if([self.indexLoader.allIndexes containsIndex:idx])
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)obj;
+        if([cell.reuseIdentifier isEqualToString:identifier]){
+            *stop = YES;
             return YES;
-        return NO;
-        
-    }];
-
-    [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        
-        if([eachCell isEqual:[NSNull null]]){
-            
-            return;
         }
         
-        eachCell.index = index;
-        
-        [self _layoutCell:eachCell atIndex:index];
-        
-    }];
-    
-    [self _updateModeForCellsAtIndexes:actualIndexes];
-}
-
-
-- (void)_layoutCell:(FJSpringBoardCell*)cell atIndex:(NSUInteger)index{
-    
-    //NSLog(@"Laying Out Cell %i", index);
-    //RECTLOG(cell.contentView.frame);
-    
-    CGRect cellFrame = [self.layout frameForCellAtIndex:index];
-    cell.frame = cellFrame;
-    cell.alpha = 1.0;
-    
-    //RECTLOG(eachCell.contentView.frame);
-    
-    [self.contentView addSubview:cell];
-    
-}
-
-
-- (void)_removeCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    NSIndexSet* actualIndexes = [indexes indexesPassingTest:^(NSUInteger idx, BOOL *stop) {
-        
-        if([self.indexLoader.allIndexes containsIndex:idx])
-            return YES;
         return NO;
         
     }];
     
-    [actualIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        [self _removeCellAtIndex:index];
-        
-        
-    }];
+    FJSpringBoardCell* cell = [[[c anyObject] retain] autorelease];
     
-    [self _updateModeForCellsAtIndexes:actualIndexes];
-}
-
-
-
-
-
-- (void)_removeCellAtIndex:(NSUInteger)index{
+    if(cell == nil)
+        return nil;
     
-    FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
+    [self.reusableCells removeObject:cell];
     
-    if([eachCell isKindOfClass:[NSNull class]])
-        return;
+    return cell;
     
-    [eachCell removeFromSuperview];
-
 }
 
 
@@ -958,7 +969,7 @@ typedef enum  {
     
     if(numOfCells != [indexLoader.allIndexes count] - [indexSet count]){
         
-        [NSException raise:NSInternalInconsistencyException format:@"inserted cell count + previous cell count != datasource cell count"];
+        [NSException raise:NSInternalInconsistencyException format:@"previous cell count - deleted cell count != datasource cell count"];
         
     } 
     
@@ -1009,6 +1020,34 @@ typedef enum  {
     
     
 }
+
+- (void)beginUpdates{
+    
+    
+}
+
+
+- (void)endUpdates{
+    
+    
+    
+}
+
+
+- (void)_setupActionQueue{
+    
+    
+    
+}
+
+- (void)_processActionQueue{
+    
+    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
+
+    
+}
+
+
 
 #pragma mark - Process Actions
 
@@ -1190,9 +1229,10 @@ typedef enum  {
         
         
         FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
-        
+        ASSERT_TRUE(cell == (FJSpringBoardCell*)[NSNull null]);
+
         if(cell){
-            
+                        
             [self _removeCellAtIndex:action.newSpringBoardIndex];
             [self _unloadCellAtIndex:action.newSpringBoardIndex];            
             
