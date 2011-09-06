@@ -394,6 +394,69 @@ typedef enum  {
 
 
 #pragma mark -
+#pragma mark Mode
+
+
+- (void)setMode:(FJSpringBoardCellMode)aMode{
+    
+    if(mode == aMode)
+        return;
+    
+    mode = aMode;
+    
+    [self _updateModeForCellsAtIndexes:[self visibleCellIndexes]];
+    
+}
+
+- (void)_updateModeForCellsAtIndexes:(NSIndexSet*)indexes{
+    
+    BOOL respondsToDelete = NO;
+    BOOL respondsToMove = NO;
+    
+    if([self.dataSource respondsToSelector:@selector(springBoardView:canMoveCellAtIndex:)]){
+        
+        respondsToMove = YES;
+    }
+    
+    if([self.dataSource respondsToSelector:@selector(springBoardView:canDeleteCellAtIndex:)]){
+        
+        respondsToDelete = YES;
+    }
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* cell = (FJSpringBoardCell*)[self cellAtIndex:idx];
+        
+        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
+            
+            return;
+        }
+        
+        BOOL canDelete = YES;
+        BOOL canMove = YES;
+        
+        if(respondsToMove){
+            
+            canMove = [self.dataSource springBoardView:self canMoveCellAtIndex:idx];
+        }
+        
+        if(respondsToDelete){
+            
+            canDelete = [self.dataSource springBoardView:self canDeleteCellAtIndex:idx];
+        }
+        
+        cell.showsDeleteButton = canDelete;
+        cell.draggable = canMove;
+        cell.mode = mode;
+        
+    }];
+    
+    
+}
+
+
+
+#pragma mark -
 #pragma mark Scroll Support
 
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated{
@@ -705,7 +768,7 @@ typedef enum  {
     
     [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
     eachCell.mode = FJSpringBoardCellModeNormal;
-    
+        
     [self.reusableCells addObject:eachCell];
     [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
     
@@ -798,7 +861,7 @@ typedef enum  {
     
 
 #pragma mark -
-#pragma mark Reload Specific Indexes
+#pragma mark Actions
 
 
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
@@ -850,6 +913,106 @@ typedef enum  {
     
 }
 
+- (void)moveCellAtIndex:(NSUInteger)index toIndex:(NSUInteger)newIndex{
+    
+    
+    
+    
+}
+
+
+
+//3 situations, indexset in vis range, indexset > vis range, indexset < vis range
+- (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    if([indexSet count] == 0)
+        return;
+    
+    [[self indexLoader] queueActionByInsertingCellsAtIndexes:indexSet withAnimation:animation];
+    
+    
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    
+    if(numOfCells != [indexLoader.allIndexes count] + [indexSet count]){
+        
+        [NSException raise:NSInternalInconsistencyException format:@"inserted cell count + previous cell count != datasource cell count"];
+        
+    } 
+    
+    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
+    
+    [self _processUpdate:update completionBlock:NULL];   
+    
+    [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
+}
+
+- (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
+    
+    if([indexSet count] == 0)
+        return;
+    
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:indexSet withAnimation:animation];
+    
+    
+    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    
+    if(numOfCells != [indexLoader.allIndexes count] - [indexSet count]){
+        
+        [NSException raise:NSInternalInconsistencyException format:@"inserted cell count + previous cell count != datasource cell count"];
+        
+    } 
+    
+    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
+    
+    [self _processUpdate:update completionBlock:NULL];   
+    
+    [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
+    
+}
+
+
+- (void)_deleteCell:(FJSpringBoardCell*)cell{
+    
+    NSUInteger index = cell.index;
+    
+    if(index == NSNotFound){
+        ALWAYS_ASSERT;
+        return;
+    }
+    
+    
+    if(![self.indexLoader.allIndexes containsIndex:index]){
+        ALWAYS_ASSERT;
+        return;
+    }
+    
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withAnimation:FJSpringBoardCellAnimationFade];
+    
+    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
+    
+    [self _processUpdate:update completionBlock:^(void) {
+        
+        NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+        
+        [self.dataSource springBoardView:self commitDeletionForCellAtIndex:index];
+        
+        NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+        
+        if(numOfCells - 1 != newNumOfCells){
+            
+            ALWAYS_ASSERT; //num != pervious count - number deleted 
+        } 
+        
+        [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
+        
+    }];   
+    
+    
+}
+
+#pragma mark - Process Actions
+
+
 - (void)_processDeletionActions:(NSArray*)deletions{
     
     NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
@@ -864,7 +1027,6 @@ typedef enum  {
 #endif
         
         [deletionIndexes addIndex:action.oldSpringBoardIndex];
-        
         
     }];
     
@@ -917,7 +1079,14 @@ typedef enum  {
             cell = [self cellAtIndex:action.newSpringBoardIndex];
             
             [self _layoutCell:cell atIndex:action.oldSpringBoardIndex];
+            
             cell.alpha = 1.0;
+            
+#ifdef DEBUG
+                
+            debugLog(@"original frame");
+            debugLog([cell description]);
+#endif
             
         }
     
@@ -940,11 +1109,18 @@ typedef enum  {
                          
                      } completion:^(BOOL finished) {
                          
-                         NSMutableIndexSet* needsReload = [NSMutableIndexSet indexSet];
+                         NSMutableIndexSet* needsReload = [NSMutableIndexSet indexSet];                         
+
                          
                          [moves enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
                              FJSpringBoardCellAction* action = obj;
+#ifdef DEBUG
+                             FJSpringBoardCell* cell = [self cellAtIndex:action.oldSpringBoardIndex];
+                             debugLog(@"new frame");
+                             debugLog([cell description]);
+#endif                         
+
 
                              if(action.needsLoaded){
                                  
@@ -1116,6 +1292,9 @@ typedef enum  {
 
 - (void)_processUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)completion{
     
+    debugLog([self.contentView recursiveDescription]);
+    
+    
     NSArray* deletions = [update deletions];
     [self _processDeletionActions:deletions];
         
@@ -1128,12 +1307,17 @@ typedef enum  {
     NSArray* reloads = [update reloads];
     [self _processReloadActions:reloads];
            
+    
+    debugLog([self.contentView recursiveDescription]);
+
     self.suspendLayoutUpdates = YES;
     self.userInteractionEnabled = NO;
 
     //this should be the maximum duration of animations + 0.5 for safety
     dispatchOnMainQueueAfterDelayInSeconds(INSERT_ANIMATION_DURATION + MOVE_ANIMATION_DURATION + RELOAD_ANIMATION_DURATION + 0.5, ^(void) {
         
+        debugLog([self.contentView recursiveDescription]);
+
         self.suspendLayoutUpdates = NO;
         self.userInteractionEnabled = YES;
         [self setNeedsLayout];
@@ -1143,177 +1327,8 @@ typedef enum  {
         
     });
     
-   
-}
+    debugLog([self.contentView recursiveDescription]);
 
-
-#pragma mark -
-#pragma mark Insert Cells
-//3 situations, indexset in vis range, indexset > vis range, indexset < vis range
-
-- (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    if([indexSet count] == 0)
-        return;
-
-    [[self indexLoader] queueActionByInsertingCellsAtIndexes:indexSet withAnimation:animation];
-    
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    
-    if(numOfCells != [indexLoader.allIndexes count] + [indexSet count]){
-        
-        [NSException raise:NSInternalInconsistencyException format:@"inserted cell count + previous cell count != datasource cell count"];
-        
-    } 
-    
-    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
-    
-    [self _processUpdate:update completionBlock:NULL];   
-    
-    [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
-}
-
-
-
-
-#pragma mark -
-#pragma mark Delete Cells
-
-- (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    if([indexSet count] == 0)
-        return;
-    
-    [[self indexLoader] queueActionByDeletingCellsAtIndexes:indexSet withAnimation:animation];
-
-    
-    NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-    
-    if(numOfCells != [indexLoader.allIndexes count] - [indexSet count]){
-        
-        [NSException raise:NSInternalInconsistencyException format:@"inserted cell count + previous cell count != datasource cell count"];
-        
-    } 
-    
-    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
-    
-    [self _processUpdate:update completionBlock:NULL];   
-
-    [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
-
-}
-
-
-- (void)_deleteCell:(FJSpringBoardCell*)cell{
-    
-    NSUInteger index = cell.index;
-    
-    if(index == NSNotFound){
-        ALWAYS_ASSERT;
-        return;
-    }
-    
-    
-    if(![self.indexLoader.allIndexes containsIndex:index]){
-        ALWAYS_ASSERT;
-        return;
-    }
-    
-    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withAnimation:FJSpringBoardCellAnimationFade];
-
-    FJSpringBoardUpdate* update = [[self indexLoader] processActionQueueAndGetUpdate];
-        
-    [self _processUpdate:update completionBlock:^(void) {
-        
-        NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-        
-        [self.dataSource springBoardView:self commitDeletionForCellAtIndex:index];
-        
-        NSUInteger newNumOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
-        
-        if(numOfCells - 1 != newNumOfCells){
-            
-            ALWAYS_ASSERT; //num != pervious count - number deleted 
-        } 
-        
-        [self.indexLoader clearActionQueueAndUpdateCellCount:numOfCells];
-
-    }];   
-    
-
-}
-
-
-#pragma mark -
-#pragma mark Move
-
-- (void)moveCellAtIndex:(NSUInteger)index toIndex:(NSUInteger)newIndex{
-    
-    
-    
-    
-}
-
-#pragma mark -
-#pragma mark Mode
-
-
-- (void)setMode:(FJSpringBoardCellMode)aMode{
-    
-    if(mode == aMode)
-        return;
-        
-    mode = aMode;
-    
-    [self _updateModeForCellsAtIndexes:[self visibleCellIndexes]];
-    
-}
-
-- (void)_updateModeForCellsAtIndexes:(NSIndexSet*)indexes{
-    
-    BOOL respondsToDelete = NO;
-    BOOL respondsToMove = NO;
-    
-    if([self.dataSource respondsToSelector:@selector(springBoardView:canMoveCellAtIndex:)]){
-        
-        respondsToMove = YES;
-    }
-
-    if([self.dataSource respondsToSelector:@selector(springBoardView:canDeleteCellAtIndex:)]){
-        
-        respondsToDelete = YES;
-    }
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardCell* cell = (FJSpringBoardCell*)[self cellAtIndex:idx];
-        
-        if(![cell isKindOfClass:[FJSpringBoardCell class]]){
-            
-            return;
-        }
-        
-        BOOL canDelete = YES;
-        BOOL canMove = YES;
-        
-        if(respondsToMove){
-            
-            canMove = [self.dataSource springBoardView:self canMoveCellAtIndex:idx];
-        }
-        
-        if(respondsToDelete){
-            
-            canDelete = [self.dataSource springBoardView:self canDeleteCellAtIndex:idx];
-        }
-        
-        cell.showsDeleteButton = canDelete;
-        cell.draggable = canMove;
-        cell.mode = mode;
-        
-    }];
-
-    
 }
 
 
