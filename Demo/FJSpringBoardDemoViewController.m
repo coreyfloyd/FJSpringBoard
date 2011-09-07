@@ -4,10 +4,12 @@
 #import "DemoModelObject.h"
 #import "FJSpringBoardCell.h"
 
-#define CELL_COUNT 40
+#define CELL_COUNT 400
 #define CELL_WIDTH 57
 #define CELL_HEIGHT 57
 @implementation FJSpringBoardDemoViewController
+@synthesize doneBar;
+@synthesize doneButton;
 
 @synthesize model;
 @synthesize springBoardView;
@@ -19,38 +21,56 @@
     [springBoardView release];
     springBoardView = nil;
     
+    [doneButton release];
+    [doneBar release];
     [super dealloc];
 }
 
 - (IBAction)insert{
     
-    DemoModelObject* o;
     
-    o = [[DemoModelObject alloc] init];
-    o.value = [self.model count];
-    [self.model insertObject:o atIndex:4];
-    [o release];
-    o = [[DemoModelObject alloc] init];
-    o.value = [self.model count];
-    [self.model insertObject:o atIndex:5];
-    [o release];
+    NSMutableIndexSet *is = [NSMutableIndexSet indexSet];
+    [is addIndex:3];
+    [is addIndex:30];
     
-    [self.springBoardView insertCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(4, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    DemoModelObject* o = [[DemoModelObject alloc] init];
+    o.value = [self.model count];
+    DemoModelObject* p = [[DemoModelObject alloc] init];
+    o.value = [self.model count];
+    
+    NSArray* a = [NSArray arrayWithObjects:o,p,nil];
+    [o release];
+    [p release];
+    
+    [self.model insertObjects:a atIndexes:is];
+
+    [self.springBoardView insertCellsAtIndexes:is withCellAnimation:FJSpringBoardCellAnimationFade];
 
 }
 
 
 
 - (IBAction)deleteCells{
+        
+    NSMutableIndexSet *is = [NSMutableIndexSet indexSet];
+    [is addIndex:3];
+    [is addIndex:30];
     
-    [self.model removeObjectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)]];
-    [self.springBoardView deleteCellsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withCellAnimation:FJSpringBoardCellAnimationFade];
+    [self.model removeObjectsAtIndexes:is];
+    
+    [self.springBoardView deleteCellsAtIndexes:is withCellAnimation:FJSpringBoardCellAnimationFade];
     
 }
 
 - (IBAction)doneEditing{
     
     self.springBoardView.mode = FJSpringBoardCellModeNormal;
+}
+
+- (IBAction)scroll:(id)sender {
+    
+    [self.springBoardView scrollToCellAtIndex:20 atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:YES];
+    
 }
 
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
@@ -70,8 +90,8 @@
     self.model = a;
     
     CGRect f = self.view.bounds;
-    f.origin.y += 40;
-    f.size.height -= 40;
+    f.origin.y += 44;
+    f.size.height -= 88;
     self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
     self.springBoardView.backgroundColor = [UIColor lightGrayColor];
     self.springBoardView.cellSize = CGSizeMake(CELL_WIDTH, CELL_HEIGHT);
@@ -83,6 +103,20 @@
     [self.view addSubview:self.springBoardView];
     
     [self.springBoardView reloadData];
+    
+    [self.doneBar setItems:nil animated:NO];
+    [self.springBoardView addObserver:self forKeyPath:@"mode" options:0 context:nil];
+    
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
+    
+    if(self.springBoardView.mode == FJSpringBoardCellModeEditing)
+        [self.doneBar setItems:nil animated:YES];
+    else 
+        [self.doneBar setItems:[NSArray arrayWithObject:self.doneButton] animated:YES];
+        
+
     
 }
 
@@ -191,6 +225,8 @@
 }
 
 - (void)viewDidUnload {
+    [self setDoneBar:nil];
+    [self setDoneButton:nil];
 	// Release any retained subviews of the main view.
 	// e.g. self.myOutlet = nil;
 }

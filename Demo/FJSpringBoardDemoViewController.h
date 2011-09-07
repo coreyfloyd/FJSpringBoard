@@ -13,6 +13,8 @@
 
     NSMutableArray* model;
     FJSpringBoardView* springBoardView;
+    UIToolbar *doneButton;
+    UIToolbar *doneBar;
 }
 @property(nonatomic, retain) NSMutableArray *model;
 @property (nonatomic, retain) FJSpringBoardView *springBoardView;
@@ -20,7 +22,11 @@
 - (IBAction)insert;
 - (IBAction)deleteCells;
 
+@property (nonatomic, retain) IBOutlet UIToolbar *doneBar;
+@property (nonatomic, retain) IBOutlet UIToolbar *doneButton;
 - (IBAction)doneEditing;
+
+- (IBAction)scroll:(id)sender;
 
 @end
 
