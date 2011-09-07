@@ -184,53 +184,6 @@
 }
 
 
-- (void)shiftCellMovementUpdatesInAffectedRange:(NSRange)affectedRange by:(NSUInteger)num{
-    
-    debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
-    
-    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
-    
-    NSMutableSet* affectedUpdates = [NSMutableSet set];    
-    //lets update the cell actions of the cells we are shuffling
-    [indexesThatRequireAction enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    
-        ASSERT_TRUE(idx != NSNotFound);
-        
-        NSUInteger oldIndex = [self.indexMap mapNewIndexToOldIndex:idx];
-        FJSpringBoardCellUpdate* affectedCell = [self actionForOldIndex:oldIndex];
-
-        if(oldIndex == NSNotFound) //an inserted index
-            return;
-
-        if(!affectedCell){
-            
-            affectedCell = [[FJSpringBoardCellUpdate alloc] init];
-            affectedCell.oldSpringBoardIndex = oldIndex;
-            affectedCell.newSpringBoardIndex = oldIndex;
-            [self.cellMovementUpdates addObject:affectedCell];
-            [affectedCell autorelease];
-            
-        }
-        
-        [affectedUpdates addObject:affectedCell];
-       
-    }];
-    
-    [affectedUpdates enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-        
-        FJSpringBoardCellUpdate* affectedCell = obj;
-
-        debugLog(@"action before shift: %@",[affectedCell description]);
-        
-        affectedCell.newSpringBoardIndex += num;
-        
-        debugLog(@"action after shift: %@",[affectedCell description]);
-
-    }];
-    
-    
-}
-
 - (void)rightShiftCellMovementUpdatesInAffectedRange:(NSRange)affectedRange{
     
     //[self shiftCellMovementUpdatesInAffectedRange:affectedRange by:1];
@@ -242,9 +195,7 @@
     NSMutableSet* affectedUpdates = [NSMutableSet set];    
     //lets update the cell actions of the cells we are shuffling
     [indexesThatRequireAction enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        ASSERT_TRUE(idx != NSNotFound);
-        
+                
         FJSpringBoardCellUpdate* affectedCell = [self actionForNewIndex:idx];
         NSUInteger oldIndex = [self.indexMap mapNewIndexToOldIndex:idx];
         
@@ -449,7 +400,7 @@
         [insertedCell release];
         
         //lets get the affected range (new indexes)
-        NSUInteger lastIndex = [self.indexMap oldCount]-1; //TODO: think this should be new count
+        NSUInteger lastIndex = [self.indexMap newCount]-1; 
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(actualIndex, lastIndex);
                 
         //now lets shift the affected cells (this uses the the new to old map)
