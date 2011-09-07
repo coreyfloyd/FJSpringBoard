@@ -200,9 +200,9 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     
 }
 
-- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
+- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [self enqueueAction:[FJSpringBoardAction deletionActionWithIndexes:indexes animation:animation]];
+    [self enqueueAction:[FJSpringBoardAction deletionActionWithIndexes:indexes currentCellState:cellState animation:animation]];
     
 }
 

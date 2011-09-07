@@ -66,7 +66,6 @@ typedef enum  {
 
 @property(nonatomic, retain) NSMutableArray *cells; //has [NSNull null] for any unloaded cells
 
-@property (nonatomic, copy) NSArray *cellsWithoutProcessedActions; //copied
 @property (nonatomic) BOOL canProcessActions;
 
 //junk pile
@@ -201,7 +200,6 @@ typedef enum  {
 
 @synthesize suspendLayoutUpdates;
 
-@synthesize cellsWithoutProcessedActions;
 @synthesize canProcessActions;
 
 
@@ -212,8 +210,6 @@ typedef enum  {
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
-    [cellsWithoutProcessedActions release];
-    cellsWithoutProcessedActions = nil;
     [cells release];
     cells = nil;
     [contentView release];
@@ -986,7 +982,7 @@ typedef enum  {
 
     [self.cells removeObjectsAtIndexes:indexSet];
     
-    [[self indexLoader] queueActionByDeletingCellsAtIndexes:indexSet withAnimation:animation];
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:indexSet currentCellState:self.cells withAnimation:animation];
     
     [self _processActionQueue];
 
@@ -1027,8 +1023,7 @@ typedef enum  {
     
     [self.cells removeObjectAtIndex:index];
     
-    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withAnimation:FJSpringBoardCellAnimationFade];
-    
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] currentCellState:self.cells withAnimation:FJSpringBoardCellAnimationFade];    
     
     [self _processActionQueue];
 
@@ -1051,10 +1046,7 @@ typedef enum  {
 
 - (void)_setupActionQueue{
     
-    if(self.cellsWithoutProcessedActions)
-        return;
-    
-    self.cellsWithoutProcessedActions = [self.cells copy];
+
     
 }
 
@@ -1070,7 +1062,6 @@ typedef enum  {
     
     [self _processUpdate:update completionBlock:^(void) {
         
-        self.cellsWithoutProcessedActions = nil;
         [self _processActionQueue];
         
     }];   
@@ -1224,7 +1215,7 @@ typedef enum  {
         
 }
 
-- (void)_processDeletionActions:(NSArray*)deletions completionBlock:(dispatch_block_t)block{
+- (void)_processDeletionActions:(NSArray*)deletions priorCellState:(NSArray*)priorCellState completionBlock:(dispatch_block_t)block{
     
     NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
     
@@ -1248,7 +1239,7 @@ typedef enum  {
                           
                          [deletionIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
                              
-                             FJSpringBoardCell* cell = [self.cellsWithoutProcessedActions objectAtIndex:idx];
+                             FJSpringBoardCell* cell = [priorCellState objectAtIndex:idx];
                              
                              if([[NSNull null] isEqual:(NSNull*)cell])
                                  return;
@@ -1262,7 +1253,7 @@ typedef enum  {
                          
                          [deletionIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
                              
-                             FJSpringBoardCell* cell = [self.cellsWithoutProcessedActions objectAtIndex:idx];
+                             FJSpringBoardCell* cell = [priorCellState objectAtIndex:idx];
                              
                              if([[NSNull null] isEqual:(NSNull*)cell])
                                  return;
@@ -1293,7 +1284,7 @@ typedef enum  {
     NSArray* deletionActions = [update sortedCellActionUpdates];
     NSArray* moveActions = [update sortedCellMovementUpdates];
     
-    [self _processDeletionActions:deletionActions completionBlock:^(void) {
+    [self _processDeletionActions:deletionActions priorCellState:update.cellStatePriorToAction completionBlock:^(void) {
         
         [self _processMoveActions:moveActions completionBlock:^(void) {
             

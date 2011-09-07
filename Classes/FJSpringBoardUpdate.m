@@ -114,6 +114,11 @@
     return [self action].type;
 }
 
+- (NSArray*)cellStatePriorToAction{
+    
+    return [[self action] cellStateBeforeAction];
+}
+
 - (void)_applyActionsAndCalculateUpdate{
     
     FJSpringBoardActionType type = action.type;

@@ -14,19 +14,24 @@
 @synthesize type;
 @synthesize animation;
 @synthesize actionItems;
+@synthesize cellStateBeforeAction;
+
 
 
 - (void)dealloc {
     
+    [cellStateBeforeAction release];
+    cellStateBeforeAction = nil;
     [actionItems release];
     actionItems = nil;
     [super dealloc];
 }
-+ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
++ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
     a.type = FJSpringBoardActionDelete;
     a.animation = anim;
+    a.cellStateBeforeAction = cellState;
 
     NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
     

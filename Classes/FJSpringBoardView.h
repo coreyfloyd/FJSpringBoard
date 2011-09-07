@@ -74,7 +74,6 @@ typedef enum  {
       
     NSMutableArray *cells;
     
-    NSArray *cellsWithoutProcessedActions;    
     BOOL canProcessActions;
     
     NSMutableSet *reusableCells; //reusable cells
@@ -127,12 +126,14 @@ typedef enum  {
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
-//the following methods are used to 
+
+
+//the following methods are used to animate changes without a full reload
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
-
+//use these to perform multiple updates at once
 - (void)beginUpdates;
 - (void)endUpdates;
 

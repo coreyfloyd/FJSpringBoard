@@ -33,6 +33,8 @@
 
 @property (nonatomic, readonly) FJSpringBoardActionType actionType; //are the cellActionUpdates insert, deletes, or reloads?
 
+@property (nonatomic, readonly) NSArray *cellStatePriorToAction; //only used for deletes now
+
 - (NSArray*)sortedCellActionUpdates; //an insert, delete, or relaod, direct result of the Action
 - (NSArray*)sortedCellMovementUpdates; //cell movements in response to the action
 

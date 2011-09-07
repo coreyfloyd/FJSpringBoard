@@ -65,7 +65,7 @@
 
 - (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
-- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
+- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState withAnimation:(FJSpringBoardCellAnimation)animation;
 
 - (FJSpringBoardUpdate*)processFirstActionInQueue;
 
