@@ -14,7 +14,7 @@
 #import "FJSpringBoardCell.h"
 #import "FJSpringBoardAction.h"
 #import "FJSpringBoardActionIndexMap.h"
-#import "FJSpringBoardCellAction.h"
+#import "FJSpringBoardCellUpdate.h"
 #import "FJSpringBoardUpdate.h"
 
 #define MAX_PAGES 3
@@ -171,63 +171,92 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 }
 
+- (void)enqueueAction:(FJSpringBoardAction*)action{
+    
+    [self.actionQueue enqueue:action];
+    
+}
+- (FJSpringBoardAction*)dequeueNextAction{
+    
+    if([self.actionQueue count] == 0)
+        return nil;
+    
+    FJSpringBoardAction* next = [self.actionQueue dequeue];
+    return next;
+    
+}
 
-- (void)addToActionQueue:(id)actionQueueObject
-{
-    [[self actionQueue] addObject:actionQueueObject];
-}
-- (void)removeFromActionQueue:(id)actionQueueObject
-{
-    [[self actionQueue] removeObject:actionQueueObject];
-}
 
 
 - (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [self addToActionQueue:[FJSpringBoardAction reloadActionWithIndexes:indexes animation:animation]];
+    [self enqueueAction:[FJSpringBoardAction reloadActionWithIndexes:indexes animation:animation]];
     
 }
-- (void)queueActionByMovingCellAtIndex:(NSUInteger)startIndex toIndex:(NSUInteger)endIndex withAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    [self addToActionQueue:[FJSpringBoardAction moveActionWithStartIndex:startIndex endIndex:endIndex animation:animation]];
-    
-}
+
 - (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [self addToActionQueue:[FJSpringBoardAction insertionActionWithIndexes:indexes animation:animation]];
+    [self enqueueAction:[FJSpringBoardAction insertionActionWithIndexes:indexes animation:animation]];
     
 }
+
 - (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
     
-    [self addToActionQueue:[FJSpringBoardAction deletionActionWithIndexes:indexes animation:animation]];
+    [self enqueueAction:[FJSpringBoardAction deletionActionWithIndexes:indexes animation:animation]];
     
 }
 
-- (FJSpringBoardUpdate*)processActionQueueAndGetUpdate{
+- (FJSpringBoardUpdate*)processFirstActionInQueue{
     
-    ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
+    //ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
+    //NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
+        
+    FJSpringBoardAction* action = [self dequeueNextAction];
     
-    NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
-    FJSpringBoardActionIndexMap* map = [[FJSpringBoardActionIndexMap alloc] initWithCellCount:[self.allIndexes count] actionableIndexRange:range springBoardActions:self.actionQueue];
+    if(action == nil)
+        return nil;
     
-    NSSet* actions = [map mappedCellActions];
+    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.allIndexes count] springBoardAction:action];
     
-    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellActions:actions];
-    
-    return [update autorelease];
-
-
-}
-
-- (void)clearActionQueueAndUpdateCellCount:(NSUInteger)count{
-    
-    [self.actionQueue removeAllObjects];
-    
-    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
-
+    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [update newCellCount])];    
     //TODO: if we had any cells to reload we are fucked. we should go to a delegate pattern so the index loader can call the 
+       
+    return update;
+
+
+}
+
+/*
+- (void)purgeActionsOutsideOfActionableRange{
+    
+    
+     //if an index is inserted offscreen, it technically wouldn't need an action.
+     //However, if it is later bumped onscreen by another action, we would lose the information about the insertion.
+     //So we do want to purge actions outside of the affected range after we are done create actions.
+     
+    
+    debugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
+    
+    
+    NSSet* actionsToRemove = [[self cellActions] objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+        
+        FJSpringBoardCellUpdate* affectedCell = obj;
+        
+        if(!NSLocationInRange(affectedCell.newSpringBoardIndex, self.actionableIndexRange)){
+            return YES;
+        }
+        
+        return NO;
+    }];
+    
+    [actionsToRemove enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+        
+        [self removeCellAction:obj];
+        
+    }];
     
 }
+*/
 
 
 

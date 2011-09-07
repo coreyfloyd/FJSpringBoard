@@ -1,10 +1,15 @@
 //
-//  FJSpringBoardCellAction.h
+//  FJSpringBoardCellUpdate.h
 //  FJSpringBoardDemo
 //
 //  Created by Corey Floyd on 9/1/11.
 //  Copyright 2011 Flying Jalapeño. All rights reserved.
 //
+
+/*
+ FJSpringBoardCellUpdate is the encapsulates the update of an individual cell. FJSpringBoardUpdate is comprised of one or more FJSpringBoardCellUpdates.
+*/
+
 
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardView.h"
@@ -15,24 +20,24 @@
 @class FJSpringBoardLayout;
 
 typedef enum{
-    FJSpringBoardCellActionNone = 0,
-    FJSpringBoardCellActionReload,
-    FJSpringBoardCellActionMove,
-    FJSpringBoardCellActionInsert,
-    FJSpringBoardCellActionDelete
+    FJSpringBoardCellupdateNone = 0,
+    FJSpringBoardCellupdateReload,
+    FJSpringBoardCellupdateMove,
+    FJSpringBoardCellupdateInsert,
+    FJSpringBoardCellupdateDelete
     
-}FJSpringBoardCellActionType;
+}FJSpringBoardCellupdateType;
 
-@interface FJSpringBoardCellAction : SMModelObject{
+@interface FJSpringBoardCellUpdate : SMModelObject{
 
-    FJSpringBoardCellActionType type;
+    FJSpringBoardCellupdateType type;
     BOOL needsLoaded; //should load a new cell from the model and replace the existing n the springboard
     FJSpringBoardCellAnimation animation;
     NSUInteger oldSpringBoardIndex; //original index of cell on the springboard, if NSNotFound this is a new cell
     NSUInteger newSpringBoardIndex; //index that the cell will be moved to, if NSNotFound this cell is being deleted, can be used to get info from the model
     
 }
-@property (nonatomic) FJSpringBoardCellActionType type; //not set, but calculated after all actions are applied
+@property (nonatomic) FJSpringBoardCellupdateType type; //not set, but calculated after all actions are applied
 @property (nonatomic, readonly) BOOL needsLoaded;
 @property (nonatomic) FJSpringBoardCellAnimation animation;
 @property (nonatomic) NSUInteger oldSpringBoardIndex;
@@ -42,6 +47,7 @@ typedef enum{
 
 - (void)finalizeType; //calculates action type
 
+- (NSComparisonResult)compare:(FJSpringBoardCellUpdate*)anAction;
 
 //- (void)applyActionToCell:(FJSpringBoardCell*)cell inLayout:(FJSpringBoardLayout*)layout;
 

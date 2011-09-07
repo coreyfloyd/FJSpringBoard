@@ -6,25 +6,36 @@
 //  Copyright 2011 Flying Jalapeño. All rights reserved.
 //
 
+/*
+  FJSpringBoardUpdate defines the update of the springboard as a result of processing a FJSpringBoardAction. 1 action -> 1 update.
+  An update is completely independent of the content offset, layout, and visible indexes.
+*/
+
 #import <Foundation/Foundation.h>
 #import "SMModelObject.h"
+#import "FJSpringBoardAction.h"
+
+@class FJSpringBoardActionIndexMap;
 
 @interface FJSpringBoardUpdate : SMModelObject{
         
-    NSArray* reloads;
-    NSArray* insertions;
-    NSArray* deletions;
-    NSArray* moves; //weird duck, couldd possibly include a reload
+    FJSpringBoardAction* action;
+    FJSpringBoardActionIndexMap* indexMap;
+    
+    NSMutableSet* cellActionUpdates;
+    NSMutableSet* cellMovementUpdates;
+    
+    NSUInteger newCellCount;
     
 }
-@property (nonatomic, copy) NSArray *reloads;
-@property (nonatomic, copy) NSArray *insertions;
-@property (nonatomic, copy) NSArray *deletions;
-@property (nonatomic, copy) NSArray *moves;
 
-- (id)initWithCellActions:(NSSet*)actions;
+- (id)initWithCellCount:(NSUInteger)count springBoardAction:(FJSpringBoardAction*)anAction;
 
+@property (nonatomic, readonly) FJSpringBoardActionType actionType; //are the cellActionUpdates insert, deletes, or reloads?
 
+- (NSArray*)sortedCellActionUpdates; //an insert, delete, or relaod, direct result of the Action
+- (NSArray*)sortedCellMovementUpdates; //cell movements in response to the action
 
+@property (nonatomic) NSUInteger newCellCount;
 
 @end

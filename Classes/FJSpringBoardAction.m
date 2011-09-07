@@ -11,7 +11,7 @@
 
 @implementation FJSpringBoardAction
 
-@synthesize action;
+@synthesize type;
 @synthesize animation;
 @synthesize actionItems;
 
@@ -25,7 +25,7 @@
 + (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionDelete;
+    a.type = FJSpringBoardActionDelete;
     a.animation = anim;
 
     NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
@@ -47,7 +47,7 @@
 + (FJSpringBoardAction*)insertionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionInsert;
+    a.type = FJSpringBoardActionInsert;
     a.animation = anim;
     
     NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
@@ -70,7 +70,7 @@
 + (FJSpringBoardAction*)reloadActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionReload;
+    a.type = FJSpringBoardActionReload;
     a.animation = anim;
     
     NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
@@ -87,32 +87,6 @@
     a.actionItems = items;
     return [a autorelease];
 
-}
-
-+ (FJSpringBoardAction*)moveActionWithStartIndex:(NSUInteger)startIndex endIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim{
-    
-    FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
-    a.action = FJSpringBoardActionReload;
-    a.animation = anim;
-    
-    FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
-    item.index = startIndex;
-    item.newIndex = endIndex;
-    
-    a.actionItems = [NSArray arrayWithObject:item];
-    [item release];
-
-    return [a autorelease];
-    
-}
-
-
-- (id)init {
-    self = [super init];
-    if (self) {
-
-    }
-    return self;
 }
 
 

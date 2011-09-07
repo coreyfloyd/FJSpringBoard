@@ -1,14 +1,14 @@
 //
-//  FJSpringBoardCellAction.m
+//  FJSpringBoardCellUpdate.m
 //  FJSpringBoardDemo
 //
 //  Created by Corey Floyd on 9/1/11.
 //  Copyright 2011 Flying Jalapeño. All rights reserved.
 //
 
-#import "FJSpringBoardCellAction.h"
+#import "FJSpringBoardCellUpdate.h"
 
-@implementation FJSpringBoardCellAction
+@implementation FJSpringBoardCellUpdate
 
 @synthesize type;
 @synthesize needsLoaded;
@@ -38,7 +38,7 @@
     if(self.oldSpringBoardIndex == NSNotFound && self.newSpringBoardIndex == NSNotFound){
         
         //cell is being inserted and subsequesntly deleted. should be rare
-        self.type = FJSpringBoardCellActionNone;
+        self.type = FJSpringBoardCellupdateNone;
         
         NSLog(@"cell inserted and deleted in same update batch!");;
         
@@ -46,25 +46,25 @@
     }else if(self.oldSpringBoardIndex == NSNotFound && self.newSpringBoardIndex != NSNotFound){
         
         //this is a new cell it is not on screen
-        self.type = FJSpringBoardCellActionInsert;
+        self.type = FJSpringBoardCellupdateInsert;
         
         
     }else if(self.oldSpringBoardIndex != NSNotFound && self.newSpringBoardIndex == NSNotFound){
         
         //cell is being deleted
-        self.type = FJSpringBoardCellActionDelete;
+        self.type = FJSpringBoardCellupdateDelete;
         
 
     }else if(self.oldSpringBoardIndex == self.newSpringBoardIndex){
         
         //cell is being reloaded
-        self.type = FJSpringBoardCellActionReload;
+        self.type = FJSpringBoardCellupdateReload;
         
         
     }else if(self.oldSpringBoardIndex != NSNotFound && self.newSpringBoardIndex != NSNotFound){
         
         //cell is being moved
-        self.type = FJSpringBoardCellActionMove;
+        self.type = FJSpringBoardCellupdateMove;
         
     }else{
         
@@ -75,19 +75,19 @@
 - (NSUInteger)comparisonIndex{
     
     switch (self.type) {
-        case FJSpringBoardCellActionNone:
+        case FJSpringBoardCellupdateNone:
             return 0;
             break;
-        case FJSpringBoardCellActionInsert:
+        case FJSpringBoardCellupdateInsert:
             return self.newSpringBoardIndex;
             break;
-        case FJSpringBoardCellActionDelete:
+        case FJSpringBoardCellupdateDelete:
             return self.oldSpringBoardIndex;
             break;
-        case FJSpringBoardCellActionReload:
+        case FJSpringBoardCellupdateReload:
             return self.oldSpringBoardIndex;
             break;
-        case FJSpringBoardCellActionMove:
+        case FJSpringBoardCellupdateMove:
             return MIN(self.oldSpringBoardIndex, self.newSpringBoardIndex);
             break;
         default:
@@ -100,7 +100,7 @@
 }
 
 
-- (NSComparisonResult)compare:(FJSpringBoardCellAction*)anAction{
+- (NSComparisonResult)compare:(FJSpringBoardCellUpdate*)anAction{
     
     if([self comparisonIndex] == [anAction comparisonIndex])
         return NSOrderedSame;

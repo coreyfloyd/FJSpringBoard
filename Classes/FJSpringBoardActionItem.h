@@ -6,18 +6,16 @@
 //  Copyright 2011 Flying Jalapeño. All rights reserved.
 //
 
+/*
+ FJSpringBoardActionItem is used by FJSpringBoardAction to hold and calculate information about individual indexes of an action
+*/
+
 #import "SMModelObject.h"
 
 @interface FJSpringBoardActionItem : SMModelObject{
     
     NSUInteger index;
-    NSUInteger newIndex;
-    NSRange affectedRange;
 }
 @property (nonatomic) NSUInteger index;
-@property (nonatomic) NSUInteger newIndex;
-@property (nonatomic) NSRange affectedRange;
-
-- (void)updatedAffectedRangeWithIndexCount:(NSUInteger)numberOfIndexes;
 
 @end

@@ -68,11 +68,14 @@ typedef enum  {
     CGSize cellSize;
     
     FJSpringBoardViewScrollDirection scrollDirection;
-    
+
     FJSpringBoardIndexLoader* indexLoader;
     FJSpringBoardLayout *layout;
+      
+    NSMutableArray *cells;
     
-    NSMutableIndexSet *selectedIndexes;
+    NSArray *cellsWithoutProcessedActions;    
+    BOOL canProcessActions;
     
     NSMutableSet *reusableCells; //reusable cells
     
@@ -85,6 +88,8 @@ typedef enum  {
     
     FJSpringBoardCellMode mode;
     
+    NSMutableIndexSet *selectedIndexes;
+
     CGPoint lastTouchPoint;
 
     UIView* draggableCellView;
@@ -104,7 +109,6 @@ typedef enum  {
 
 //reload
 - (void)reloadData;
-- (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
 
 //yes, like a UITableView
@@ -123,12 +127,16 @@ typedef enum  {
 //scroll
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
-
-//index sets must be continuous
+//the following methods are used to 
+- (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)insertCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
-- (void)moveCellAtIndex:(NSUInteger)index toIndex:(NSUInteger)newIndex;
+
+- (void)beginUpdates;
+- (void)endUpdates;
+
+
 
 //mode
 @property(nonatomic) FJSpringBoardCellMode mode; //KVO to be notified about mode changes

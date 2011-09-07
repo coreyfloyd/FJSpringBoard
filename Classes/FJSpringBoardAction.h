@@ -6,15 +6,16 @@
 //  Copyright 2011 Flying Jalapeño. All rights reserved.
 //
 
+/*
+ FJSpringBoardAction defines any actions taken on the springboard: Inserts, Deletions, Reloads
+*/
+
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardView.h"
 #import "SMModelObject.h"
 
-@class FJSpringBoardActionIndexMap;
-
 typedef enum{
     FJSpringBoardActionReload,
-    FJSpringBoardActionMove,
     FJSpringBoardActionInsert,
     FJSpringBoardActionDelete
     
@@ -23,12 +24,12 @@ typedef enum{
 
 @interface FJSpringBoardAction : SMModelObject{
     
-    FJSpringBoardActionType action;
+    FJSpringBoardActionType type;
     FJSpringBoardCellAnimation animation;
     NSArray* actionItems;
     
 }
-@property (nonatomic) FJSpringBoardActionType action;
+@property (nonatomic) FJSpringBoardActionType type;
 @property (nonatomic) FJSpringBoardCellAnimation animation;
 @property (nonatomic, copy) NSArray *actionItems;
 
@@ -37,8 +38,6 @@ typedef enum{
 + (FJSpringBoardAction*)insertionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim; 
 
 + (FJSpringBoardAction*)reloadActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim; 
-
-+ (FJSpringBoardAction*)moveActionWithStartIndex:(NSUInteger)startIndex endIndex:(NSUInteger)endIndex animation:(FJSpringBoardCellAnimation)anim; 
 
 
 
