@@ -122,7 +122,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     //ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check: no longer valid since we are letting inserted indexes into the map
     
-    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+    extendedDebugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
     
     //add 1 to each
     [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
@@ -142,7 +142,7 @@ NSMutableArray* indexArrayOfSize(NSUInteger size){
     
     //ASSERT_TRUE([oldAffectedIndexes count] == [affectedIndexes count]); //sanity check: no longer valid since we are letting inserted indexes into the map
     
-    debugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
+    extendedDebugLog(@"all affected indexes (old): %@", oldAffectedIndexes);
 
     //sub 1 to each
     [self.oldToNew enumerateObjectsAtIndexes:oldAffectedIndexes options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {

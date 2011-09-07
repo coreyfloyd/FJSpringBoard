@@ -17,6 +17,8 @@
 
 @property (nonatomic, retain) FJSpringBoardAction *action;
 
+@property (nonatomic) NSRange visibleIndexRange;
+
 @property (nonatomic, retain) NSMutableSet *cellActionUpdates; 
 @property (nonatomic, retain) NSMutableSet *cellMovementUpdates; 
 
@@ -43,6 +45,7 @@
 @synthesize newCellCount;
 @synthesize cellActionUpdates;
 @synthesize cellMovementUpdates;
+@synthesize visibleIndexRange;
 
 
 - (void)dealloc {
@@ -57,7 +60,7 @@
     [super dealloc];
 }
 
-- (id)initWithCellCount:(NSUInteger)count springBoardAction:(FJSpringBoardAction*)anAction{
+- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range springBoardAction:(FJSpringBoardAction*)anAction{
     
     self = [super init];
     if (self) {
@@ -67,6 +70,19 @@
         [map release];
         
         self.action = anAction;
+        
+        NSUInteger padding = [[anAction actionItems] count];
+        
+        NSRange newRange = range;
+        
+        if(anAction.type == FJSpringBoardActionInsert){
+            newRange.location -= padding;
+            newRange.length += padding;
+        }else if(anAction.type == FJSpringBoardActionDelete){
+            newRange.length += padding;
+        }
+    
+        self.visibleIndexRange = newRange;
         
         self.cellActionUpdates = [NSMutableSet set];
         self.cellMovementUpdates = [NSMutableSet set];
@@ -190,7 +206,11 @@
     
     debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
     
-    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
+    NSRange affectedRangeThatNeedShifted = NSIntersectionRange(self.visibleIndexRange, affectedRange);
+
+    debugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
+
+    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRangeThatNeedShifted];
     
     NSMutableSet* affectedUpdates = [NSMutableSet set];    
     //lets update the cell actions of the cells we are shuffling
@@ -225,7 +245,7 @@
         
     }];
     
-    debugLog(@"updates after shift: %@",[affectedUpdates description]);
+    extendedDebugLog(@"updates after shift: %@",[affectedUpdates description]);
 
 }
 
@@ -233,9 +253,35 @@
     
     //[self shiftCellMovementUpdatesInAffectedRange:affectedRange by:-1];
     
-    debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
+    extendedDebugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
     
-    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRange];
+    NSRange affectedRangeThatNeedShifted = NSIntersectionRange(self.visibleIndexRange, affectedRange);
+
+    
+    NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRangeThatNeedShifted];
+    
+    debugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
+
+    /*
+    NSMutableIndexSet* affectedIndexesThatNeedShifted = [NSMutableIndexSet indexSet];
+    
+    [indexesThatRequireAction enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+       
+        NSUInteger newIndex = [self.indexMap mapOldIndexToNewIndex:idx];
+        if(NSLocationInRange(newIndex, self.visibleIndexRange))
+            [affectedIndexesThatNeedShifted addIndex:idx];
+        
+    }];
+    
+#ifdef DEBUG
+    
+    ASSERT_TRUE(indexesAreContiguous(affectedIndexesThatNeedShifted));
+    
+    NSRange affectedRangeThatNeedShifted = rangeWithContiguousIndexes(affectedIndexesThatNeedShifted);
+    
+    
+#endif
+*/
     
     NSMutableSet* affectedUpdates = [NSMutableSet set];    
     //lets update the cell actions of the cells we are shuffling
@@ -267,7 +313,7 @@
         
     }];
 
-    debugLog(@"updates after shift: %@",[affectedUpdates description]);
+    extendedDebugLog(@"updates after shift: %@",[affectedUpdates description]);
 
 }
 
@@ -301,7 +347,7 @@
     
     self.newCellCount = [self.indexMap oldCount] - [deletion actionItems].count;
     
-    debugLog(@"applying deletion action %@", [deletion description]);
+    extendedDebugLog(@"applying deletion action %@", [deletion description]);
     
     //hold indexes for fast lookup later
     NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
@@ -340,7 +386,7 @@
         //lets get the affected range (old indexes)                
         NSUInteger lastIndex = [self.indexMap oldCount]-1;
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(actualIndex+1, lastIndex);
-        
+                
         //update the old to new map 
         [self.indexMap leftShiftOldToNewIndexesInAffectedRange:affectedRangeThatNeedShifted];
         
@@ -379,7 +425,7 @@
     
     self.newCellCount = [self.indexMap oldCount] + [insertion actionItems].count;
 
-    debugLog(@"applying insertion action %@", [insertion description]);
+    extendedDebugLog(@"applying insertion action %@", [insertion description]);
         
     
     [insertion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {

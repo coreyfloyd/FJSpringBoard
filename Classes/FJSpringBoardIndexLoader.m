@@ -207,16 +207,18 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 }
 
 - (FJSpringBoardUpdate*)processFirstActionInQueue{
-    
-    //ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
-    //NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
         
     FJSpringBoardAction* action = [self dequeueNextAction];
     
     if(action == nil)
         return nil;
+
+    ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
+    NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
     
-    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.allIndexes count] springBoardAction:action];
+    debugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
+    
+    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.allIndexes count]  visibleIndexRange:range springBoardAction:action];
     
     self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [update newCellCount])];    
     //TODO: if we had any cells to reload we are fucked. we should go to a delegate pattern so the index loader can call the 
@@ -235,7 +237,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
      //So we do want to purge actions outside of the affected range after we are done create actions.
      
     
-    debugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
+    extendedDebugLog(@"range in view: %i - %i", actionableIndexRange.location, NSMaxRange(actionableIndexRange));
     
     
     NSSet* actionsToRemove = [[self cellActions] objectsPassingTest:^BOOL(id obj, BOOL *stop) {

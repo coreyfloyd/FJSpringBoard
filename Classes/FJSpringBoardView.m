@@ -1087,9 +1087,9 @@ typedef enum  {
         
         FJSpringBoardCellUpdate* action = obj;
         
-#ifdef DEBUG
+#if DEBUG == 2
         
-        debugLog(@"move action - old location: %i new location: %i", action.oldSpringBoardIndex, action.newSpringBoardIndex);
+        extendedDebugLog(@"move action - old location: %i new location: %i", action.oldSpringBoardIndex, action.newSpringBoardIndex);
 #endif
         
         FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
@@ -1103,10 +1103,10 @@ typedef enum  {
             
             cell.alpha = 1.0;
             
-#ifdef DEBUG
+#if DEBUG == 2
             
-            debugLog(@"original frame");
-            debugLog([cell description]);
+            extendedDebugLog(@"original frame");
+            extendedDebugLog([cell description]);
 #endif
             
         }
@@ -1130,13 +1130,13 @@ typedef enum  {
                          
                      } completion:^(BOOL finished) {
                          
-#ifdef DEBUG
+#if DEBUG == 2
                          [moves enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                                                           
                              FJSpringBoardCellUpdate* action = obj;
                              FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
-                             debugLog(@"new frame");
-                             debugLog([cell description]);
+                             extendedDebugLog(@"new frame");
+                             extendedDebugLog([cell description]);
                              
                          }];
 #endif        
@@ -1159,9 +1159,9 @@ typedef enum  {
         
         FJSpringBoardCellUpdate* action = obj;
         
-#ifdef DEBUG
+#if DEBUG == 2
         
-        debugLog(@"insert action - new location: %i", action.newSpringBoardIndex);
+        extendedDebugLog(@"insert action - new location: %i", action.newSpringBoardIndex);
 #endif
 
         FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
@@ -1232,9 +1232,9 @@ typedef enum  {
         
         FJSpringBoardCellUpdate* action = obj;
         
-#ifdef DEBUG
+#if DEBUG == 2
         
-        debugLog(@"delete action - old location: %i", action.oldSpringBoardIndex);
+        extendedDebugLog(@"delete action - old location: %i", action.oldSpringBoardIndex);
 #endif
         
         [deletionIndexes addIndex:action.oldSpringBoardIndex];
@@ -1318,9 +1318,9 @@ typedef enum  {
                              FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
                              cell.alpha = 0.0;
                              
-#ifdef DEBUG
+#if DEBUG == 2
                              
-                             debugLog(@"reload action - location: %i", action.newSpringBoardIndex);
+                             extendedDebugLog(@"reload action - location: %i", action.newSpringBoardIndex);
 #endif
                          }];
                          
@@ -1389,11 +1389,11 @@ typedef enum  {
     self.suspendLayoutUpdates = YES;
     self.userInteractionEnabled = NO;
 
-    debugLog([self.contentView recursiveDescription]);
+    extendedDebugLog([self.contentView recursiveDescription]);
     
     dispatch_block_t block = ^{
         
-        debugLog([self.contentView recursiveDescription]);
+        extendedDebugLog([self.contentView recursiveDescription]);
         
         self.suspendLayoutUpdates = NO;
         self.userInteractionEnabled = YES;
@@ -1422,7 +1422,7 @@ typedef enum  {
     }
            
     
-    debugLog([self.contentView recursiveDescription]);
+    extendedDebugLog([self.contentView recursiveDescription]);
 }
 
 

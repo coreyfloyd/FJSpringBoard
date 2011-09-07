@@ -29,7 +29,7 @@
     
 }
 
-- (id)initWithCellCount:(NSUInteger)count springBoardAction:(FJSpringBoardAction*)anAction;
+- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range springBoardAction:(FJSpringBoardAction*)anAction;
 
 @property (nonatomic, readonly) FJSpringBoardActionType actionType; //are the cellActionUpdates insert, deletes, or reloads?
 
