@@ -15,6 +15,7 @@
     FJSpringBoardView* springBoardView;
     UIToolbar *doneButton;
     UIToolbar *doneBar;
+    UIBarButtonItem *directionButton;
 }
 @property(nonatomic, retain) NSMutableArray *model;
 @property (nonatomic, retain) FJSpringBoardView *springBoardView;
@@ -27,6 +28,9 @@
 - (IBAction)doneEditing;
 
 - (IBAction)scroll:(id)sender;
+
+@property (nonatomic, retain) IBOutlet UIBarButtonItem *directionButton;
+- (IBAction)switchDirection:(id)sender;
 
 @end
 

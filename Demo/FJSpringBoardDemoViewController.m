@@ -8,6 +8,7 @@
 #define CELL_WIDTH 57
 #define CELL_HEIGHT 57
 @implementation FJSpringBoardDemoViewController
+@synthesize directionButton;
 @synthesize doneBar;
 @synthesize doneButton;
 
@@ -23,6 +24,7 @@
     
     [doneButton release];
     [doneBar release];
+    [directionButton release];
     [super dealloc];
 }
 
@@ -73,6 +75,20 @@
     
 }
 
+- (IBAction)switchDirection:(id)sender {
+    
+    if(self.springBoardView.scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
+        
+        self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
+
+    }else{
+        
+        self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
+
+    }
+    
+}
+
 // Implement viewDidLoad to do additional setup after loading the view, typically from a nib.
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -104,20 +120,24 @@
     
     [self.springBoardView reloadData];
     
-    [self.doneBar setItems:nil animated:NO];
+    [self.doneBar setItems:[NSArray arrayWithObject:self.directionButton] animated:NO];
     [self.springBoardView addObserver:self forKeyPath:@"mode" options:0 context:nil];
     
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
     
-    if(self.springBoardView.mode == FJSpringBoardCellModeEditing)
-        [self.doneBar setItems:nil animated:YES];
-    else 
-        [self.doneBar setItems:[NSArray arrayWithObject:self.doneButton] animated:YES];
+    if(self.springBoardView.mode == FJSpringBoardCellModeEditing){
         
+        [self.doneBar setItems:[NSArray arrayWithObject:self.directionButton] animated:NO];
 
-    
+    }else{
+        
+        UIBarButtonItem* i  = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+        
+        [self.doneBar setItems:[NSArray arrayWithObjects:self.directionButton, i, self.doneButton, nil] animated:YES];
+
+    }
 }
 
 - (NSUInteger)numberOfCellsInSpringBoardView:(FJSpringBoardView *)springBoardView{
@@ -225,6 +245,7 @@
 }
 
 - (void)viewDidUnload {
+    [self setDirectionButton:nil];
     [self setDoneBar:nil];
     [self setDoneButton:nil];
 	// Release any retained subviews of the main view.
