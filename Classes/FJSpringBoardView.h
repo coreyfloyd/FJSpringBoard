@@ -51,11 +51,20 @@ typedef enum  {
 
 
 @optional
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger )index;
-- (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex;
 
-- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger )index;
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger )index; 
+//simple drag and drop
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger)index; //you must implement the following method as well
+- (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex; //update your model
+
+//deletion
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger)index; //you must implement the following method as well
+- (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger)index; //update your model
+
+//drag and drop ONTO another cell
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDropCellFromIndex:(NSUInteger)formIndex onCellAtIndex:(NSUInteger)dropIndex; 
+- (FJSpringBoardCell*)springBoardView:(FJSpringBoardView *)springBoardView willDropCellOntoCell:(FJSpringBoardCell*)dropCell atIndex:(NSUInteger)dropIndex; //chance to customize a cell before another cell is dropped onto it
+- (void)springBoardView:(FJSpringBoardView *)springBoardView dropCellAtIndex:(NSUInteger)fromIndex onCellAtIndex:(NSUInteger)toIndex; //update your model. the cell at the drop index will be reloaded after this call
+
 
 
 @end
