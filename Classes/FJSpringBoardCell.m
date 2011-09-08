@@ -411,13 +411,58 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)setSelected:(BOOL)flag animated:(BOOL)animated{
     
-    if(animated)
-        [UIView beginAnimations:@"SelectionAnimation" context:nil];
-    
-    [self setSelected:flag];
+
+    if(!animated){
         
-    if(animated)
-        [UIView commitAnimations];
+        [self setSelected:flag];
+
+    }else{
+        
+        [self willChangeValueForKey:@"selected"];
+        
+        selected = flag;
+        
+        [self didChangeValueForKey:@"selected"];
+        
+        if(selected){
+            
+            UIView* sv = [[UIView alloc] initWithFrame:self.bounds];
+            sv.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
+            sv.layer.cornerRadius = 10.0;
+            sv.alpha = 0.8;
+            
+            sv.backgroundColor = [UIColor darkGrayColor];
+            self.selectionView = sv;
+            [self addSubview:sv];
+            [sv release];            
+            
+            self.selectionView.alpha = 0.0;
+            
+        }
+        
+        
+        [UIView animateWithDuration:0.4 animations:^(void) {
+            
+            if(selected){
+                
+                self.selectionView.alpha = 0.8;
+            }else{
+                
+                self.selectionView.alpha = 0.0;
+            }
+            
+        } completion:^(BOOL finished) {
+            
+            if(!selected){
+                
+                [self.selectionView removeFromSuperview];
+                self.selectionView = nil;
+
+            }
+          
+        }];
+    }
+    
     
 }
 
