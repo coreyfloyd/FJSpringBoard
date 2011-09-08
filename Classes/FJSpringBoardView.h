@@ -25,7 +25,9 @@ typedef enum  {
 } FJSpringBoardCellAnimation;
 
 typedef enum  {
-    FJSpringBoardCellScrollPositionMiddle
+    FJSpringBoardCellScrollPositionTop,
+    FJSpringBoardCellScrollPositionMiddle,
+    FJSpringBoardCellScrollPositionBottom
 } FJSpringBoardCellScrollPosition;
 
 typedef enum  {
@@ -123,7 +125,7 @@ typedef enum  {
 
 @property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
 
-//scroll
+//scroll, position is ignored in horizontal layout
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 

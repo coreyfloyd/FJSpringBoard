@@ -470,9 +470,38 @@ typedef enum  {
 
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated{
     
-    CGRect f =  [self _frameForCellAtIndex:index checkOffScreenIndexes:YES];
-    //TODO: support scroll positions?
-    [self scrollRectToVisible:f animated:animated];
+    
+    if(self.scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
+        
+        NSUInteger page = [(FJSpringBoardHorizontalLayout*)self.layout pageForCellIndex:index];
+        [self scrollToPage:page animated:animated];
+        
+    }else{
+        
+        static const float kScrollBuffer = 10.0;
+        
+        CGRect f =  [self _frameForCellAtIndex:index checkOffScreenIndexes:YES];
+        CGPoint offset = f.origin;
+        
+        if(scrollPosition == FJSpringBoardCellScrollPositionMiddle){
+            
+            offset.y = MAX(kScrollBuffer, offset.y - self.bounds.size.height/2 + self.cellSize.height/2);
+            
+            
+        }else if(scrollPosition == FJSpringBoardCellScrollPositionTop){
+            
+            offset.y = offset.y - kScrollBuffer;
+            
+        }else{
+            
+            offset.y = MAX(self.bounds.size.height - kScrollBuffer, offset.y - self.bounds.size.height + self.cellSize.height + kScrollBuffer);
+        }
+        
+        
+        [self setContentOffset:offset animated:animated];    
+           
+    }
+    
     
 }
 

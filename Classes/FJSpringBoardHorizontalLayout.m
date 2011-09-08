@@ -335,6 +335,14 @@
     
 }
 
+- (NSUInteger)pageForCellIndex:(NSUInteger)index{
+    
+    CellPosition pos = [self _positionForCellAtIndex:index];
+    NSUInteger page = [self _pageForCellAtPosition:pos];
+    return page;
+}
+
+
 - (NSIndexSet*)cellIndexesForPage:(NSUInteger)page{
         
     if(page == NSNotFound)
