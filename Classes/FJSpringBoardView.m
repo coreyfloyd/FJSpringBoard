@@ -488,7 +488,10 @@ typedef enum  {
         
         static const float kScrollBuffer = 10.0;
         
-        CGRect f =  [self _frameForCellAtIndex:index checkOffScreenIndexes:YES];
+        NSUInteger row = [(FJSpringBoardVerticalLayout*)self.layout rowForCellAtIndex:index];
+        
+        CGRect f = [(FJSpringBoardVerticalLayout*)self.layout frameForRow:row]; 
+
         CGPoint offset = f.origin;
         
         if(scrollPosition == FJSpringBoardCellScrollPositionMiddle){
@@ -648,18 +651,32 @@ typedef enum  {
 //called when changes occur affecting layout
 - (void)layoutSubviews{
             
+    
+    
     //reload entire table if needed
     if(self.shouldReload)
         [self reloadData];
     
     //recalculate layout
-    if(self.shouldRecalculateLayout)
+    if(self.shouldRecalculateLayout){
+        
+        NSRange visibleCellRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
+        
+        NSUInteger firstVisibleCell = visibleCellRange.location; 
+        
         [self _calculateLayout];
+        
+        dispatchOnMainQueueAfterDelayInSeconds(MOVE_ANIMATION_DURATION, ^(void) {
+            [self scrollToCellAtIndex:firstVisibleCell atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:YES];        
+        });
+
+    }
     
     //fix any loaded cells
     if(self.shouldFixLoadedCells)
         [self _fixLoadedCells];
 
+   
     //unload cells that are no longer "visible"
     [self _cleanupCellsScrollingOutOfView];
     

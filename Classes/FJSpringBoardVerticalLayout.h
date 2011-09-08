@@ -17,6 +17,7 @@
 
 - (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset;
 
-
+- (NSUInteger)rowForCellAtIndex:(NSUInteger)index;
+- (CGRect)frameForRow:(NSUInteger)row;
 
 @end
