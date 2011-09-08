@@ -76,10 +76,24 @@
         NSRange newRange = range;
         
         if(anAction.type == FJSpringBoardActionInsert){
-            newRange.location -= padding;
-            newRange.length += padding;
+            
+            NSUInteger start = 0;
+            if(padding <= newRange.location)
+                start = newRange.location - padding;
+            newRange.location  = start;
+            
+            NSUInteger finish = count - 1;
+            if(padding <=  count - 1 - NSMaxRange(newRange))
+                finish = newRange.length + padding;
+            
+            newRange.length = finish;
         }else if(anAction.type == FJSpringBoardActionDelete){
-            newRange.length += padding;
+            
+            NSUInteger finish = count - 1;
+            if(padding <=  count - 1 - NSMaxRange(newRange))
+                finish = newRange.length + padding;
+            
+            newRange.length = finish;
         }
     
         self.visibleIndexRange = newRange;
