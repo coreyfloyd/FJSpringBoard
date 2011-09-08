@@ -81,6 +81,11 @@ typedef enum  {
 
 - (void)_calculateLayout;
 
+@property(nonatomic) BOOL shouldFixLoadedCells;
+- (void)_setLoadedCellsDirty;
+- (void)_clearLoadedCellsDirty;
+- (void)_fixLoadedCells;
+
 //mark a full reload
 - (void)_setNeedsReload;
 - (void)_clearReload;
@@ -201,6 +206,7 @@ typedef enum  {
 @synthesize suspendLayoutUpdates;
 
 @synthesize canProcessActions;
+@synthesize shouldFixLoadedCells;
 
 
 #pragma mark -
@@ -280,6 +286,8 @@ typedef enum  {
     
     scrollDirection = direction;
     
+    [self _setLoadedCellsDirty];
+            
     [self _setNeedsLayoutCalculation];
         
     [self setNeedsLayout];
@@ -603,8 +611,41 @@ typedef enum  {
 
 }
 
-//called when changes occur affecting layout
+#pragma mark -
+#pragma mark Fix layout
 
+
+- (void)_setLoadedCellsDirty{
+    
+    self.shouldFixLoadedCells = YES;
+    
+}
+
+- (void)_clearLoadedCellsDirty{
+    
+    self.shouldFixLoadedCells = NO;
+}
+
+//only called on reload
+- (void)_fixLoadedCells{
+    
+    [self _clearLoadedCellsDirty];
+    
+    [self.indexLoader updateIndexesWithContentOffest:self.contentOffset]; //this causes the index loader to recalculate cells to load in case we changed scroll directions.
+    
+    [UIView animateWithDuration:MOVE_ANIMATION_DURATION animations:^(void) {
+        
+        [self _layoutCellsAtIndexes:[self.indexLoader loadedIndexes]]; //relay out loaded cells. 
+        
+    }];
+        
+}
+
+
+#pragma mark -
+#pragma mark Layout
+
+//called when changes occur affecting layout
 - (void)layoutSubviews{
             
     //reload entire table if needed
@@ -614,6 +655,10 @@ typedef enum  {
     //recalculate layout
     if(self.shouldRecalculateLayout)
         [self _calculateLayout];
+    
+    //fix any loaded cells
+    if(self.shouldFixLoadedCells)
+        [self _fixLoadedCells];
 
     //unload cells that are no longer "visible"
     [self _cleanupCellsScrollingOutOfView];
@@ -624,6 +669,8 @@ typedef enum  {
 }
 
 
+#pragma mark -
+#pragma mark Load Indexes Due to scrolling
 
 - (void)_setupCellsScrollingIntoView{
     

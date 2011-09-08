@@ -75,6 +75,23 @@
     
 }
 
+- (CGRect)_frameForRow:(NSUInteger)row{
+    
+    CGRect f;
+    
+    CGFloat x = 0;
+    
+    CGFloat y = 0 + ((float)row * self.veritcalCellSpacing) + ((float)row * self.springBoard.cellSize.height); 
+    
+    f.origin = CGPointMake(x, y);
+    f.size = CGSizeMake(self.rowWidth, self.springBoard.cellSize.height); 
+    
+    return f;
+
+    
+    
+}
+
 - (CGPoint)_originForCellAtPosition:(CellPosition)position{
         
     float widthOfCellsInRowBeforeCell = self.springBoard.cellSize.width * position.column;

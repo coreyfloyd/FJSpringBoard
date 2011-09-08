@@ -102,9 +102,9 @@ typedef enum  {
 @property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
 
-@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. setting causes reload
+@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful! setting this causes a full reload
 
-@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection; //causes reload
+@property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
 
 
 
