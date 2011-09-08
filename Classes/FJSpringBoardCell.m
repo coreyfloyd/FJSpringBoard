@@ -240,6 +240,20 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }  
 
+- (void)setFrame:(CGRect)frame{
+    
+    [super setFrame:frame];
+    self.deleteButton.center = self.frame.origin;
+    [self setNeedsLayout];
+}
+
+- (void)layoutSubviews{
+    
+    [self.superview insertSubview:self.deleteButton aboveSubview:self];
+
+}
+
+
 
 - (void)prepareForReuse{
     
@@ -317,11 +331,13 @@ static UIColor* _defaultBackgroundColor = nil;
         self.draggingRecognizer.enabled = YES;
         self.draggingSelectionRecognizer.enabled = YES;
         
+        if(showsDeleteButton)
+            [self _addDeleteButton];
+        
         if(draggable)
             [self _startWiggle];
         
-        if(showsDeleteButton)
-            [self _addDeleteButton];
+       
     }
 }
 
@@ -439,12 +455,12 @@ static UIColor* _defaultBackgroundColor = nil;
         self.deleteButton = [UIButton buttonWithType:UIButtonTypeCustom];
     
     self.deleteButton.frame = CGRectMake(0, 0, 44, 44);
-    self.deleteButton.center = self.contentView.frame.origin;
+    self.deleteButton.center = self.frame.origin;
     [self.deleteButton setImage:self.deleteImage forState:UIControlStateNormal];
     self.deleteButton.contentMode = UIViewContentModeCenter;
     //[b setImageEdgeInsets:UIEdgeInsetsMake(0, 0, 14, 14)];
     [self.deleteButton addTarget:self action:@selector(delete) forControlEvents:UIControlEventTouchUpInside];
-    [self insertSubview:self.deleteButton aboveSubview:self.contentView];
+    [self.superview insertSubview:self.deleteButton aboveSubview:self];
     
 }
 
@@ -460,12 +476,15 @@ static UIColor* _defaultBackgroundColor = nil;
     CAAnimation *wiggle = wiggleAnimation();
     recursivelyApplyAnimationToAllSubviewLayers(self, wiggle, @"wiggle");
 
-
+    [self.deleteButton.layer addAnimation:wiggle forKey:@"wiggle"];
 }
 
 - (void)_stopWiggle{
     
     recursivelyRemoveAnimationFromAllSubviewLayers(self, @"wiggle");
+    
+    [self.deleteButton.layer removeAnimationForKey:@"wiggle"];
+
 }
 
 - (CAAnimation*)_wiggleAnimation {
