@@ -38,7 +38,7 @@
     DemoModelObject* o = [[DemoModelObject alloc] init];
     o.value = [self.model count];
     DemoModelObject* p = [[DemoModelObject alloc] init];
-    o.value = [self.model count];
+    p.value = [self.model count] + 1;
     
     NSArray* a = [NSArray arrayWithObjects:o,p,nil];
     [o release];

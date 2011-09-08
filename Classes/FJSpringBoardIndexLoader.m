@@ -216,7 +216,7 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
     NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
     
-    debugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
+    extendedDebugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
     
     FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.allIndexes count]  visibleIndexRange:range springBoardAction:action];
     

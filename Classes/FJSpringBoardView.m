@@ -682,7 +682,9 @@ typedef enum  {
     
     //load cells that are now visible
     [self _setupCellsScrollingIntoView];
-        
+    
+    extendedDebugLog([self.contentView recursiveDescription]);
+
 }
 
 
@@ -700,6 +702,9 @@ typedef enum  {
             return NO;
             
         }];
+        
+        extendedDebugLog(@"indexes to load: %@", [self.indexLoader indexesToLoad]);
+        extendedDebugLog(@"actual indexes to load: %@", actualIndexes);
         
         //remove from view
         [self _removeCellsAtIndexes:actualIndexes];
@@ -804,6 +809,9 @@ typedef enum  {
     cell.springBoardView = self;
     
     [self.cells replaceObjectAtIndex:index withObject:cell];
+    
+    extendedDebugLog(@"loaded cell: %@", [cell description])
+    
     [cell release];    
     
 }
@@ -851,6 +859,8 @@ typedef enum  {
     cell.alpha = 1.0;
     
     //RECTLOG(eachCell.contentView.frame);
+    
+    extendedDebugLog(@"layed out cell: %@", [cell description])
     
     [self.contentView addSubview:cell];
     
@@ -1167,7 +1177,7 @@ typedef enum  {
 
 
 
-#pragma mark - Process Actions
+#pragma mark - Process Updates
 
 - (void)_processMoveActions:(NSArray*)moves completionBlock:(dispatch_block_t)block{
     

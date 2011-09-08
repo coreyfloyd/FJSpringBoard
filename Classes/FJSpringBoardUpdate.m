@@ -223,11 +223,11 @@
     
     //[self shiftCellMovementUpdatesInAffectedRange:affectedRange by:1];
     
-    debugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
+    extendedDebugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
     
     NSRange affectedRangeThatNeedShifted = NSIntersectionRange(self.visibleIndexRange, affectedRange);
 
-    debugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
+    extendedDebugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
 
     NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRangeThatNeedShifted];
     
@@ -279,7 +279,7 @@
     
     NSIndexSet* indexesThatRequireAction = [NSIndexSet indexSetWithIndexesInRange:affectedRangeThatNeedShifted];
     
-    debugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
+    extendedDebugLog(@"visible range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
 
     /*
     NSMutableIndexSet* affectedIndexesThatNeedShifted = [NSMutableIndexSet indexSet];
