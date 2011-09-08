@@ -1221,6 +1221,8 @@ typedef enum  {
                              FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
                              
                              [self _layoutCell:cell atIndex:action.newSpringBoardIndex];
+                             cell.index = action.newSpringBoardIndex;
+                
                              
                          }];
                          
