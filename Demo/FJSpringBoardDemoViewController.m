@@ -129,13 +129,15 @@
     
     if(self.springBoardView.mode == FJSpringBoardCellModeEditing){
         
-        [self.doneBar setItems:[NSArray arrayWithObject:self.directionButton] animated:NO];
+        UIBarButtonItem* i  = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+
+        [self.doneBar setItems:[NSArray arrayWithObjects:self.directionButton, i, self.doneButton, nil] animated:YES];
+        
+        [i release];
 
     }else{
         
-        UIBarButtonItem* i  = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-        
-        [self.doneBar setItems:[NSArray arrayWithObjects:self.directionButton, i, self.doneButton, nil] animated:YES];
+        [self.doneBar setItems:[NSArray arrayWithObject:self.directionButton] animated:NO];
 
     }
 }
@@ -199,34 +201,12 @@
     NSLog(@"cell tapped at index: %i", index);
 }    
 
-
-- (void)springBoardView:(FJSpringBoardView *)springBoardView cellWasDoubleTappedAtIndex:(NSUInteger)index{
-    
-    NSLog(@"cell double tapped at index: %i", index);
-    
-}
-
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex{
     
     id obj = [[self.model objectAtIndex:fromIndex] retain];
     [self.model removeObjectAtIndex:fromIndex];
     [self.model insertObject:obj atIndex:toIndex];
     [obj release];
-}
-
-
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index{
-    
-    DemoModelObject* o = [[DemoModelObject alloc] init];
-    o.value = 999;
-    [self.model insertObject:o atIndex:index];
-    [o release];
-
-}
-
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex{
-    
-    [self.model removeObjectsAtIndexes:indexes];
 }
 
 /*

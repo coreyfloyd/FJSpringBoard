@@ -94,7 +94,7 @@
 						<string key="targetRuntimeIdentifier">IBCocoaTouchFramework</string>
 						<object class="NSMutableArray" key="IBUIItems">
 							<bool key="EncodedWithXMLCoder">YES</bool>
-							<object class="IBUIBarButtonItem" id="374825494">
+							<object class="IBUIBarButtonItem" id="852494404">
 								<string key="IBUITitle">Direction</string>
 								<string key="targetRuntimeIdentifier">IBCocoaTouchFramework</string>
 								<int key="IBUIStyle">1</int>
@@ -167,14 +167,6 @@
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchOutletConnection" key="connection">
-						<string key="label">doneButton</string>
-						<reference key="source" ref="372490531"/>
-						<reference key="destination" ref="1002941555"/>
-					</object>
-					<int key="connectionID">26</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBCocoaTouchOutletConnection" key="connection">
 						<string key="label">doneBar</string>
 						<reference key="source" ref="372490531"/>
 						<reference key="destination" ref="1002941555"/>
@@ -192,7 +184,7 @@
 				<object class="IBConnectionRecord">
 					<object class="IBCocoaTouchEventConnection" key="connection">
 						<string key="label">switchDirection:</string>
-						<reference key="source" ref="374825494"/>
+						<reference key="source" ref="852494404"/>
 						<reference key="destination" ref="372490531"/>
 					</object>
 					<int key="connectionID">32</int>
@@ -201,9 +193,17 @@
 					<object class="IBCocoaTouchOutletConnection" key="connection">
 						<string key="label">directionButton</string>
 						<reference key="source" ref="372490531"/>
-						<reference key="destination" ref="374825494"/>
+						<reference key="destination" ref="852494404"/>
 					</object>
 					<int key="connectionID">33</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBCocoaTouchOutletConnection" key="connection">
+						<string key="label">doneButton</string>
+						<reference key="source" ref="372490531"/>
+						<reference key="destination" ref="1039095016"/>
+					</object>
+					<int key="connectionID">34</int>
 				</object>
 			</object>
 			<object class="IBMutableOrderedSet" key="objectRecords">
@@ -265,7 +265,7 @@
 							<bool key="EncodedWithXMLCoder">YES</bool>
 							<reference ref="1039095016"/>
 							<reference ref="990265145"/>
-							<reference ref="374825494"/>
+							<reference ref="852494404"/>
 						</object>
 						<reference key="parent" ref="774585933"/>
 					</object>
@@ -291,7 +291,7 @@
 					</object>
 					<object class="IBObjectRecord">
 						<int key="objectID">29</int>
-						<reference key="object" ref="374825494"/>
+						<reference key="object" ref="852494404"/>
 						<reference key="parent" ref="1002941555"/>
 					</object>
 				</object>
@@ -345,7 +345,7 @@
 				<reference key="dict.values" ref="0"/>
 			</object>
 			<nil key="sourceID"/>
-			<int key="maxID">33</int>
+			<int key="maxID">34</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<object class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -418,7 +418,7 @@
 							<bool key="EncodedWithXMLCoder">YES</bool>
 							<string>UIBarButtonItem</string>
 							<string>UIToolbar</string>
-							<string>UIToolbar</string>
+							<string>UIBarButtonItem</string>
 						</object>
 					</object>
 					<object class="NSMutableDictionary" key="toOneOutletInfosByName">
@@ -441,7 +441,7 @@
 							</object>
 							<object class="IBToOneOutletInfo">
 								<string key="name">doneButton</string>
-								<string key="candidateClassName">UIToolbar</string>
+								<string key="candidateClassName">UIBarButtonItem</string>
 							</object>
 						</object>
 					</object>
