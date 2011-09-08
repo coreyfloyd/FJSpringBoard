@@ -9,7 +9,6 @@
 #import "FJSpringBoardUpdate.h"
 #import "FJSpringBoardCellUpdate.h"
 #import "FJSpringBoardActionIndexMap.h"
-#import "FJSpringBoardActionItem.h"
 
 @interface FJSpringBoardUpdate()
 
@@ -71,7 +70,7 @@
         
         self.action = anAction;
         
-        NSUInteger padding = [[anAction actionItems] count];
+        NSUInteger padding = [[anAction indexes] count];
         
         NSRange newRange = range;
         
@@ -339,47 +338,37 @@
 
 - (void)applyReloadAction:(FJSpringBoardAction*)reload{
     
-    [reload.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = obj;
-        
-        FJSpringBoardCellUpdate* affectedCell = [self actionForNewIndex:item.index];    
+    [reload.indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                
+        FJSpringBoardCellUpdate* affectedCell = [self actionForNewIndex:idx];    
         
         if(!affectedCell){
             
             affectedCell = [[[FJSpringBoardCellUpdate alloc] init] autorelease];
-            affectedCell.oldSpringBoardIndex = item.index;
+            affectedCell.oldSpringBoardIndex = idx;
             [self.cellActionUpdates addObject:affectedCell];
             
         }
         
         [affectedCell markNeedsLoaded];
-        affectedCell.newSpringBoardIndex = item.index;
+        affectedCell.newSpringBoardIndex = idx;
         affectedCell.animation = reload.animation;
-        
     }];
-    
+       
 }
 
 
 - (void)applyDeletionAction:(FJSpringBoardAction*)deletion{
     
-    self.newCellCount = [self.indexMap oldCount] - [deletion actionItems].count;
+    self.newCellCount = [self.indexMap oldCount] - [deletion indexes].count;
     
     extendedDebugLog(@"applying deletion action %@", [deletion description]);
     
-    //hold indexes for fast lookup later
-    NSMutableIndexSet* deletionIndexes = [NSMutableIndexSet indexSet];
     
-    [deletion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = obj;
-        
-        NSUInteger actualIndex = item.index;
-        
-        //add index
-        [deletionIndexes addIndex:actualIndex];
-        
+    [deletion.indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                
+        NSUInteger actualIndex = idx;
+                
         //create and add cell action
         FJSpringBoardCellUpdate* deletedCell = [[FJSpringBoardCellUpdate alloc] init];
         deletedCell.animation = deletion.animation;
@@ -388,34 +377,31 @@
         
         [self.cellActionUpdates addObject:deletedCell];
         [deletedCell release];
-                        
-
+        
     }];
     
+    
     //now we need to update the new to old map
-    [self.indexMap updateMapByDeletingItemsAtIndexes:deletionIndexes];  
+    [self.indexMap updateMapByDeletingItemsAtIndexes:deletion.indexes];  
     
 
-    [deletion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = obj;
-        
-        NSUInteger actualIndex = item.index;
+    [deletion.indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                
+        NSUInteger actualIndex = idx;
         
         //lets get the affected range (old indexes)                
         NSUInteger lastIndex = [self.indexMap oldCount]-1;
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(actualIndex+1, lastIndex);
-                
+        
         //update the old to new map 
         [self.indexMap leftShiftOldToNewIndexesInAffectedRange:affectedRangeThatNeedShifted];
         
         //now lets shift the affected cells (this uses the new to old map)
         [self leftShiftCellMovementUpdatesInAffectedRange:affectedRangeThatNeedShifted];
         
-        
-        
-        
+
     }];
+    
     //get rid of any movements associated with cells that are being deleted
     NSMutableSet* deletedCellsThatAreBeingMoved = [NSMutableSet set];
     
@@ -423,7 +409,7 @@
         
         FJSpringBoardCellUpdate* update = obj;
         
-        if([deletionIndexes containsIndex:update.oldSpringBoardIndex]){
+        if([deletion.indexes containsIndex:update.oldSpringBoardIndex]){
             
             [deletedCellsThatAreBeingMoved addObject:update];
             
@@ -442,16 +428,13 @@
 
 - (void)applyInsertionAction:(FJSpringBoardAction*)insertion{
     
-    self.newCellCount = [self.indexMap oldCount] + [insertion actionItems].count;
+    self.newCellCount = [self.indexMap oldCount] + [insertion indexes].count;
 
     extendedDebugLog(@"applying insertion action %@", [insertion description]);
         
-    
-    [insertion.actionItems enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = obj;
-        
-        NSUInteger actualIndex = item.index;
+    [insertion.indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                
+        NSUInteger actualIndex = idx;
         
         //create and add cell action
         FJSpringBoardCellUpdate* insertedCell = [[FJSpringBoardCellUpdate alloc] init];
@@ -467,18 +450,18 @@
         //lets get the affected range (new indexes)
         NSUInteger lastIndex = [self.indexMap newCount]-1; 
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(actualIndex, lastIndex);
-                
+        
         //now lets shift the affected cells (this uses the the new to old map)
         [self rightShiftCellMovementUpdatesInAffectedRange:affectedRangeThatNeedShifted];
         
         //now we need to update the new to old map
         [self.indexMap updateMapByInsertItemAtIndex:actualIndex];
-         
+        
         //update the old to new map 
         [self.indexMap rightShiftOldToNewIndexesInAffectedRange:affectedRangeThatNeedShifted];
-
-               
+        
     }];
+    
         
 }
 

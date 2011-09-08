@@ -26,14 +26,14 @@ typedef enum{
     
     FJSpringBoardActionType type;
     FJSpringBoardCellAnimation animation;
-    NSArray* actionItems;
+    NSIndexSet* indexes;
     
     NSArray* cellStateBeforeAction;
 }
 @property (nonatomic) FJSpringBoardActionType type;
 @property (nonatomic) FJSpringBoardCellAnimation animation;
-@property (nonatomic, copy) NSArray *actionItems;
 @property (nonatomic, copy) NSArray *cellStateBeforeAction;
+@property (nonatomic, copy) NSIndexSet *indexes;
 
 + (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState animation:(FJSpringBoardCellAnimation)anim; 
 

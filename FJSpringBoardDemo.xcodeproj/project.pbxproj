@@ -30,7 +30,6 @@
 		C4ADBB951409702B00BE79D5 /* Functions.m in Sources */ = {isa = PBXBuildFile; fileRef = C4ADBB941409702B00BE79D5 /* Functions.m */; };
 		C4ADBBB7140AA38A00BE79D5 /* FJSpringBoardAction.m in Sources */ = {isa = PBXBuildFile; fileRef = C4ADBBB6140AA38A00BE79D5 /* FJSpringBoardAction.m */; };
 		C4BAC19814113B9E00AF84A9 /* SMModelObject.m in Sources */ = {isa = PBXBuildFile; fileRef = C4BAC19714113B9E00AF84A9 /* SMModelObject.m */; };
-		C4BAC19B1411479500AF84A9 /* FJSpringBoardActionItem.m in Sources */ = {isa = PBXBuildFile; fileRef = C4BAC19A1411479500AF84A9 /* FJSpringBoardActionItem.m */; };
 		C4BAC19E14115E5600AF84A9 /* FJIndexMapItem.m in Sources */ = {isa = PBXBuildFile; fileRef = C4BAC19D14115E5600AF84A9 /* FJIndexMapItem.m */; };
 		C4F082B5127A08CF00F8BDBC /* FJSpringBoardLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F082B4127A08CF00F8BDBC /* FJSpringBoardLayout.m */; };
 		C4F08513127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m in Sources */ = {isa = PBXBuildFile; fileRef = C4F08512127C9B7700F8BDBC /* FJSpringBoardIndexLoader.m */; };
@@ -54,7 +53,7 @@
 		8D1107310486CEB800E47090 /* FJSpringBoardDemo-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "FJSpringBoardDemo-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		C44C9702140F890500AA6661 /* FJSpringBoardActionIndexMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardActionIndexMap.h; sourceTree = "<group>"; };
 		C44C9703140F890500AA6661 /* FJSpringBoardActionIndexMap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardActionIndexMap.m; sourceTree = "<group>"; };
-		C44C9705140FDD5D00AA6661 /* FJSpringBoardCellUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; path = FJSpringBoardCellUpdate.h; sourceTree = "<group>"; };
+		C44C9705140FDD5D00AA6661 /* FJSpringBoardCellUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardCellUpdate.h; sourceTree = "<group>"; };
 		C44C9706140FDD5D00AA6661 /* FJSpringBoardCellUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardCellUpdate.m; sourceTree = "<group>"; };
 		C44C970B140FF02000AA6661 /* NSArrayHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NSArrayHelper.h; sourceTree = "<group>"; };
 		C44C970C140FF02000AA6661 /* NSArrayHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSArrayHelper.m; sourceTree = "<group>"; };
@@ -81,8 +80,6 @@
 		C4ADBBB6140AA38A00BE79D5 /* FJSpringBoardAction.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardAction.m; sourceTree = "<group>"; };
 		C4BAC19614113B9E00AF84A9 /* SMModelObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SMModelObject.h; sourceTree = "<group>"; };
 		C4BAC19714113B9E00AF84A9 /* SMModelObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SMModelObject.m; sourceTree = "<group>"; };
-		C4BAC1991411479500AF84A9 /* FJSpringBoardActionItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardActionItem.h; sourceTree = "<group>"; };
-		C4BAC19A1411479500AF84A9 /* FJSpringBoardActionItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJSpringBoardActionItem.m; sourceTree = "<group>"; };
 		C4BAC19C14115E5600AF84A9 /* FJIndexMapItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJIndexMapItem.h; sourceTree = "<group>"; };
 		C4BAC19D14115E5600AF84A9 /* FJIndexMapItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FJIndexMapItem.m; sourceTree = "<group>"; };
 		C4F082B3127A08CF00F8BDBC /* FJSpringBoardLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FJSpringBoardLayout.h; sourceTree = "<group>"; };
@@ -198,8 +195,6 @@
 			children = (
 				C4ADBBB5140AA38A00BE79D5 /* FJSpringBoardAction.h */,
 				C4ADBBB6140AA38A00BE79D5 /* FJSpringBoardAction.m */,
-				C4BAC1991411479500AF84A9 /* FJSpringBoardActionItem.h */,
-				C4BAC19A1411479500AF84A9 /* FJSpringBoardActionItem.m */,
 			);
 			name = Action;
 			sourceTree = "<group>";
@@ -376,7 +371,6 @@
 				C44C970D140FF02000AA6661 /* NSArrayHelper.m in Sources */,
 				C44C97101410A3E200AA6661 /* FJSpringBoardUpdate.m in Sources */,
 				C4BAC19814113B9E00AF84A9 /* SMModelObject.m in Sources */,
-				C4BAC19B1411479500AF84A9 /* FJSpringBoardActionItem.m in Sources */,
 				C4BAC19E14115E5600AF84A9 /* FJIndexMapItem.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

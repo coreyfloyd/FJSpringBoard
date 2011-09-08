@@ -8,7 +8,6 @@
 
 #import "FJSpringBoardActionIndexMap.h"
 #import "FJSpringBoardAction.h"
-#import "FJSpringBoardActionItem.h"
 
 #import "FJIndexMapItem.h"
 

@@ -7,23 +7,22 @@
 //
 
 #import "FJSpringBoardAction.h"
-#import "FJSpringBoardActionItem.h"
 
 @implementation FJSpringBoardAction
 
 @synthesize type;
 @synthesize animation;
-@synthesize actionItems;
 @synthesize cellStateBeforeAction;
+@synthesize indexes;
+
 
 
 
 - (void)dealloc {
-    
+    [indexes release];
+    indexes = nil;
     [cellStateBeforeAction release];
     cellStateBeforeAction = nil;
-    [actionItems release];
-    actionItems = nil;
     [super dealloc];
 }
 + (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState animation:(FJSpringBoardCellAnimation)anim{
@@ -32,19 +31,8 @@
     a.type = FJSpringBoardActionDelete;
     a.animation = anim;
     a.cellStateBeforeAction = cellState;
+    a.indexes = indexes;
 
-    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
-        item.index = idx;
-        [items addObject:item];
-        [item release];
-        
-    }];
-    
-    a.actionItems = items;
     return [a autorelease];
 
 }
@@ -54,19 +42,8 @@
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
     a.type = FJSpringBoardActionInsert;
     a.animation = anim;
-    
-    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
-        item.index = idx;
-        [items addObject:item];
-        [item release];
-        
-    }];
+    a.indexes = indexes;
 
-    a.actionItems = items;
     return [a autorelease];
 
 }
@@ -77,19 +54,8 @@
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
     a.type = FJSpringBoardActionReload;
     a.animation = anim;
-    
-    NSMutableArray* items = [NSMutableArray arrayWithCapacity:[indexes count]];
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-        
-        FJSpringBoardActionItem* item = [[FJSpringBoardActionItem alloc] init];
-        item.index = idx;
-        [items addObject:item];
-        [item release];
-        
-    }];
-    
-    a.actionItems = items;
+    a.indexes = indexes;
+
     return [a autorelease];
 
 }
