@@ -160,10 +160,16 @@ typedef enum  {
 - (void)_completeDrop;
 
 
-
-
-
 @property(nonatomic, retain) NSMutableIndexSet *selectedIndexes;
+
+
+@property(nonatomic, retain) UILongPressGestureRecognizer *tapAndHoldRecognizer;
+@property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
+@property(nonatomic, retain) UILongPressGestureRecognizer *editingModeRecognizer;
+@property(nonatomic, retain) UILongPressGestureRecognizer *draggingSelectionRecognizer;
+@property(nonatomic, retain) UIPanGestureRecognizer *draggingRecognizer;
+
+- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g;
 
 
 
@@ -209,6 +215,12 @@ typedef enum  {
 @synthesize shouldFixLoadedCells;
 @synthesize allowsMultipleSelection;
 
+@synthesize tapAndHoldRecognizer;
+@synthesize singleTapRecognizer;
+@synthesize editingModeRecognizer;
+@synthesize draggingSelectionRecognizer;
+@synthesize draggingRecognizer;
+
 
 #pragma mark -
 #pragma mark NSObject
@@ -217,6 +229,16 @@ typedef enum  {
 - (void)dealloc {    
     dataSource = nil;
     delegate = nil;
+    [tapAndHoldRecognizer release];
+    tapAndHoldRecognizer = nil;
+    [singleTapRecognizer release];
+    singleTapRecognizer = nil;
+    [editingModeRecognizer release];
+    editingModeRecognizer = nil;
+    [draggingSelectionRecognizer release];
+    draggingSelectionRecognizer = nil;
+    [draggingRecognizer release];
+    draggingRecognizer = nil;
     [cells release];
     cells = nil;
     [contentView release];
@@ -256,7 +278,43 @@ typedef enum  {
         self.mode = FJSpringBoardCellModeNormal;
         self.canProcessActions = YES;
 
+        UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
+        g.minimumPressDuration = 0.1;
+        g.delegate = self;
+        g.cancelsTouchesInView = NO;
+        [self.contentView addGestureRecognizer:g];
+        self.tapAndHoldRecognizer = g;
+        [g release];
         
+        
+        UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
+        [self.contentView addGestureRecognizer:t];
+        self.singleTapRecognizer = t;
+        [t release];
+        
+        UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(editingLongTapRecieved:)];
+        l.minimumPressDuration = 0.75;
+        [self.contentView addGestureRecognizer:l];
+        self.editingModeRecognizer = l;
+        [l release];
+        
+        
+        l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
+        l.minimumPressDuration = 0.2;
+        l.cancelsTouchesInView = NO;
+        [self.contentView addGestureRecognizer:l];
+        self.draggingSelectionRecognizer = l;
+        [l release];
+        
+        /*
+         UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
+         p.maximumNumberOfTouches = 1;
+         [self addGestureRecognizer:p];
+         self.draggingRecognizer = p;
+         [p release]; 
+         */
+
+
     }
     return self;
 }
@@ -417,6 +475,23 @@ typedef enum  {
 
 - (void)setMode:(FJSpringBoardCellMode)aMode{
     
+    if(aMode == FJSpringBoardCellModeNormal){
+        
+        self.singleTapRecognizer.enabled = YES;
+        self.editingModeRecognizer.enabled = YES;
+        self.draggingRecognizer.enabled = NO;
+        self.draggingSelectionRecognizer.enabled = NO;
+        
+        
+    }else{
+        
+        self.singleTapRecognizer.enabled = NO;
+        self.editingModeRecognizer.enabled = YES; //to get the first drag
+        self.draggingRecognizer.enabled = YES;
+        self.draggingSelectionRecognizer.enabled = YES;
+        
+    }
+
     if(mode == aMode)
         return;
     
@@ -1285,7 +1360,9 @@ typedef enum  {
 #endif
 
         FJSpringBoardCell* cell = [self cellAtIndex:action.newSpringBoardIndex];
-        ASSERT_TRUE(cell == (FJSpringBoardCell*)[NSNull null] || cell == nil);
+        
+        if(self.reorderingIndex == NSNotFound)
+            ASSERT_TRUE(cell == (FJSpringBoardCell*)[NSNull null] || cell == nil);
         
         [self _loadCellAtIndex:action.newSpringBoardIndex];
         
@@ -1296,7 +1373,9 @@ typedef enum  {
         [self _layoutCell:cell atIndex:action.newSpringBoardIndex];
         cell.alpha = 0;
         
-        [insetionIndexes addIndex:action.newSpringBoardIndex];
+        //so we don't reveal the reording index
+        if(action.newSpringBoardIndex != self.reorderingIndex)
+            [insetionIndexes addIndex:action.newSpringBoardIndex];
         
     }];
     
@@ -1550,15 +1629,184 @@ typedef enum  {
 #pragma mark -
 #pragma mark Touches
 
-/*
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
     
-    return YES;
+    if(gestureRecognizer == self.tapAndHoldRecognizer || gestureRecognizer == self.singleTapRecognizer || gestureRecognizer == self.editingModeRecognizer || gestureRecognizer == self.draggingSelectionRecognizer || gestureRecognizer == self.draggingRecognizer){
+        
+        if(otherGestureRecognizer == self.tapAndHoldRecognizer || otherGestureRecognizer == self.singleTapRecognizer || otherGestureRecognizer == self.editingModeRecognizer || otherGestureRecognizer == self.draggingSelectionRecognizer || otherGestureRecognizer == self.draggingRecognizer){
+            
+            return YES;
+        }
+    }
+    
+    
+    return NO;
 
 }
-*/
 
-/*
+- (void)didSingleTap:(UITapGestureRecognizer*)g{
+    
+    CGPoint p = [g locationInView:self.contentView];
+    
+    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSNotFound)
+        return;
+    
+    FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+
+    [self cellWasTapped:c];
+    
+}
+
+- (void)cellWasTapped:(FJSpringBoardCell*)cell{
+    
+    if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
+        
+        [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
+    }
+    
+    [self.selectedIndexes addIndex:cell.index];
+    
+    if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
+        return;
+    
+    [cell setSelected:YES animated:YES];
+    
+    if([self.delegate respondsToSelector:@selector(springBoardView:didSelectCellAtIndex:)])
+        [self.delegate springBoardView:self didSelectCellAtIndex:cell.index];
+    
+}
+
+
+
+- (void)editingLongTapRecieved:(UILongPressGestureRecognizer*)g{
+    
+    /*
+    CGPoint p = [g locationInView:self.contentView];
+    
+    
+    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+    
+    if(indexOfCell == NSNotFound)
+        return;
+        
+    FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+
+    [self cellWasLongTapped:c];
+*/
+    [self _processEditingLongTapWithRecognizer:g];
+
+}
+
+
+- (void)draggingSelectionLongTapReceived:(UILongPressGestureRecognizer*)g{
+    
+    [self _processEditingLongTapWithRecognizer:g];
+}
+
+
+
+- (void)dragPanningGestureReceived:(UIPanGestureRecognizer*)g{
+    
+    [self _processEditingLongTapWithRecognizer:g];
+}
+
+
+
+- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g{
+    
+    CGPoint p = [g locationInView:self.contentView];
+    
+    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
+    
+
+    if(g.state == UIGestureRecognizerStateBegan){
+        
+        debugLog(@"touch began");
+        
+        if(indexOfCell == NSNotFound)
+            return;
+        
+        FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+        
+        [self cellWasLongTapped:c];
+        
+    }
+    
+    //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
+    if(g.state == UIGestureRecognizerStateChanged){
+        
+        debugLog(@"touch changed");
+                
+        if(self.reorderingIndex == NSNotFound)
+            return;
+        
+        FJSpringBoardCell* c = [self.cells objectAtIndex:self.reorderingIndex];
+
+        [self cell:c longTapMovedToLocation:p];
+        
+        return;
+    }
+    
+    //we are done lets reorder or add to folder
+    if(g.state == UIGestureRecognizerStateEnded){
+        
+        debugLog(@"touch ended");
+        
+        if(indexOfCell == NSNotFound)
+            return;
+        
+        FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+        
+        [self cellLongTapEnded:c];
+        
+        return;
+    }
+    
+    //we failed to start panning, lets clean up
+    if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
+        
+        debugLog(@"touch failed or cancelled");
+        
+        if(indexOfCell == NSNotFound)
+            return;
+        
+        FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+        
+        [self cellLongTapEnded:c];
+        
+        return;
+    }
+    
+    if(g.state == UIGestureRecognizerStatePossible){
+        
+        debugLog(@"touch possible");
+        
+        if(indexOfCell == NSNotFound)
+            return;
+        
+        FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
+        
+        [self cellLongTapEnded:c];
+        
+        return;
+    }
+    
+}
+ 
+
+- (void)cellWasLongTapped:(FJSpringBoardCell*)cell{
+    
+    debugLog(@"cell long tapped");
+    
+    self.mode = FJSpringBoardCellModeEditing;
+    
+    [self _makeCellDraggableAtIndex:cell.index];
+    
+    
+}
+
 - (void)updateTapAndHold:(UIGestureRecognizer*)g{
     
     CGPoint p = [g locationInView:self.contentView];
@@ -1568,7 +1816,7 @@ typedef enum  {
     if(indexOfCell == NSNotFound)
         return;
 
-    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
+    FJSpringBoardCell* c = [self.cells objectAtIndex:indexOfCell];
     
     if(g.state == UIGestureRecognizerStateBegan){
         
@@ -1580,103 +1828,26 @@ typedef enum  {
 
     }
 }
-*/
-
-- (void)cellWasTapped:(FJSpringBoardCell*)cell{
-    
-    if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
-        
-        [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
-    }
-    
-    [self.selectedIndexes addIndex:cell.index];
-        
-    if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
-        return;
-    
-    [cell setSelected:YES animated:YES];
-
-    if([self.delegate respondsToSelector:@selector(springBoardView:didSelectCellAtIndex:)])
-        [self.delegate springBoardView:self didSelectCellAtIndex:cell.index];
-
-}
-
-/*
-- (void)didSingleTap:(UITapGestureRecognizer*)g{
-    
-    CGPoint p = [g locationInView:self.contentView];
-    self.lastTouchPoint = p;
-    
-    NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
-        
-    if(indexOfCell == NSNotFound)
-        return;
-
-    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
-    [c setSelected:YES];
-
-    if([delegate respondsToSelector:@selector(springBoardView:didSelectCellAtIndex:)])
-        [delegate springBoardView:self didSelectCellAtIndex:indexOfCell];
-    
-}
-*/
-
-- (void)cellWasLongTapped:(FJSpringBoardCell*)cell{
-    
-    self.mode = FJSpringBoardCellModeEditing;
-
-    [self _makeCellDraggableAtIndex:cell.index];
 
 
-}
-
-/*
-- (void)editingLongTapRecieved:(UILongPressGestureRecognizer*)g{
-    
-    CGPoint p = [g locationInView:self];
-    self.lastTouchPoint = p;
-    
-    CGPoint contentPoint = [g locationInView:self.contentView];
-    NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
-
-    if(self.mode == FJSpringBoardCellModeNormal){
-        
-        if(indexOfCell != NSNotFound){
-            
-            self.mode = FJSpringBoardCellModeEditing;
-
-            FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfCell];
-            
-            [cell setSelected:NO];
-            [cell setTappedAndHeld:NO];
-            
-            [self _makeCellDraggableAtIndex:indexOfCell];
-            
-            //[self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-        }
-    
-        return;
-    }
-    
-    [self _processEditingLongTapWithRecognizer:g];
-
-}
-*/
 
 - (void)cell:(FJSpringBoardCell*)cell longTapMovedToLocation:(CGPoint)newLocation{
     
+    debugLog(@"long tap moved to loaction: x:%f y:%f", newLocation.x, newLocation.y);
+
+    /*
     if(self.animatingContentOffset || self.animatingReorder){
         
         debugLog(@"still animating");
         //[self performSelector:@selector(_processEditingLongTapWithRecognizer:) withObject:g afterDelay:0.1];
         return;
     }
+     */
     debugLog(@"made it!");
     
-    CGPoint p = [self convertPoint:newLocation fromView:cell];
+    CGPoint p = newLocation;
     self.lastTouchPoint = p;
-    
-    
+        
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
     
     NSUInteger indexOfCell = cell.index;
@@ -1721,137 +1892,141 @@ typedef enum  {
 
 - (void)cellLongTapEnded:(FJSpringBoardCell*)cell{
     
+    debugLog(@"long tap ended");
+    
     [self _completeDragAction];
 
-}    
+}
 
 /*
+ 
+ - (void)draggingSelectionLongTapReceived:(UILongPressGestureRecognizer*)g{
+ 
+ [self _processEditingLongTapWithRecognizer:g];
+ }
+ 
+ 
+ 
+ - (void)dragPanningGestureReceived:(UIPanGestureRecognizer*)g{
+ 
+ [self _processEditingLongTapWithRecognizer:g];
+ }
+ 
+ 
+ - (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g{
+ 
+ if(self.animatingContentOffset || self.animatingReorder){
+ 
+ debugLog(@"still animating");
+ [self performSelector:@selector(_processEditingLongTapWithRecognizer:) withObject:g afterDelay:0.1];
+ return;
+ }
+ debugLog(@"made it!");
+ 
+ CGPoint p = [g locationInView:self];
+ self.lastTouchPoint = p;
+ 
+ 
+ [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
+ 
+ CGPoint contentPoint = [g locationInView:self.contentView];
+ NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
+ 
+ if(indexOfCell == NSNotFound){
+ 
+ [self _completeDragAction];
+ 
+ return;
+ 
+ }
+ 
+ if(g.state == UIGestureRecognizerStateBegan){
+ 
+ if(indexOfCell != NSNotFound){
+ 
+ FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfCell];
+ 
+ [cell setSelected:NO];
+ [cell setTappedAndHeld:NO];
+ 
+ [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
+ 
+ [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
+ 
+ }
+ }
+ 
+ //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
+ if(g.state == UIGestureRecognizerStateChanged){
+ 
+ self.draggableCellView.center = p;
+ 
+ //lets pause a second to see 
+ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
+ 
+ if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5)){
+ 
+ FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:p];
+ 
+ if(e == FJSpringBoardViewEdgeNone){
+ 
+ [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
+ 
+ }else{
+ 
+ //hit edge, scroll
+ if([self _scrollSpringBoardInDirectionOfEdge:e]){
+ 
+ /*
+ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
+ 
+ //are we still on an edge? then scroll again!
+ if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
+ [self _scrollSpringBoardInDirectionOfEdge:e];
+ 
+ });
+ 
+ 
+ }
+ }
+ }
+ 
+ });
+ 
+ [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
+ 
+ return;
+ }
+ 
+ 
+ //we are done lets reorder or add to folder
+ if(g.state == UIGestureRecognizerStateEnded){
+ 
+ [self _completeDragAction];
+ 
+ return;
+ }
+ 
+ //we failed to start panning, lets clean up
+ if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
+ 
+ 
+ [self _completeDragAction];
+ 
+ return;
+ }
+ 
+ if(g.state == UIGestureRecognizerStatePossible){
+ 
+ [self _completeDragAction];
+ 
+ return;
+ }
+ 
+ }
+ */
 
-- (void)draggingSelectionLongTapReceived:(UILongPressGestureRecognizer*)g{
-    
-    [self _processEditingLongTapWithRecognizer:g];
-}
 
-
-
-- (void)dragPanningGestureReceived:(UIPanGestureRecognizer*)g{
-    
-    [self _processEditingLongTapWithRecognizer:g];
-}
-
-
-- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g{
-    
-    if(self.animatingContentOffset || self.animatingReorder){
-        
-        debugLog(@"still animating");
-        [self performSelector:@selector(_processEditingLongTapWithRecognizer:) withObject:g afterDelay:0.1];
-        return;
-    }
-    debugLog(@"made it!");
-    
-    CGPoint p = [g locationInView:self];
-    self.lastTouchPoint = p;
-    
-    
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_completeDragAction) object:nil];
-    
-    CGPoint contentPoint = [g locationInView:self.contentView];
-    NSUInteger indexOfCell = [self indexOfCellAtPoint:contentPoint];
-    
-    if(indexOfCell == NSNotFound){
-        
-        [self _completeDragAction];
-        
-        return;
-
-    }
-    
-    if(g.state == UIGestureRecognizerStateBegan){
-        
-        if(indexOfCell != NSNotFound){
-            
-            FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:indexOfCell];
-            
-            [cell setSelected:NO];
-            [cell setTappedAndHeld:NO];
-                        
-            [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-            
-            [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-            
-        }
-    }
-    
-    //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
-    if(g.state == UIGestureRecognizerStateChanged){
-        
-        self.draggableCellView.center = p;
-        
-        //lets pause a second to see 
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.25)), dispatch_get_main_queue(), ^{
-            
-            if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5)){
-                
-                FJSpringBoardViewEdge e = [self _edgeOfViewAtTouchPoint:p];
-                
-                if(e == FJSpringBoardViewEdgeNone){
-                    
-                    [self _handleDraggableCellAtIndex:indexOfCell withTouchPoint:p];       
-                    
-                }else{
-                    
-                    //hit edge, scroll
-                    if([self _scrollSpringBoardInDirectionOfEdge:e]){
-                        
-                        /*
-                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
-                            
-                            //are we still on an edge? then scroll again!
-                            if(fabsf(p.x - self.lastTouchPoint.x) < 5 && (fabsf(p.y - self.lastTouchPoint.y) < 5))
-                                [self _scrollSpringBoardInDirectionOfEdge:e];
-                            
-                        });
-                         
-                         
-                    }
-                }
-            }
-            
-        });
-        
-        [self performSelector:@selector(_completeDragAction) withObject:nil afterDelay:4.0];
-        
-        return;
-    }
-    
-    
-    //we are done lets reorder or add to folder
-    if(g.state == UIGestureRecognizerStateEnded){
-        
-        [self _completeDragAction];
-        
-        return;
-    }
-    
-    //we failed to start panning, lets clean up
-    if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
-        
-        
-        [self _completeDragAction];
-        
-        return;
-    }
-    
-    if(g.state == UIGestureRecognizerStatePossible){
-        
-        [self _completeDragAction];
-        
-        return;
-    }
-    
-}
-*/
 
 #pragma mark -
 #pragma mark Animating Draggable Cell
@@ -2147,57 +2322,57 @@ typedef enum  {
         return;
     
     [self _removeHighlight];
-        
-    [self beginUpdates];
     
+    [self beginUpdates];
+
     [self _setupActionQueue];
     
     NSArray* oldCells = [self.cells copy];
     
     [self.cells removeObjectAtIndex:index];
-    
+        
     [self.dataSource springBoardView:self moveCellAtIndex:self.reorderingIndex toIndex:index];
     
     [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:self.reorderingIndex] currentCellState:oldCells withAnimation:FJSpringBoardCellAnimationFade];    
-    
+                         
     [oldCells release];
-    
+                                                                                                   
     [[self indexLoader] queueActionByInsertingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withAnimation:FJSpringBoardCellAnimationFade];
-    
+                         
     self.reorderingIndex = index;
-    
+                         
     [self endUpdates];
-    
+ 
 }
 
 - (void)_completeReorder{
-
+    
     debugLog(@"completing reorder...");
-
+    
     [self _removeHighlight];
     
-    CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
-    
-    NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
-    
-    if(newIndex == NSNotFound)
+        CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
+
+        NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
+        
+        if(newIndex == NSNotFound)
         newIndex = self.reorderingIndex;
-    
+        
     if(newIndex != self.reorderingIndex){
         
-        [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
-               
-    }  
-
+            [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
+            
+        }       
+    
     [self _animateDraggableViewToReorderedCellIndex:newIndex completionBlock:^{
-        
+    
         FJSpringBoardCell* cell = [self cellAtIndex:newIndex];
-        
+    
         if(![cell isEqual:[NSNull null]])
             cell.reordering = NO;
         
         self.draggableCellView = nil;
-        
+
         self.reorderingIndex = NSNotFound;
         
     }];

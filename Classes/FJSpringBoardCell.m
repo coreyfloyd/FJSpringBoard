@@ -89,14 +89,6 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 - (void)_removeDeleteButton;
 - (void)_addDeleteButton;
 
-@property(nonatomic, retain) UILongPressGestureRecognizer *tapAndHoldRecognizer;
-@property(nonatomic, retain) UITapGestureRecognizer *singleTapRecognizer;
-@property(nonatomic, retain) UILongPressGestureRecognizer *editingModeRecognizer;
-@property(nonatomic, retain) UILongPressGestureRecognizer *draggingSelectionRecognizer;
-@property(nonatomic, retain) UIPanGestureRecognizer *draggingRecognizer;
-
-- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g;
-
 @end
 
 
@@ -118,11 +110,6 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize draggable;
 @synthesize tappedAndHeld;
 @synthesize index;
-@synthesize tapAndHoldRecognizer;
-@synthesize singleTapRecognizer;
-@synthesize editingModeRecognizer;
-@synthesize draggingSelectionRecognizer;
-@synthesize draggingRecognizer;
 @synthesize deleteButton;
 @synthesize selectedBackgroundView;
 @synthesize selectionStyle;
@@ -136,16 +123,6 @@ static UIColor* _defaultBackgroundColor = nil;
     selectedBackgroundView = nil;
     [deleteButton release];
     deleteButton = nil;
-    [tapAndHoldRecognizer release];
-    tapAndHoldRecognizer = nil;
-    [singleTapRecognizer release];
-    singleTapRecognizer = nil;
-    [editingModeRecognizer release];
-    editingModeRecognizer = nil;
-    [draggingSelectionRecognizer release];
-    draggingSelectionRecognizer = nil;
-    [draggingRecognizer release];
-    draggingRecognizer = nil;
     [backgroundView release];
     backgroundView = nil;
     springBoardView = nil;
@@ -201,42 +178,6 @@ static UIColor* _defaultBackgroundColor = nil;
         self.showsDeleteButton = YES;
         self.reuseIdentifier = identifier;
         
-        UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
-        g.minimumPressDuration = 0.1;
-        g.delegate = self;
-        g.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:g];
-        self.tapAndHoldRecognizer = g;
-        [g release];
-        
-        
-        UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
-        [self addGestureRecognizer:t];
-        self.singleTapRecognizer = t;
-        [t release];
-        
-        UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(editingLongTapRecieved:)];
-        l.minimumPressDuration = 0.75;
-        [self addGestureRecognizer:l];
-        self.editingModeRecognizer = l;
-        [l release];
-        
-        
-        l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
-        l.minimumPressDuration = 0.2;
-        l.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:l];
-        self.draggingSelectionRecognizer = l;
-        [l release];
-        
-        /*
-        UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
-        p.maximumNumberOfTouches = 1;
-        [self addGestureRecognizer:p];
-        self.draggingRecognizer = p;
-        [p release]; 
-         */
-    
 
     }
     return self;
@@ -294,26 +235,6 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
-/*
-- (void)setFrame:(CGRect)f{
-    
-    [super setFrame:f];
-    
-    CGRect contentFrame = self.contentView.frame;
-    contentFrame.origin = CGPointMake(CELL_INVISIBLE_LEFT_MARGIN, CELL_INVISIBLE_TOP_MARGIN);
-    
-    backgroundView.frame = contentFrame;
-    contentView.frame = contentFrame;
-    
-    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);    
-    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);   
-    
-    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));    
-
-}
- */
-
 
 - (void)setMode:(FJSpringBoardCellMode)aMode{
     
@@ -321,20 +242,10 @@ static UIColor* _defaultBackgroundColor = nil;
 
     if(aMode == FJSpringBoardCellModeNormal){
         
-        self.singleTapRecognizer.enabled = YES;
-        self.editingModeRecognizer.enabled = YES;
-        self.draggingRecognizer.enabled = NO;
-        self.draggingSelectionRecognizer.enabled = NO;
-        
         [self _stopWiggle];
         [self _removeDeleteButton];
         
     }else{
-        
-        self.singleTapRecognizer.enabled = NO;
-        self.editingModeRecognizer.enabled = YES; //to get the first drag
-        self.draggingRecognizer.enabled = YES;
-        self.draggingSelectionRecognizer.enabled = YES;
         
         if(showsDeleteButton)
             [self _addDeleteButton];
@@ -614,104 +525,6 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 */
-
-#pragma mark -
-#pragma mark Touches
-
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
-    
-    return YES;
-    
-}
-
-
-- (void)didSingleTap:(UITapGestureRecognizer*)g{
-        
-    [self.springBoardView cellWasTapped:self];
-    
-}
-
-- (void)updateTapAndHold:(UIGestureRecognizer*)g{
-        
-    if(g.state == UIGestureRecognizerStateBegan){
-        
-        [self setTappedAndHeld:YES];
-        
-    }else if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled || g.state == UIGestureRecognizerStateFailed){
-        
-        [self setTappedAndHeld:NO];
-        
-    }
-}
-
-
-
-- (void)editingLongTapRecieved:(UILongPressGestureRecognizer*)g{
-    
-    [self setTappedAndHeld:NO];
-    
-    [self.springBoardView cellWasLongTapped:self];
-    
-    [self _processEditingLongTapWithRecognizer:g];
-    
-}
-
-
-- (void)draggingSelectionLongTapReceived:(UILongPressGestureRecognizer*)g{
-    
-    [self _processEditingLongTapWithRecognizer:g];
-}
-
-
-
-- (void)dragPanningGestureReceived:(UIPanGestureRecognizer*)g{
-    
-    [self _processEditingLongTapWithRecognizer:g];
-}
-
-
-- (void)_processEditingLongTapWithRecognizer:(UIGestureRecognizer*)g{
-    
-    if(g.state == UIGestureRecognizerStateBegan){
-        
-        [springBoardView cellWasLongTapped:self];
-        
-    }
-    
-    //ok, we are still moving, update the drag cell and then check if we should reorder or animate a folder
-    if(g.state == UIGestureRecognizerStateChanged){
-        
-        CGPoint p = [g locationInView:self];
-        
-        [springBoardView cell:self longTapMovedToLocation:p];
-        
-        return;
-    }
-    
-    //we are done lets reorder or add to folder
-    if(g.state == UIGestureRecognizerStateEnded){
-        
-        [springBoardView cellLongTapEnded:self];
-        
-        return;
-    }
-    
-    //we failed to start panning, lets clean up
-    if(g.state == UIGestureRecognizerStateFailed || g.state == UIGestureRecognizerStateCancelled){
-        
-        [springBoardView cellLongTapEnded:self];
-        
-        return;
-    }
-    
-    if(g.state == UIGestureRecognizerStatePossible){
-        
-        [springBoardView cellLongTapEnded:self];
-        
-        return;
-    }
-    
-}
 
 - (NSString*)description{
     
