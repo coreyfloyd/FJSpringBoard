@@ -2,8 +2,8 @@
 
 #import <UIKit/UIKit.h>
 #import "FJSpringBoardUtilities.h"
+#import "FJSpringBoardCell.h"
 
-@class FJSpringBoardCell;
 @class FJReorderingIndexMap;
 
 @class FJSpringBoardIndexLoader;
@@ -12,12 +12,6 @@
 @class FJSpringBoardView;
 
 @protocol FJSpringBoardViewDataSource;
-
-typedef enum  {
-    FJSpringBoardCellModeNormal,
-    FJSpringBoardCellModeMultiSelection, //not implemented
-    FJSpringBoardCellModeEditing //delete + move
-} FJSpringBoardCellMode;
 
 typedef enum  {
     FJSpringBoardCellAnimationNone,
@@ -60,6 +54,7 @@ typedef enum  {
 - (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDeleteCellAtIndex:(NSUInteger)index; //you must implement the following method as well
 - (void)springBoardView:(FJSpringBoardView *)springBoardView commitDeletionForCellAtIndex:(NSUInteger)index; //update your model
 
+//NOT IMPLEMENTED
 //drag and drop ONTO another cell
 - (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canDropCellFromIndex:(NSUInteger)formIndex onCellAtIndex:(NSUInteger)dropIndex; 
 - (FJSpringBoardCell*)springBoardView:(FJSpringBoardView *)springBoardView willDropCellOntoCell:(FJSpringBoardCell*)dropCell atIndex:(NSUInteger)dropIndex; //chance to customize a cell before another cell is dropped onto it
@@ -138,6 +133,17 @@ typedef enum  {
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 
+@property(nonatomic) BOOL allowsMultipleSelection; 
+
+- (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition;
+- (void)deselectCellAtIndex:(NSUInteger)index animated:(BOOL)animated;
+- (void)deselectCellsAtIndexes:(NSIndexSet*)indexes animated:(BOOL)animated;
+
+
+- (NSUInteger)selectedCellIndex;
+- (NSIndexSet*)selectedCellIndexes;
+
+
 
 //the following methods are used to animate changes without a full reload
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
@@ -181,33 +187,4 @@ typedef enum  {
 
 @end
 
-
-
-
-
-/*
-@protocol FJSpringBoardViewDataSource <NSObject>
-
-- (void)springBoardView:(FJSpringBoardView *)springBoardView canDropCellFromIndex:(NSUInteger )formIndex onCellAtIndex:(NSUInteger )dropIndex; 
- 
-- (FJSpringBoardGroupCell *)emptyGroupCellForSpringBoardView:(FJSpringBoardView *)springBoardView;
-
-//called when a new group cell has been created
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitInsertingGroupCellAtIndex:(NSUInteger )index;
-
-//called when adding items to group cells
-- (void)springBoardView:(FJSpringBoardView *)springBoardView commitAddingCellsAtIndexes:(NSIndexSet *)indexes toGroupCellAtIndex:(NSUInteger )toIndex;
-
-//called to get the image to be displayed inside the group cell
-- (NSArray *)springBoardView:(FJSpringBoardView *)springBoardView imagesForGroupAtIndex:(NSUInteger)groupIndex;
-- (UIImage *)springBoardView:(FJSpringBoardView *)springBoardView imageForCellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
-
-
-- (FJSpringBoardCell *)springBoardView:(FJSpringBoardView *)springBoardView cellAtIndex:(NSUInteger )index inGroupAtIndex:(NSUInteger)groupIndex;
-- (void)springBoardView:(FJSpringBoardView *)springBoardView canAddCellAtIndex:(NSUInteger )fromIndex toGroupCellAtIndex:(NSUInteger )toIndex;
-
-
-@end
-
-*/
 

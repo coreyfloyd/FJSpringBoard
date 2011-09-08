@@ -69,6 +69,8 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 
 @property (nonatomic, retain, readwrite) UIView *contentView;
 
+@property(nonatomic,retain) UIView *selectionView;
+
 @property (nonatomic, retain) UIButton *deleteButton;
 
 @property (nonatomic, copy, readwrite) NSString *reuseIdentifier;
@@ -108,9 +110,6 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize contentView;
 @synthesize reuseIdentifier;
 @synthesize mode;
-@synthesize selectionModeImageView;
-@synthesize selectedImageView;
-@synthesize glowsOnTap;
 @synthesize selected;
 @synthesize deleteImage;
 @synthesize springBoardView;
@@ -125,8 +124,16 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize draggingSelectionRecognizer;
 @synthesize draggingRecognizer;
 @synthesize deleteButton;
+@synthesize selectedBackgroundView;
+@synthesize selectionStyle;
+@synthesize selectionView;
+
 - (void) dealloc
 {
+    [selectionView release];
+    selectionView = nil;
+    [selectedBackgroundView release];
+    selectedBackgroundView = nil;
     [deleteButton release];
     deleteButton = nil;
     [tapAndHoldRecognizer release];
@@ -146,10 +153,6 @@ static UIColor* _defaultBackgroundColor = nil;
     contentView = nil;
     [reuseIdentifier release];
     reuseIdentifier = nil;
-    [selectionModeImageView release];
-    selectionModeImageView = nil;
-    [selectedImageView release];
-    selectedImageView = nil;
     [deleteImage release];
     deleteImage = nil;
     [super dealloc];
@@ -249,7 +252,8 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)layoutSubviews{
     
-    [self.superview insertSubview:self.deleteButton aboveSubview:self];
+    if(self.mode == FJSpringBoardCellModeEditing)
+        [self.superview insertSubview:self.deleteButton aboveSubview:self];
 
 }
 
@@ -262,6 +266,7 @@ static UIColor* _defaultBackgroundColor = nil;
     self.selected = NO;
     self.draggable = NO;
     self.tappedAndHeld = NO;
+    self.deleteButton = nil;
     
 }
 
@@ -351,7 +356,6 @@ static UIColor* _defaultBackgroundColor = nil;
     
     if(reordering){
         
-        self.selected = NO;
         self.tappedAndHeld = NO;
         self.alpha = 0;
         
@@ -364,6 +368,20 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
+- (void)setSelectionStyle:(FJSpringBoardCellSelectionStyle)aSelectionStyle{
+    
+    selectionStyle = aSelectionStyle;
+    
+    if(selected){
+        
+        //update selection view
+        
+        
+    }
+    
+}
+
+
 - (void)setSelected:(BOOL)flag{
     
     if(selected == flag)
@@ -371,7 +389,24 @@ static UIColor* _defaultBackgroundColor = nil;
     
     selected = flag;
     
-    //TODO: update selection
+    if(selected){
+        
+        UIView* sv = [[UIView alloc] initWithFrame:self.bounds];
+        sv.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
+        sv.layer.cornerRadius = 10.0;
+        sv.alpha = 0.8;
+        
+        sv.backgroundColor = [UIColor darkGrayColor];
+        self.selectionView = sv;
+        [self addSubview:sv];
+        [sv release];
+
+    }else{
+        
+        [self.selectionView removeFromSuperview];
+        self.selectionView = nil;
+    }
+    
 }
 
 - (void)setSelected:(BOOL)flag animated:(BOOL)animated{
@@ -546,9 +581,7 @@ static UIColor* _defaultBackgroundColor = nil;
 
 
 - (void)didSingleTap:(UITapGestureRecognizer*)g{
-    
-    [self setSelected:YES];
-    
+        
     [self.springBoardView cellWasTapped:self];
     
 }
@@ -570,7 +603,6 @@ static UIColor* _defaultBackgroundColor = nil;
 
 - (void)editingLongTapRecieved:(UILongPressGestureRecognizer*)g{
     
-    [self setSelected:NO];
     [self setTappedAndHeld:NO];
     
     [self.springBoardView cellWasLongTapped:self];

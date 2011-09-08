@@ -207,6 +207,7 @@ typedef enum  {
 
 @synthesize canProcessActions;
 @synthesize shouldFixLoadedCells;
+@synthesize allowsMultipleSelection;
 
 
 #pragma mark -
@@ -808,6 +809,9 @@ typedef enum  {
     cell.index = index;
     cell.springBoardView = self;
     
+    if([self.selectedIndexes containsIndex:index])
+        cell.selected = YES;
+    
     [self.cells replaceObjectAtIndex:index withObject:cell];
     
     extendedDebugLog(@"loaded cell: %@", [cell description])
@@ -972,13 +976,71 @@ typedef enum  {
     
     [self.reusableCells removeObject:cell];
     
+    [cell prepareForReuse];
+    
     return cell;
     
 }
 
 
     
+#pragma mark -
+#pragma mark Selections
 
+- (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition{
+    
+    if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
+        
+        [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
+    }
+        
+    
+    [self.selectedIndexes addIndex:index];
+    
+    FJSpringBoardCell* cell = [self cellAtIndex:index];
+    
+    if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
+        return;
+    
+    [cell setSelected:YES animated:animated];
+
+}
+
+
+- (void)deselectCellAtIndex:(NSUInteger)index animated:(BOOL)animated{
+    
+    [self.selectedIndexes removeIndex:index];
+    
+    FJSpringBoardCell* cell = [self cellAtIndex:index];
+    
+    if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
+        return;
+    
+    [cell setSelected:NO animated:animated];
+    
+}
+
+- (void)deselectCellsAtIndexes:(NSIndexSet*)indexes animated:(BOOL)animated{
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+       
+        [self deselectCellAtIndex:idx animated:animated];
+        
+    }];
+    
+}
+
+- (NSIndexSet*)selectedCellIndexes{
+    
+    return [[self.selectedIndexes copy] autorelease];
+    
+}
+
+- (NSUInteger)selectedCellIndex{
+    
+    return [self.selectedIndexes firstIndex];
+    
+}
 #pragma mark -
 #pragma mark Actions
 
@@ -991,53 +1053,7 @@ typedef enum  {
     
     [self _processActionQueue];
 
-    return;
-
-    //remove from springboard
-    [self _removeCellsAtIndexes:indexSet];
-    
-    //unload existing cells (placed in reusable pool)
-    [self _unloadCellsAtIndexes:indexSet];
-    
-    //create and insert in array
-    [self _loadCellsAtIndexes:indexSet];
-    
-    //set frame and add to view
-    [self _layoutCellsAtIndexes:indexSet];
-
-    if(animation == FJSpringBoardCellAnimationNone)
-        return;
-    
-    [indexSet enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        
-        //TODO: must update Index Loader, this is an action…
-    
-        if(![self.indexLoader.loadedIndexes containsIndex:index]){
-            
-            return;
-        }
-        
-        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
-        
-        eachCell.alpha = 0;
-        
-        [UIView animateWithDuration:RELOAD_ANIMATION_DURATION 
-                              delay:DELETE_ANIMATION_DURATION 
-                            options:UIViewAnimationOptionCurveEaseInOut
-                         animations:^(void) {
-                             
-                             eachCell.alpha = 1;
-                             
-                         } completion:^(BOOL finished) {
-                             
-                             
-                             
-                             
-                         }];
-        
-        
-    }];
-    
+    return;    
 }
 
 
@@ -1564,6 +1580,18 @@ typedef enum  {
 
 - (void)cellWasTapped:(FJSpringBoardCell*)cell{
     
+    if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
+        
+        [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
+    }
+    
+    [self.selectedIndexes addIndex:cell.index];
+        
+    if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
+        return;
+    
+    [cell setSelected:YES animated:YES];
+
     if([self.delegate respondsToSelector:@selector(springBoardView:didSelectCellAtIndex:)])
         [self.delegate springBoardView:self didSelectCellAtIndex:cell.index];
 
@@ -1915,6 +1943,8 @@ typedef enum  {
     
     if(![cell draggable])
         return;
+    
+    [cell setSelected:NO];
     
     //start reordering
     self.reorderingIndex = index;

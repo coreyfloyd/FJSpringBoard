@@ -2,7 +2,19 @@
 
 #import <Foundation/Foundation.h>
 #import "FJSpringBoardUtilities.h"
-#import "FJSpringBoardView.h"
+
+
+typedef enum  {
+    FJSpringBoardCellModeNormal,
+    FJSpringBoardCellModeMultiSelection, //not implemented
+    FJSpringBoardCellModeEditing //delete + move
+} FJSpringBoardCellMode;
+
+typedef enum {
+    FJSpringBoardCellSelectionStyleNone,
+    FJSpringBoardCellSelectionStyleBlue,
+    FJSpringBoardCellSelectionStyleGray
+} FJSpringBoardCellSelectionStyle;
 
 @interface FJSpringBoardCell : UIView <UIGestureRecognizerDelegate> {
 
@@ -16,10 +28,8 @@
 
 @property(nonatomic) FJSpringBoardCellMode mode;
 
-
-@property(nonatomic, retain) UIImageView *selectionModeImageView; //shown in select mode
-@property(nonatomic, retain) UIImageView *selectedImageView; //shown when selected in select mode
-@property(nonatomic) BOOL glowsOnTap;
+@property(nonatomic,retain) UIView *selectedBackgroundView;
+@property(nonatomic) FJSpringBoardCellSelectionStyle  selectionStyle;   
 
 @property(nonatomic) BOOL selected;
 - (void)setSelected:(BOOL)flag animated:(BOOL)animated;
