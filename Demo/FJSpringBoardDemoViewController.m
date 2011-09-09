@@ -7,16 +7,21 @@
 #define CELL_COUNT 400
 #define CELL_WIDTH 57
 #define CELL_HEIGHT 57
+
 @implementation FJSpringBoardDemoViewController
+
 @synthesize directionButton;
 @synthesize doneBar;
 @synthesize doneButton;
-
 @synthesize model;
 @synthesize springBoardView;
+@synthesize colors;
+
 
 
 - (void)dealloc {
+    [colors release];
+    colors = nil;
     [model release];
     model = nil;
     [springBoardView release];
@@ -93,6 +98,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    NSArray* c = [NSArray arrayWithObjects:[UIColor redColor], [UIColor blueColor], [UIColor greenColor], [UIColor orangeColor], [UIColor purpleColor], nil];
+    self.colors = c;
+    
     NSMutableArray* a = [NSMutableArray arrayWithCapacity:CELL_COUNT];
     for (int i = 0; i < CELL_COUNT; i++) {
         
@@ -162,16 +170,18 @@
         
         CGRect contentFrame = cell.contentView.bounds;
 
+        /*
         UIView* b = [[UIView alloc] initWithFrame:contentFrame];
         b.backgroundColor = [UIColor blueColor];
         [cell.contentView addSubview:b];
         [b release];
+        */
         
         UILabel* l = [[UILabel alloc] initWithFrame:contentFrame];
         l.tag = 10101;
         [cell.contentView addSubview:l];
         l.textColor = [UIColor whiteColor];
-        l.backgroundColor = [UIColor blueColor];
+        l.backgroundColor = [UIColor clearColor];
         l.textAlignment = UITextAlignmentCenter;
         [l release];
         
@@ -181,7 +191,11 @@
 
     }
     
+
+    
     DemoModelObject* o  = [self.model objectAtIndex:index];
+    UIColor* c = [self.colors objectAtIndex:(o.value % [self.colors count])];
+    cell.contentView.backgroundColor = c;
     UILabel* l = (UILabel*)[cell.contentView viewWithTag:10101];
     l.text = [NSString stringWithFormat:@"%i", [o value]];
     cell.contentView.tag = [o value];

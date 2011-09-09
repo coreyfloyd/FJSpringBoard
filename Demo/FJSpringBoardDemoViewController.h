@@ -16,6 +16,8 @@
     UIBarButtonItem *doneButton;
     UIToolbar *doneBar;
     UIBarButtonItem *directionButton;
+    
+    NSArray* colors;
 }
 @property(nonatomic, retain) NSMutableArray *model;
 @property (nonatomic, retain) FJSpringBoardView *springBoardView;
@@ -23,6 +25,7 @@
 - (IBAction)insert;
 - (IBAction)deleteCells;
 
+@property (nonatomic, copy) NSArray *colors;
 @property (nonatomic, retain) IBOutlet UIToolbar *doneBar;
 @property (nonatomic, retain) IBOutlet UIBarButtonItem *doneButton;
 - (IBAction)doneEditing;
