@@ -1981,6 +1981,8 @@ typedef enum  {
 
 - (void)_handleDraggableCellAtIndex:(NSUInteger)dragIindex withTouchPoint:(CGPoint)point{
         
+    //debugLog(@"handling dragged cell at index:%i", dragIindex);
+
     //check if we need to scroll the view
     
     //CGPoint contentPoint = [self convertPoint:point toView:self.contentView];
@@ -2139,114 +2141,66 @@ typedef enum  {
 
 - (void)_reorderCellsByUpdatingPlaceHolderIndex:(NSUInteger)index{
     
+    debugLog(@"reording cell at index: %i to: :%i", self.reorderingIndex, index);
+    
     if(index == NSNotFound)
         return;
     
-    /*
-    
     [self _removeHighlight];
-    
-    self.animatingReorder = YES;
-    FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
-
-    NSIndexSet* affectedIndexes = [im modifiedIndexesByMovingReorderingCellToCellAtIndex:index];
-    
-    FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:self.reorderingIndex];
-    
-    if(![c isEqual:[NSNull null]]){
         
-        c.alpha = 0;
-    }
+    [self beginUpdates];
     
-    [UIView animateWithDuration:LAYOUT_ANIMATION_DURATION 
-                          delay:0 
-                        options:UIViewAnimationOptionCurveEaseInOut  
-                     animations:^(void) {
-                         
-                         [self _layoutCellsAtIndexes:affectedIndexes];                        
-                                                                                                   
-                     } completion:^(BOOL finished) {
-                         
-                         self.animatingReorder = NO;
-                         //update layout, cell count, content size, index loader, etc
-                         //[self _updateLayout];
-                         
-                     }];
- 
-     */
+    [self _setupActionQueue];
+    
+    NSArray* oldCells = [self.cells copy];
+    
+    [self.cells removeObjectAtIndex:index];
+    
+    [self.dataSource springBoardView:self moveCellAtIndex:self.reorderingIndex toIndex:index];
+    
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:self.reorderingIndex] currentCellState:oldCells withAnimation:FJSpringBoardCellAnimationFade];    
+    
+    [oldCells release];
+    
+    [[self indexLoader] queueActionByInsertingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] withAnimation:FJSpringBoardCellAnimationFade];
+    
+    self.reorderingIndex = index;
+    
+    [self endUpdates];
+    
 }
 
 - (void)_completeReorder{
-    
-    /*
-    [self _removeHighlight];
-
-    FJSpringBoardIndexLoader* im = (FJSpringBoardIndexLoader*)self.indexLoader;
 
     debugLog(@"completing reorder...");
-    NSUInteger current = im.currentReorderingIndex;
-    NSUInteger original = im.originalReorderingIndex;
-    
-    FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;
-    NSUInteger page = [l pageForContentOffset:self.contentOffset];
-    NSIndexSet* visIndexes = [l cellIndexesForPage:page];
-    
-    if(![visIndexes containsIndex:current]){
-        
-        CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
 
-        NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
-        
-        if(newIndex == NSNotFound)
-            newIndex = ([visIndexes lastIndex]-1); //compensating for weird foundation bug that does not report the proper last index. sometimes it reports lastIndex+1. wtf???
-        
-        
-        if(newIndex != current){
-            
-            
-            [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
-            
-            //TODO: guard against infinite loop   
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                
-                [self _completeReorder];
-                
-            });
-            
-            return;
-            
-        }       
-    }
+    [self _removeHighlight];
     
+    CGRect adjustedFrame = [self convertRect:self.draggableCellView.frame toView:self.contentView];
     
-    FJSpringBoardCell* cell = [self.indexLoader.cells objectAtIndex:im.currentReorderingIndex];
-    [self.indexLoader commitChanges];
+    NSUInteger newIndex = [self _coveredCellIndexWithObscuredContentFrame:adjustedFrame];
     
-    self.animatingReorder = YES;
+    if(newIndex == NSNotFound)
+        newIndex = self.reorderingIndex;
+    
+    if(newIndex != self.reorderingIndex){
+        
+        [self _reorderCellsByUpdatingPlaceHolderIndex:newIndex];
+               
+    }  
 
-    id<FJSpringBoardViewDataSource> d = self.dataSource;
-    
-    if([self.indexLoader.cells count] == 0){
+    [self _animateDraggableViewToReorderedCellIndex:newIndex completionBlock:^{
         
-        ALWAYS_ASSERT;
-    }
-    
-    [self _animateDraggableViewToReorderedCellIndex:current completionBlock:^{
+        FJSpringBoardCell* cell = [self cellAtIndex:newIndex];
         
         if(![cell isEqual:[NSNull null]])
             cell.reordering = NO;
         
         self.draggableCellView = nil;
-
-        self.animatingReorder = NO;
-        if([d respondsToSelector:@selector(springBoardView:moveCellAtIndex:toIndex:)])
-            [d springBoardView:self moveCellAtIndex:original toIndex:current];
         
+        self.reorderingIndex = NSNotFound;
         
     }];
-    
-     */
     
 }
 
