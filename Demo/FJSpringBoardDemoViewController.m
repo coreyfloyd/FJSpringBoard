@@ -130,15 +130,16 @@
     CGRect f = self.view.bounds;
     f.origin.y += 44;
     f.size.height -= 88;
-    self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
-    self.springBoardView.backgroundColor = [UIColor lightGrayColor];
+    //self.springBoardView = [[FJSpringBoardView alloc] initWithFrame:f];
+    
+    //self.springBoardView.backgroundColor = [UIColor lightGrayColor];
     self.springBoardView.cellSize = CGSizeMake(CELL_WIDTH, CELL_HEIGHT);
     //self.springBoardView.pageInsets = UIEdgeInsetsMake(15, 15, 15, 15);
-    self.springBoardView.delegate = self;
-    self.springBoardView.dataSource = self;
+    //self.springBoardView.delegate = self;
+    //self.springBoardView.dataSource = self;
     self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
     
-    [self.view addSubview:self.springBoardView];
+    //[self.view addSubview:self.springBoardView];
     
     [self.springBoardView reloadData];
     

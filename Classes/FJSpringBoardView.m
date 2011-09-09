@@ -238,28 +238,46 @@ typedef enum  {
 #pragma mark -
 #pragma mark UIView
 
+- (void)setup{
+    
+    self.contentView = [[[UIView alloc] initWithFrame:self.bounds] autorelease];
+    [self addSubview:self.contentView];
+    
+    self.selectedIndexes = [NSMutableIndexSet indexSet];
+    
+    self.cells = [NSMutableArray array];
+    
+    self.reusableCells = [NSMutableSet set];
+    
+    self.indexOfHighlightedCell = NSNotFound;
+    self.reorderingIndex = NSNotFound;
+    self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
+    self.mode = FJSpringBoardCellModeNormal;
+    self.canProcessActions = YES;
+}
+
+
 - (id)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
         
-        self.contentView = [[[UIView alloc] initWithFrame:self.bounds] autorelease];
-        [self addSubview:self.contentView];
-                
-        self.selectedIndexes = [NSMutableIndexSet indexSet];
-        
-        self.cells = [NSMutableArray array];
-
-        self.reusableCells = [NSMutableSet set];
-
-        self.indexOfHighlightedCell = NSNotFound;
-        self.reorderingIndex = NSNotFound;
-        self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
-        self.mode = FJSpringBoardCellModeNormal;
-        self.canProcessActions = YES;
-
+        [self setup];
         
     }
     return self;
 }
+
+- (id)initWithCoder:(NSCoder *)coder {
+
+    self = [super initWithCoder:coder];
+    if (self) {
+        
+        [self setup];
+
+    }
+    return self;
+}
+
+
 
 - (void)setFrame:(CGRect)f{
     

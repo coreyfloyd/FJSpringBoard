@@ -20,7 +20,7 @@
     NSArray* colors;
 }
 @property(nonatomic, retain) NSMutableArray *model;
-@property (nonatomic, retain) FJSpringBoardView *springBoardView;
+@property (nonatomic, retain) IBOutlet FJSpringBoardView *springBoardView;
 
 - (IBAction)insert;
 - (IBAction)deleteCells;

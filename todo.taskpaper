@@ -1,7 +1,9 @@
 test:
 
  implement:
+	- support interface builder
 	- support animation types
+	- page insets (horizontal only)
 	- drag and drop
 		- move gesture recognizers to content view
 		- dragging 

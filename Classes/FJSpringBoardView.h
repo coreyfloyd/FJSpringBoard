@@ -103,8 +103,8 @@ typedef enum  {
     
 }
 //delegate and datasource
-@property(nonatomic, assign) id<FJSpringBoardViewDataSource> dataSource;
-@property(nonatomic, assign) id<FJSpringBoardViewDelegate> delegate;
+@property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDataSource> dataSource;
+@property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDelegate> delegate;
 
 @property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful! setting this causes a full reload
 
