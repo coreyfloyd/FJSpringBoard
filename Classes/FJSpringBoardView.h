@@ -65,7 +65,7 @@ typedef enum  {
 @end
 
 
-@interface FJSpringBoardView : UIScrollView <UIScrollViewDelegate, UIGestureRecognizerDelegate> {
+@interface FJSpringBoardView : UIScrollView <UIGestureRecognizerDelegate> {
 
     UIView* contentView;
     

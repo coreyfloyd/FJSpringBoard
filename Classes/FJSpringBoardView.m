@@ -1144,10 +1144,14 @@ typedef enum  {
     
     [self _setupActionQueue];
     
+    NSArray* oldCells = [self.cells copy];
+        
     [self.cells removeObjectAtIndex:index];
     
-    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] currentCellState:self.cells withAnimation:FJSpringBoardCellAnimationFade];    
+    [[self indexLoader] queueActionByDeletingCellsAtIndexes:[NSIndexSet indexSetWithIndex:index] currentCellState:oldCells withAnimation:FJSpringBoardCellAnimationFade];    
     
+    [oldCells release];
+
     [self _processActionQueue];
 
 }
