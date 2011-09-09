@@ -1,7 +1,6 @@
 test:
 
  implement:
-	- support interface builder
 	- support animation types
 	- page insets (horizontal only)
 	- drag and drop
