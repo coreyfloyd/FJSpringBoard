@@ -215,6 +215,11 @@
     NSLog(@"cell tapped at index: %i", index);
 }    
 
+- (BOOL)springBoardView:(FJSpringBoardView *)springBoardView canMoveCellAtIndex:(NSUInteger)index{
+    
+    return NO;
+}
+
 - (void)springBoardView:(FJSpringBoardView *)springBoardView moveCellAtIndex:(NSUInteger )fromIndex toIndex:(NSUInteger )toIndex{
     
     id obj = [[self.model objectAtIndex:fromIndex] retain];
