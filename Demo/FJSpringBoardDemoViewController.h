@@ -24,6 +24,7 @@
 
 - (IBAction)insert;
 - (IBAction)deleteCells;
+- (IBAction)reload:(id)sender;
 
 @property (nonatomic, copy) NSArray *colors;
 @property (nonatomic, retain) IBOutlet UIToolbar *doneBar;

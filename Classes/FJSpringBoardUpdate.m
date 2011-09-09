@@ -338,6 +338,8 @@
 
 - (void)applyReloadAction:(FJSpringBoardAction*)reload{
     
+    self.newCellCount = [self.indexMap oldCount];
+
     [reload.indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
                 
         FJSpringBoardCellUpdate* affectedCell = [self actionForNewIndex:idx];    

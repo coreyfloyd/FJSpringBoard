@@ -69,6 +69,20 @@
     
 }
 
+- (IBAction)reload:(id)sender {
+    
+    NSMutableIndexSet *is = [NSMutableIndexSet indexSet];
+    [is addIndex:3];
+    [is addIndex:30];
+    
+    DemoModelObject* o = [self.model objectAtIndex:3];
+    o.value = [self.model count] + 1;
+    o = [self.model objectAtIndex:30];
+    o.value = [self.model count] + 2;
+
+    [self.springBoardView reloadCellsAtIndexes:is withCellAnimation:FJSpringBoardCellAnimationFade];
+}
+
 - (IBAction)doneEditing{
     
     self.springBoardView.mode = FJSpringBoardCellModeNormal;
