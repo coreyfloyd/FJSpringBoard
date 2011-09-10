@@ -395,7 +395,13 @@
     [set addIndexes:[self cellIndexesForPage:previousPage]];
     [set addIndexes:[self cellIndexesForPage:nextPage]];
     
-    ASSERT_TRUE(indexesAreContiguous(set));
+#ifdef DEBUG
+
+    if([set count] > 0)
+        ASSERT_TRUE(indexesAreContiguous(set));
+    
+#endif
+    
     NSRange r = rangeWithContiguousIndexes(set);
     
     return r;
