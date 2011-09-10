@@ -33,7 +33,10 @@ typedef enum  {
 @protocol FJSpringBoardViewDelegate <NSObject, UIScrollViewDelegate>
 
 @optional
-- (void)springBoardView:(FJSpringBoardView *)springBoardView didSelectCellAtIndex:(NSUInteger)index; //use to launch detail?
+- (void)springBoardView:(FJSpringBoardView *)springBoardView willSelectCellAtIndex:(NSUInteger)index;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView didSelectCellAtIndex:(NSUInteger)index; 
+- (void)springBoardView:(FJSpringBoardView *)springBoardView willDeselectCellAtIndex:(NSUInteger)index;
+- (void)springBoardView:(FJSpringBoardView *)springBoardView didDeselectCellAtIndex:(NSUInteger)index; 
 
 
 @end
@@ -101,6 +104,8 @@ typedef enum  {
         
     NSUInteger indexOfHighlightedCell;
     
+    id<FJSpringBoardViewDataSource> dataSource;
+    id<FJSpringBoardViewDelegate> delegate;
 }
 //delegate and datasource
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDataSource> dataSource;
@@ -129,20 +134,19 @@ typedef enum  {
 
 @property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
 
-//scroll, position is ignored in horizontal layout
+//scroll, note: position is ignored in horizontal scroll direction
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 
+//selection
 @property(nonatomic) BOOL allowsMultipleSelection; 
 
 - (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition;
 - (void)deselectCellAtIndex:(NSUInteger)index animated:(BOOL)animated;
 - (void)deselectCellsAtIndexes:(NSIndexSet*)indexes animated:(BOOL)animated;
 
-
 - (NSUInteger)selectedCellIndex;
 - (NSIndexSet*)selectedCellIndexes;
-
 
 
 //the following methods are used to animate changes without a full reload

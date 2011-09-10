@@ -1603,8 +1603,15 @@ typedef enum  {
 - (void)cellWasTapped:(FJSpringBoardCell*)cell{
     
     if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
-        
+
+        if([self.delegate respondsToSelector:@selector(springBoardView:willDeselectCellAtIndex:)])
+            [self.delegate springBoardView:self willDeselectCellAtIndex:cell.index];
+
         [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
+        
+        if([self.delegate respondsToSelector:@selector(springBoardView:didDeselectCellAtIndex:)])
+            [self.delegate springBoardView:self didDeselectCellAtIndex:cell.index];
+
     }
     
     [self.selectedIndexes addIndex:cell.index];
@@ -1612,6 +1619,10 @@ typedef enum  {
     if(cell == nil || ![cell isKindOfClass:[FJSpringBoardCell class]])
         return;
     
+    
+    if([self.delegate respondsToSelector:@selector(springBoardView:willSelectCellAtIndex:)])
+        [self.delegate springBoardView:self willSelectCellAtIndex:cell.index];
+
     [cell setSelected:YES animated:YES];
 
     if([self.delegate respondsToSelector:@selector(springBoardView:didSelectCellAtIndex:)])

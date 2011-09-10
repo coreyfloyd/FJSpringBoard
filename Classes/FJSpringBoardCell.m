@@ -51,6 +51,10 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
     }
 }
 
+static UIColor* _graySelection = nil;
+static UIColor* _blueSelection = nil;
+
+
 @interface FJSpringBoardView(CellInternal)
 
 - (void)_deleteCell:(FJSpringBoardCell*)cell;
@@ -67,13 +71,13 @@ void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyP
 
 @property(nonatomic, assign) FJSpringBoardView* springBoardView;
 
+@property(nonatomic, copy, readwrite) NSString *reuseIdentifier;
+
 @property (nonatomic, retain, readwrite) UIView *contentView;
 
 @property(nonatomic,retain) UIView *selectionView;
 
 @property (nonatomic, retain) UIButton *deleteButton;
-
-@property (nonatomic, copy, readwrite) NSString *reuseIdentifier;
 
 @property(nonatomic, readwrite) BOOL reordering;
 
@@ -158,15 +162,100 @@ static UIColor* _defaultBackgroundColor = nil;
     [super dealloc];
 }
 
-+ (void)initialize{
++ (void)load{
+
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     
     _deleteImage = [[UIImage imageNamed:@"close.png"] retain];
-    _defaultBackgroundColor = [UIColor whiteColor];
+    _defaultBackgroundColor = [[UIColor whiteColor] retain];
+    _graySelection  = [[UIColor darkGrayColor] retain];
+    _blueSelection = [[UIColor blueColor] retain];
+    
+    [pool drain];
+}
+
+- (void)setupContent{
+    
+    CGRect contentFrame = self.bounds;
+    
+    self.backgroundColor = [UIColor clearColor];
+    
+    if(self.contentView == nil){
+        self.contentView = [[[UIView alloc] initWithFrame:contentFrame] autorelease];
+        self.contentView.backgroundColor = _defaultBackgroundColor;
+    }
+    contentView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
+    [self addSubview:self.contentView];
+    
+    
+    if(self.backgroundView == nil){
+        
+        backgroundView = [[UIView alloc] initWithFrame:contentFrame]; //adds to view
+        self.backgroundView.backgroundColor = _defaultBackgroundColor;    
+        backgroundView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
+
+        
+    }
+    [self insertSubview:backgroundView belowSubview:contentView];
+    
+#ifdef DEBUG_LAYOUT
+    
+    self.backgroundColor = [UIColor greenColor];
+    self.layer.borderColor = [UIColor blackColor].CGColor;
+    self.layer.borderWidth = 2.0;
+    self.backgroundView.backgroundColor = [UIColor yellowColor];
+    self.contentView.layer.borderColor = [UIColor orangeColor].CGColor;
+    self.contentView.layer.borderWidth = 2.0;
+    
+#endif
+    
+    self.showsDeleteButton = YES;
     
 }
 
+- (void)setupGestures{
+       
+    
+    UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
+    g.minimumPressDuration = 0.1;
+    g.delegate = self;
+    g.cancelsTouchesInView = NO;
+    [self addGestureRecognizer:g];
+    self.tapAndHoldRecognizer = g;
+    [g release];
+    
+    
+    UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
+    [self addGestureRecognizer:t];
+    self.singleTapRecognizer = t;
+    [t release];
+    
+    UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(editingLongTapRecieved:)];
+    l.minimumPressDuration = 0.75;
+    [self addGestureRecognizer:l];
+    self.editingModeRecognizer = l;
+    [l release];
+    
+    
+    l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
+    l.minimumPressDuration = 0.2;
+    l.cancelsTouchesInView = NO;
+    [self addGestureRecognizer:l];
+    self.draggingSelectionRecognizer = l;
+    [l release];
+    
+    /*
+     UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
+     p.maximumNumberOfTouches = 1;
+     [self addGestureRecognizer:p];
+     self.draggingRecognizer = p;
+     [p release]; 
+     */
+    
+    
+}
 
-- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
+- (id)_initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
     
     CGRect minFrame;
     minFrame.origin = CGPointZero;
@@ -174,74 +263,49 @@ static UIColor* _defaultBackgroundColor = nil;
     
     self = [super initWithFrame:minFrame];
     if (self != nil) {
-                
-        CGRect contentFrame = minFrame;
-                        
-        self.backgroundColor = [UIColor clearColor];
         
-        self.contentView = [[[UIView alloc] initWithFrame:contentFrame] autorelease];
-        self.contentView.backgroundColor = _defaultBackgroundColor;
-        contentView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
-        [self addSubview:self.contentView];
-        
-        self.backgroundView = [[[UIView alloc] initWithFrame:contentFrame] autorelease]; //adds to view
-        self.backgroundView.backgroundColor = _defaultBackgroundColor;
-
-#ifdef DEBUG_LAYOUT
-        
-        self.backgroundColor = [UIColor greenColor];
-        self.layer.borderColor = [UIColor blackColor].CGColor;
-        self.layer.borderWidth = 2.0;
-        self.backgroundView.backgroundColor = [UIColor yellowColor];
-        self.contentView.layer.borderColor = [UIColor orangeColor].CGColor;
-        self.contentView.layer.borderWidth = 2.0;
-        
-#endif
-        
-        self.showsDeleteButton = YES;
+        self.opaque = YES;
         self.reuseIdentifier = identifier;
         
-        UILongPressGestureRecognizer* g = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(updateTapAndHold:)];
-        g.minimumPressDuration = 0.1;
-        g.delegate = self;
-        g.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:g];
-        self.tapAndHoldRecognizer = g;
-        [g release];
-        
-        
-        UITapGestureRecognizer* t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didSingleTap:)];
-        [self addGestureRecognizer:t];
-        self.singleTapRecognizer = t;
-        [t release];
-        
-        UILongPressGestureRecognizer* l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(editingLongTapRecieved:)];
-        l.minimumPressDuration = 0.75;
-        [self addGestureRecognizer:l];
-        self.editingModeRecognizer = l;
-        [l release];
-        
-        
-        l = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(draggingSelectionLongTapReceived:)];
-        l.minimumPressDuration = 0.2;
-        l.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:l];
-        self.draggingSelectionRecognizer = l;
-        [l release];
-        
-        /*
-        UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
-        p.maximumNumberOfTouches = 1;
-        [self addGestureRecognizer:p];
-        self.draggingRecognizer = p;
-        [p release]; 
-         */
+    }
+    return self;
     
+}
 
+
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier{
+    
+    self = [self _initWithSize:size reuseIdentifier:identifier];
+    
+    if (self != nil) {
+        
+        [self setupContent];
+        [self setupGestures];
+        
+        
     }
     return self;
     
 }  
+
+- (id)initWithSize:(CGSize)size reuseIdentifier:(NSString*)identifier contentNib:(UINib*)nib{    
+
+    self = [self _initWithSize:size reuseIdentifier:identifier];
+    
+    if (self != nil) {
+        
+        [nib instantiateWithOwner:self options:nil];
+        [self setupContent];
+        [self setupGestures];
+
+        
+    }
+    return self;
+    
+}
+
+
+
 
 - (void)setFrame:(CGRect)frame{
     
@@ -286,34 +350,13 @@ static UIColor* _defaultBackgroundColor = nil;
         return;
     
     [backgroundView removeFromSuperview];
-    bv.frame = self.contentView.frame;
-    contentView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
+    //bv.frame = self.contentView.frame;
+    //backgroundView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
     [backgroundView release];
     backgroundView = [bv retain];
     [self insertSubview:backgroundView belowSubview:contentView];
     
 }
-
-/*
-- (void)setFrame:(CGRect)f{
-    
-    [super setFrame:f];
-    
-    CGRect contentFrame = self.contentView.frame;
-    contentFrame.origin = CGPointMake(CELL_INVISIBLE_LEFT_MARGIN, CELL_INVISIBLE_TOP_MARGIN);
-    
-    backgroundView.frame = contentFrame;
-    contentView.frame = contentFrame;
-    
-    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);    
-    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds)+CELL_INVISIBLE_LEFT_MARGIN, CGRectGetMidY(self.bounds)+CELL_INVISIBLE_TOP_MARGIN);   
-    
-    //backgroundView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-    //contentView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));    
-
-}
- */
-
 
 - (void)setMode:(FJSpringBoardCellMode)aMode{
     
@@ -381,71 +424,101 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
+- (void)_addSelectionView{
+    
+    if(self.selectedBackgroundView){
+        
+        self.selectionView = self.selectedBackgroundView;
+        
+    }else{
+        
+        
+        UIColor* c = nil;
+        
+        switch (self.selectionStyle) {
+            case FJSpringBoardCellSelectionStyleNone:
+                c = nil;
+                break;
+            case FJSpringBoardCellSelectionStyleBlue:
+                c = _blueSelection;
+                break;
+            case FJSpringBoardCellSelectionStyleGray:
+                c = _graySelection;
+                break;
+            default:
+                ALWAYS_ASSERT;
+                break;
+        }
+        
+        if(c){
+            
+            UIView* sv = [[UIView alloc] initWithFrame:self.bounds];
+            /*
+            sv.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
+            sv.layer.cornerRadius = 10.0;
+            sv.alpha = 0.8;
+            */
+            
+            sv.backgroundColor = c;
+            self.selectionView = sv;
+            [sv release];
+
+        }
+        
+       
+    }
+    
+    [self insertSubview:self.selectionView belowSubview:self.contentView];    
+       
+}
+
+- (void)_removeSelectionView{
+    
+    [self.selectionView removeFromSuperview];
+    self.selectionView = nil;
+
+}
+
 
 - (void)setSelected:(BOOL)flag{
     
-    if(selected == flag)
-        return;
-    
-    selected = flag;
-    
-    if(selected){
+    [self setSelected:flag animated:NO];
         
-        UIView* sv = [[UIView alloc] initWithFrame:self.bounds];
-        sv.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
-        sv.layer.cornerRadius = 10.0;
-        sv.alpha = 0.8;
-        
-        sv.backgroundColor = [UIColor darkGrayColor];
-        self.selectionView = sv;
-        [self addSubview:sv];
-        [sv release];
-
-    }else{
-        
-        [self.selectionView removeFromSuperview];
-        self.selectionView = nil;
-    }
-    
 }
 
 - (void)setSelected:(BOOL)flag animated:(BOOL)animated{
     
+    [self willChangeValueForKey:@"selected"];
+    
+    selected = flag;
 
     if(!animated){
         
-        [self setSelected:flag];
+        if(selected){
+            
+            [self _addSelectionView];
+                      
+        }else{
+            
+            [self _removeSelectionView];
+            
+        }
 
     }else{
         
-        [self willChangeValueForKey:@"selected"];
-        
-        selected = flag;
-        
-        [self didChangeValueForKey:@"selected"];
-        
         if(selected){
             
-            UIView* sv = [[UIView alloc] initWithFrame:self.bounds];
-            sv.layer.transform = CATransform3DMakeScale(1.3, 1.3, 0);
-            sv.layer.cornerRadius = 10.0;
-            sv.alpha = 0.8;
-            
-            sv.backgroundColor = [UIColor darkGrayColor];
-            self.selectionView = sv;
-            [self addSubview:sv];
-            [sv release];            
-            
+            [self _addSelectionView];
             self.selectionView.alpha = 0.0;
             
         }
         
         
-        [UIView animateWithDuration:0.4 animations:^(void) {
+        [UIView animateWithDuration:0.2 animations:^(void) {
             
             if(selected){
                 
-                self.selectionView.alpha = 0.8;
+                self.selectionView.alpha = 1.0;
             }else{
                 
                 self.selectionView.alpha = 0.0;
@@ -455,15 +528,15 @@ static UIColor* _defaultBackgroundColor = nil;
             
             if(!selected){
                 
-                [self.selectionView removeFromSuperview];
-                self.selectionView = nil;
+                [self _removeSelectionView];
 
             }
           
         }];
     }
     
-    
+    [self didChangeValueForKey:@"selected"];
+
 }
 
 - (void)setTappedAndHeld:(BOOL)flag{
