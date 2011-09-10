@@ -1,6 +1,6 @@
 test:
-
- implement:
+	- move: begin update / delete / insert /end update
+ to implement:
 	- support animation types
 	- page insets (horizontal only)
 	- drag and drop
@@ -12,18 +12,20 @@ test:
 		- dropping
 			- drop in place
 			- drop on cell
-		dropping
-		- moves
 
+	- concatenate multiple actions into a single update
 fix:
+	- round frame calculations to the nearest pixel
 	- scroll to cell when switching scroll directions
 
 niceties:
 		- staggered move animation
-			may need to use CAAnimations to make this work, staggering UIView animations isn't performant.
+				may need to use CAAnimations to make this work, staggering UIView animations isn't performant.
+		- header
+		- footer
 		
 performance:
-		possibly move to CAAnimations for animations
+		- possibly move to CAAnimations for animations
 
 
 		

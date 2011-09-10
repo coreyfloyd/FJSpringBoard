@@ -67,6 +67,19 @@ typedef enum  {
 
 @end
 
+//Now you can use a custom page control such as ZZPageControl in addtion to UIPageControl
+@protocol FJSpringBoardViewPageControl <NSObject>
+
+@required
+
+@property(nonatomic) NSInteger numberOfPages;
+@property(nonatomic) NSInteger currentPage;
+
+- (void)updateCurrentPageDisplay;
+
+- (void)addTarget:(id)target action:(SEL)action forControlEvents:(UIControlEvents)controlEvents;
+
+@end
 
 @interface FJSpringBoardView : UIScrollView <UIGestureRecognizerDelegate> {
 
@@ -106,6 +119,8 @@ typedef enum  {
     
     id<FJSpringBoardViewDataSource> dataSource;
     id<FJSpringBoardViewDelegate> delegate;
+    id<FJSpringBoardViewPageControl> pageControl;
+    
 }
 //delegate and datasource
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDataSource> dataSource;
@@ -179,12 +194,14 @@ typedef enum  {
 
 //paging, only valid if scrollingDirection == horizontal
 
-@property(nonatomic) UIEdgeInsets pageInsets;
+//page control
+@property(nonatomic, assign) IBOutlet id<FJSpringBoardViewPageControl> pageControl;
+
+//these are in addition to the normal scroll view content insets
+@property(nonatomic) UIEdgeInsets pageInsets; //not implemented
 
 - (NSUInteger)numberOfPages;
-- (NSUInteger)page;
-- (NSUInteger)nextPage;
-- (NSUInteger)previousPage;
+- (NSUInteger)currentPage;
 
 - (BOOL)scrollToPage:(NSUInteger)page animated:(BOOL)animated;
 

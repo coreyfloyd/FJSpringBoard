@@ -160,12 +160,11 @@ typedef enum  {
 - (void)_completeDrop;
 
 
-
-
-
 @property(nonatomic, retain) NSMutableIndexSet *selectedIndexes;
 
-
+- (NSUInteger)nextPage;
+- (NSUInteger)previousPage;
+- (void)_updatePageControl;
 
 @end
 
@@ -208,13 +207,14 @@ typedef enum  {
 @synthesize canProcessActions;
 @synthesize shouldFixLoadedCells;
 @synthesize allowsMultipleSelection;
+@synthesize pageControl;
 
 
 #pragma mark -
 #pragma mark NSObject
 
-
-- (void)dealloc {    
+- (void)dealloc {  
+    pageControl = nil;
     dataSource = nil;
     delegate = nil;
     [cells release];
@@ -254,6 +254,9 @@ typedef enum  {
     self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
     self.mode = FJSpringBoardCellModeNormal;
     self.canProcessActions = YES;
+    
+    [self.pageControl addTarget:self action:@selector(handlePageControlChange:) forControlEvents:UIControlEventValueChanged];
+
 }
 
 
@@ -284,6 +287,9 @@ typedef enum  {
     [super setFrame:f];
     
     [self _setNeedsLayoutCalculation];
+    
+    [self setNeedsLayout];
+
 }
 
 - (void)setPageInsets:(UIEdgeInsets)insets{
@@ -299,7 +305,7 @@ typedef enum  {
     
     [self _setNeedsReload];
     
-}
+} 
 
 - (void)setScrollDirection:(FJSpringBoardViewScrollDirection)direction{
     
@@ -553,6 +559,9 @@ typedef enum  {
     }
     
     [super setContentSize:size];
+    
+    [self _updatePageControl];    
+
 }
 
 - (void)setContentOffset:(CGPoint)offset{
@@ -586,6 +595,19 @@ typedef enum  {
     CGPoint dragCenter = self.draggableCellView.center;
     dragCenter.x += (self.contentOffset.x-previousOffset.x);
     self.draggableCellView.center = dragCenter;
+    
+    
+    CGPoint p = self.contentOffset;
+    dispatchOnMainQueueAfterDelayInSeconds(0.1, ^(void) {
+        
+        if(p.x == self.contentOffset.x){
+            
+            [self _updatePageControl];    
+
+        }
+    });
+    
+
 }
 
 - (void)_resetAnimatingContentOffset{
@@ -2497,6 +2519,45 @@ typedef enum  {
 #pragma mark -
 #pragma mark paging
 
+- (void)setPageControl:(id<FJSpringBoardViewPageControl>)aPageControl
+{
+    if (pageControl != aPageControl) {
+        [aPageControl retain];
+        [pageControl release];
+        pageControl = aPageControl;
+        
+        [self.pageControl addTarget:self action:@selector(handlePageControlChange:) forControlEvents:UIControlEventValueChanged];
+    }
+}
+- (IBAction)handlePageControlChange:(id<FJSpringBoardViewPageControl>)sender{
+    
+    NSUInteger page = [sender currentPage];
+    
+    [self scrollToPage:page animated:YES];
+    [sender updateCurrentPageDisplay];
+    
+}
+
+- (void)_updatePageControl{
+    
+    NSUInteger p = [self currentPage];
+    
+    if(p == NSNotFound)
+        return;
+    
+    NSUInteger num = [self numberOfPages];
+    
+    if(num == NSNotFound)
+        return;
+    
+    [self.pageControl setCurrentPage:p];
+    [self.pageControl setNumberOfPages:num];
+    [self.pageControl updateCurrentPageDisplay];
+
+}
+
+
+
 - (NSUInteger)numberOfPages{
     
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
@@ -2505,7 +2566,7 @@ typedef enum  {
     return [(FJSpringBoardHorizontalLayout*)self.layout pageCount];
 }
 
-- (NSUInteger)page{
+- (NSUInteger)currentPage{
     
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
         return NSNotFound;
@@ -2521,7 +2582,7 @@ typedef enum  {
     
     FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;
 
-    NSUInteger currentPage = [self page];
+    NSUInteger currentPage = [self currentPage];
     
     NSUInteger next = currentPage+1;
     
@@ -2539,7 +2600,7 @@ typedef enum  {
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
         return NSNotFound;
     
-    NSUInteger currentPage = [self page];
+    NSUInteger currentPage = [self currentPage];
     
     if(currentPage > 0)
         return (currentPage-1);
@@ -2563,6 +2624,7 @@ typedef enum  {
     
     [self setContentOffset:p animated:animated];
     
+    
     return YES;
     
 }
@@ -2578,47 +2640,4 @@ typedef enum  {
 
 
 @end
-
-
-/*
- - (void)didDoubleTap:(UITapGestureRecognizer*)g{
- 
- CGPoint p = [g locationInView:self.contentView];
- self.lastTouchPoint = p;
- 
- NSUInteger indexOfCell = [self indexOfCellAtPoint:p];
- 
- if(indexOfCell == NSNotFound)
- return;
- 
- //FJSpringBoardCell* c = [self.indexLoader.cells objectAtIndex:indexOfCell];
- 
- if(doubleTapped){
- 
- [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_resetDoubleTapped) object:nil];
- 
- [self performSelector:@selector(_resetDoubleTapped) withObject:nil afterDelay:0.5];
- 
- return;
- }
- 
- self.doubleTapped = YES;
- [self performSelector:@selector(_resetDoubleTapped) withObject:nil afterDelay:0.5];
- 
- if([delegate respondsToSelector:@selector(springBoardView:cellWasDoubleTappedAtIndex:)]){
- 
- [delegate springBoardView:self cellWasDoubleTappedAtIndex:indexOfCell];
- 
- 
- }
- 
- }
- */
-
-/*
- - (void)_resetDoubleTapped{
- 
- self.doubleTapped = NO;
- }
- */
 
