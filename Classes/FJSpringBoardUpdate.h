@@ -13,30 +13,48 @@
 
 #import <Foundation/Foundation.h>
 #import "SMModelObject.h"
-#import "FJSpringBoardAction.h"
 
-@class FJSpringBoardActionIndexMap;
+@class FJSpringBoardActionGroup;
 
 @interface FJSpringBoardUpdate : SMModelObject{
         
-    FJSpringBoardAction* action;
-    FJSpringBoardActionIndexMap* indexMap;
+    FJSpringBoardActionGroup* actionGroup;
     
-    NSMutableSet* cellActionUpdates;
+    NSArray* reloadUpdates;
+    NSArray* deleteUpdates;
+    NSArray* insertUpdates;
+    NSArray* moveUpdates;
+    
+    NSIndexSet* reloadIndexes;
+    NSIndexSet* deleteIndexes;
+    NSIndexSet* insertIndexes;
+    
     NSMutableSet* cellMovementUpdates;
     
     NSUInteger newCellCount;
     
+    NSMutableArray* newCellState;
+    
 }
 
-- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range springBoardAction:(FJSpringBoardAction*)anAction;
+- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range actionGroup:(FJSpringBoardActionGroup*)anActionGroup;
 
-@property (nonatomic, readonly) FJSpringBoardActionType actionType; //are the cellActionUpdates insert, deletes, or reloads?
+
+//These should be processed in this order.
+- (NSArray*)deleteUpdates;
+- (NSIndexSet*)deleteIndexes;
+
+- (NSArray*)insertUpdates;
+- (NSIndexSet*)insertIndexes;
+
+- (NSArray*)moveUpdates;
+
+- (NSArray*)reloadUpdates;
+- (NSIndexSet*)reloadIndexes;
 
 @property (nonatomic, readonly) NSArray *cellStatePriorToAction; //only used for deletes now
+@property (nonatomic, retain, readonly) NSMutableArray *newCellState; //cells after action is processed
 
-- (NSArray*)sortedCellActionUpdates; //an insert, delete, or relaod, direct result of the Action
-- (NSArray*)sortedCellMovementUpdates; //cell movements in response to the action
 
 @property (nonatomic) NSUInteger newCellCount;
 

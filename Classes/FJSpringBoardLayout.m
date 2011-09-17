@@ -8,14 +8,13 @@
 
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
-#import "FJSpringBoardView.h"
 
 #define MINIMUM_CELL_SPACING 2
 
 @interface FJSpringBoardLayout()
 
-@property (nonatomic, assign, readwrite) FJSpringBoardView *springBoard;
-
+@property (nonatomic, readwrite) CGSize cellSize;
+@property (nonatomic, readwrite) CGRect springBoardBounds;
 @property(nonatomic, readwrite) CGSize cellSizeWithAccesories;
 
 @property(nonatomic, readwrite) NSUInteger numberOfRows;
@@ -45,7 +44,6 @@
 
 @implementation FJSpringBoardLayout
 
-@synthesize springBoard;
 @synthesize cellCount;
 @synthesize cellsPerRow;
 @synthesize numberOfRows;
@@ -54,38 +52,29 @@
 @synthesize cellSizeWithAccesories;
 @synthesize veritcalCellSpacing;
 @synthesize horizontalCellSpacing;
+@synthesize cellSize;
+@synthesize springBoardBounds;
 
 
 #pragma mark -
 #pragma mark Initialization
 
-- (id) initWithSpringBoardView:(FJSpringBoardView *)view
-{
+- (id)initWithSpringBoardBounds:(CGRect)bounds cellSize:(CGSize)size cellCount:(NSUInteger)count{
     self = [super init];
     if (self != nil) {
     
-        self.springBoard = view;
-        [self reset];
+        self.springBoardBounds = bounds;
+        self.cellSize = size;
+        self.cellCount = count;
     }
     return self;
-}
-
-- (void)reset{
-    
-    self.cellCount = 0;
-    
-    self.cellsPerRow = 0;
-    self.numberOfRows = 0;
-    self.rowWidth = 0.0;
-    self.contentSize = CGSizeZero;
-
 }
 
 - (void)calculateLayout{
     
     self.rowWidth = [self _rowWidth];
     
-    CGSize s = self.springBoard.cellSize;
+    CGSize s = self.cellSize;
     s.width += CELL_INVISIBLE_LEFT_MARGIN;
     s.height += CELL_INVISIBLE_TOP_MARGIN;
     self.cellSizeWithAccesories = s;
@@ -94,7 +83,7 @@
     float cellsInOneRow = floorf(self.rowWidth / minimumCellWidth);
     self.cellsPerRow = (NSUInteger)cellsInOneRow;
     
-    self.horizontalCellSpacing = (self.rowWidth - (self.cellsPerRow * self.springBoard.cellSize.width))/(self.cellsPerRow+1);
+    self.horizontalCellSpacing = (self.rowWidth - (self.cellsPerRow * self.cellSize.width))/(self.cellsPerRow+1);
 
     self.numberOfRows = (NSUInteger)ceilf((float)((float)self.cellCount / (float)self.cellsPerRow));
     
@@ -138,7 +127,7 @@
     
     CGRect frame = CGRectZero;
     frame.origin = [self _originForCellAtPosition:position];
-    frame.size = self.springBoard.cellSize;
+    frame.size = self.cellSize;
     
     return frame;
     

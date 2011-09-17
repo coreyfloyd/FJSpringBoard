@@ -12,9 +12,6 @@
 #import "SMModelObject.h"
 
 @class FJSpringBoardLayout;
-@class FJSpringBoardGroupCell;
-@class FJSpringBoardIndexLoader;
-@class FJSpringBoardUpdate;
 
 @interface FJSpringBoardIndexLoader : SMModelObject {
 
@@ -28,16 +25,21 @@
     
     NSIndexSet *visibleIndexes; //visible means should be loaded due to layout not neccesarily in the view port.
     NSMutableArray* cells;
-
-
-    NSMutableArray* actionQueue;
         
 }
-- (id)initWithCount:(NSUInteger)count;
 
+//set the layout so we can determine the visible cells
+@property (nonatomic, retain) FJSpringBoardLayout *layout; 
+
+//all indexes (as determined by the datasource cell count)
 - (NSIndexSet*)allIndexes;
 
-@property (nonatomic, retain) FJSpringBoardLayout *layout;
+//indexes that are visible (this is determined using the layout and independent of actual cell count)
+- (NSIndexSet*)visibleIndexes;
+
+//scrub a given index set leaving only the visible members
+- (NSIndexSet*)visibleIndexesInIndexSet:(NSIndexSet*)someIndexes;
+
 
 //The methods below are used to process index changes due to movement.  
 - (void)updateIndexesWithContentOffest:(CGPoint)newOffset;
@@ -58,22 +60,12 @@
 - (void)clearIndexesToLoad; 
 - (void)clearIndexesToUnload;
 
-//This should be equal to the actual indexes on screen!!
+//This should be equal to the actual cell indexes loaded into the springboard!!
 //updated as the indexes are cleared above
 - (NSIndexSet*)loadedIndexes;
 
-
-- (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
-- (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation;
-- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState withAnimation:(FJSpringBoardCellAnimation)animation;
-
-- (FJSpringBoardUpdate*)processFirstActionInQueue;
-
-
-
-
-
-
+//call this method after the gridview processes an update to adjust the values of the loaded indexes to their new values 
+- (void)adjustLoadedIndexesByDeletingIndexes:(NSIndexSet*)indexes insertingIndexes:(NSIndexSet*)indexes;
 
 
 @end

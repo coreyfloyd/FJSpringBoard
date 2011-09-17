@@ -44,7 +44,7 @@
 
 - (float)_rowWidth{
     
-    return self.springBoard.bounds.size.width;
+    return self.springBoardBounds.size.width;
 }
 
 
@@ -56,10 +56,10 @@
     //TODO: handle contentInset
     CGFloat x = 0;
     
-    CGFloat y = ((float)row * self.springBoard.cellSize.height) + ((float)(row+1) * self.veritcalCellSpacing); 
+    CGFloat y = ((float)row * self.cellSize.height) + ((float)(row+1) * self.veritcalCellSpacing); 
     
     f.origin = CGPointMake(x, y);
-    f.size = CGSizeMake(self.rowWidth, self.springBoard.cellSize.height); 
+    f.size = CGSizeMake(self.rowWidth, self.cellSize.height); 
     
     return f;
 }
@@ -67,8 +67,8 @@
 
 - (CGSize)_contentSize{
     
-    CGFloat pageHeight = ((float)self.numberOfRows * self.springBoard.cellSize.height) + ((float)(self.numberOfRows+1) * self.veritcalCellSpacing);
-    CGFloat pageWidth = self.springBoard.bounds.size.width;
+    CGFloat pageHeight = ((float)self.numberOfRows * self.cellSize.height) + ((float)(self.numberOfRows+1) * self.veritcalCellSpacing);
+    CGFloat pageWidth = self.springBoardBounds.size.width;
     
     return CGSizeMake(pageWidth, pageHeight);
     
@@ -76,7 +76,7 @@
 
 - (CGPoint)_originForCellAtPosition:(CellPosition)position{
         
-    float widthOfCellsInRowBeforeCell = self.springBoard.cellSize.width * position.column;
+    float widthOfCellsInRowBeforeCell = self.cellSize.width * position.column;
     
     float widthOfSpacesInRowBeforeCell = self.horizontalCellSpacing * (position.column + 1);
     
@@ -87,7 +87,7 @@
         ALWAYS_ASSERT;
     }
 
-    float heightOfCellsInColumnBeforeCell = self.springBoard.cellSize.height * position.row;
+    float heightOfCellsInColumnBeforeCell = self.cellSize.height * position.row;
     
     float heightOfSpacesInColumnBeforeCell = self.veritcalCellSpacing * (position.row + 1);
     
@@ -110,7 +110,7 @@
     
     CGRect viewRect;
     viewRect.origin = offset;
-    viewRect.size = self.springBoard.bounds.size;
+    viewRect.size = self.springBoardBounds.size;
         
     NSMutableIndexSet* rowsInView = [NSMutableIndexSet indexSet];
     
@@ -124,6 +124,9 @@
             [rowsInView addIndex:row];
         }
     }
+    
+    if([rowsInView count] == 0)
+        return nil;
     
     NSUInteger lowest = [rowsInView firstIndex];
     

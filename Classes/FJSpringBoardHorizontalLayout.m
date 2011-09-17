@@ -63,22 +63,12 @@
 @synthesize pageCount;
 
 
-- (void)reset{
-    
-    [super reset];
-    self.cellsPerPage = 0;
-    self.rowsPerPage = 0;
-    self.pageSize = CGSizeZero;
-    self.pageSizeWithInsetsApplied = CGSizeZero;
-    
-}
-
 
 - (void)calculateLayout{
      
     [super calculateLayout];
 
-    self.pageSize = self.springBoard.bounds.size;
+    self.pageSize = self.springBoardBounds.size;
     self.pageSizeWithInsetsApplied = [self _pageSizeWithInsetsApplied];
     
     float pageHeight = self.pageSizeWithInsetsApplied.height;
@@ -88,7 +78,7 @@
     
     self.cellsPerPage = self.rowsPerPage * self.cellsPerRow;
     
-    self.veritcalCellSpacing = (pageHeight - (self.rowsPerPage * self.springBoard.cellSize.height))/(self.rowsPerPage+1);
+    self.veritcalCellSpacing = (pageHeight - (self.rowsPerPage * self.cellSize.height))/(self.rowsPerPage+1);
     
     self.pageCount = [self _numberOfPages];
         
@@ -98,7 +88,7 @@
 
 - (float)_rowWidth{
     
-    return (self.springBoard.bounds.size.width - self.springBoard.pageInsets.left - self.springBoard.pageInsets.right);
+    return (self.springBoardBounds.size.width /*- self.springBoard.pageInsets.left - self.springBoard.pageInsets.right*/);
 }
 
 
@@ -109,8 +99,9 @@
 }
 
 - (CGSize)_pageSizeWithInsetsApplied{
-    
-    return UIEdgeInsetsInsetRect(self.springBoard.bounds, self.springBoard.pageInsets).size;
+
+    return self.springBoardBounds.size;
+    //return UIEdgeInsetsInsetRect(self.springBoardBounds, self.springBoard.pageInsets).size;
 }
 
 
@@ -161,7 +152,7 @@
     
     float widthOfPagesBeforePage = pagePosition.page * self.pageSize.width;
 
-    float widthOfCellsInRowBeforeCell = self.springBoard.cellSize.width * pagePosition.column;
+    float widthOfCellsInRowBeforeCell = self.cellSize.width * pagePosition.column;
     
     float widthOfSpacesInRowBeforeCell = self.horizontalCellSpacing * (pagePosition.column + 1);
 
@@ -173,7 +164,7 @@
         ALWAYS_ASSERT;
     }
     
-    float heightOfCellsInColumnBeforeCell = self.springBoard.cellSize.height * pagePosition.row;
+    float heightOfCellsInColumnBeforeCell = self.cellSize.height * pagePosition.row;
     
     float heightOfSpacesInColumnBeforeCell = self.veritcalCellSpacing * (pagePosition.row + 1);
     
@@ -208,7 +199,7 @@
     
     NSUInteger page = (NSUInteger)val;
     
-    if(page >= self.pageCount){
+    if(page >= self.pageCount && page > 0){
         
         page = self.pageCount-1;
     }
@@ -216,96 +207,6 @@
     return page;
     
 }
-
-- (NSUInteger)nextPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
-    
-    NSUInteger pageSizeInt = (NSUInteger)self.pageSize.width;
-    
-    float currentXOffset = currentOffset.x;
-    float previousXOffset = previousOffset.x;
-    
-    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
-        
-        return [self pageForContentOffset:currentOffset];
-    }
-    
-    float nextPage;
-    if((currentXOffset - previousXOffset) > 0)
-        nextPage = ceilf((float)(currentXOffset / (float)pageSizeInt));
-    else
-        nextPage = floorf((float)(currentXOffset / (float)pageSizeInt));
-
-    NSUInteger pageInt = (NSUInteger)nextPage;
-    
-    if(pageInt > self.pageCount)
-        return pageInt--;
-    
-    if(pageInt < 0)
-        return 0;
-    
-    return pageInt;
-}
-
-- (NSUInteger)previousPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
-        
-    float currentXOffset = currentOffset.x;
-    float previousXOffset = previousOffset.x;
-    
-    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
-        
-        return [self pageForContentOffset:currentOffset];
-    }
-    
-    NSUInteger currentPage = [self pageForContentOffset:currentOffset];
-    
-    NSUInteger lastPage = 0;
-    
-    if((currentXOffset - previousXOffset) > 0)
-        lastPage = currentPage - 1;
-    else
-        lastPage = currentPage + 1;
-        
-    if(lastPage > self.pageCount)
-        return lastPage--;
-    
-    if(lastPage < 0)
-        return 0;
-    
-    return lastPage;
-    
-}
-
-- (NSUInteger)removalPageWithPreviousContentOffset:(CGPoint)previousOffset currentContentOffset:(CGPoint)currentOffset{
-    
-        
-    float currentXOffset = currentOffset.x;
-    float previousXOffset = previousOffset.x;
-    
-    if(abs((int)((int)currentXOffset - (int)previousXOffset)) == 0){
-        
-        return NSNotFound;
-    }
-    
-    NSUInteger currentPage = [self pageForContentOffset:currentOffset];
-    
-    NSUInteger lastPage = 0;
-    
-    if((currentXOffset - previousXOffset) > 0)
-        lastPage = currentPage - NUMBER_OF_PAGES_TO_PAD - 1;
-    else
-        lastPage = currentPage + NUMBER_OF_PAGES_TO_PAD + 1;
-    
-    if(lastPage > self.pageCount)
-        return NSNotFound;
-    
-    if(lastPage < 0)
-        return NSNotFound;
-    
-    return lastPage;
-    
-    
-}
-
 
 
 - (CGRect)frameForPage:(NSUInteger)page{
@@ -331,7 +232,7 @@
 
 - (CGFloat)_horizontalOffsetForPage:(NSUInteger)page{
     
-    return springBoard.bounds.size.width * (float)page;
+    return springBoardBounds.size.width * (float)page;
     
 }
 
@@ -348,8 +249,10 @@
     if(page == NSNotFound)
         return nil;
     
-    if(page >= self.pageCount)
+    /*
+    if(page > 0 && page >= self.pageCount)
         return nil;
+    */
     
     NSUInteger numOfCellsOnPage = self.cellsPerPage;
 

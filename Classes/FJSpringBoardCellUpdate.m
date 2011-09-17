@@ -11,7 +11,6 @@
 @implementation FJSpringBoardCellUpdate
 
 @synthesize type;
-@synthesize needsLoaded;
 @synthesize animation;
 @synthesize oldSpringBoardIndex;
 @synthesize newSpringBoardIndex;
@@ -27,12 +26,8 @@
     return self;
 }
 
-- (void)markNeedsLoaded{
-    
-    needsLoaded = YES;
-    
-}
 
+/*
 - (void)finalizeType{
     
     if(self.oldSpringBoardIndex == NSNotFound && self.newSpringBoardIndex == NSNotFound){
@@ -71,6 +66,7 @@
         ALWAYS_ASSERT;
     }
 }
+ */
 
 - (NSUInteger)comparisonIndex{
     

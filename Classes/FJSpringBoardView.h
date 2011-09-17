@@ -96,7 +96,8 @@ typedef enum  {
       
     NSMutableArray *cells;
     
-    BOOL canProcessActions;
+    BOOL actionGroupOpen;
+    BOOL updateInProgress;
     
     NSMutableSet *reusableCells; //reusable cells
     
@@ -122,21 +123,21 @@ typedef enum  {
     id<FJSpringBoardViewPageControl> pageControl;
     
 }
-//delegate and datasource
+//delegate and datasource like UITableView
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDelegate> delegate;
 
-@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful! setting this causes a full reload
+@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful! setting triggers a reload
 
+//smooth vertical scrolling or paginated horizontal
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
 
 
-
-//reload
+//reload data, like UITableView this only loads visible cells
 - (void)reloadData;
 
 
-//yes, like a UITableView
+//yes, also like a UITableView, sensing a pattern here?
 - (FJSpringBoardCell *)dequeueReusableCellWithIdentifier:(NSString *)identifier;
 
 

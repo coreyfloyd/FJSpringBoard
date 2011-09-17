@@ -92,6 +92,9 @@ BOOL rangesAreContiguous(NSRange first, NSRange second){
 
 BOOL indexesAreContiguous(NSIndexSet* indexes){
     
+    if([indexes count] == 0)
+        return YES;
+    
     return ((([indexes lastIndex] - [indexes firstIndex]) + 1) == [indexes count]);
 }
 

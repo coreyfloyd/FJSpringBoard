@@ -7,7 +7,6 @@
 
 NSMutableArray* nullArrayOfSize(NSUInteger size);
 
-
 BOOL rangesAreContiguous(NSRange first, NSRange second);
 
 NSRange rangeWithContiguousIndexes(NSIndexSet* indexes);

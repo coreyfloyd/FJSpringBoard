@@ -12,25 +12,19 @@
 
 @synthesize type;
 @synthesize animation;
-@synthesize cellStateBeforeAction;
 @synthesize indexes;
-
-
 
 
 - (void)dealloc {
     [indexes release];
     indexes = nil;
-    [cellStateBeforeAction release];
-    cellStateBeforeAction = nil;
     [super dealloc];
 }
-+ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState animation:(FJSpringBoardCellAnimation)anim{
++ (FJSpringBoardAction*)deletionActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     
     FJSpringBoardAction* a = [[FJSpringBoardAction alloc] init];
     a.type = FJSpringBoardActionDelete;
     a.animation = anim;
-    a.cellStateBeforeAction = cellState;
     a.indexes = indexes;
 
     return [a autorelease];
@@ -47,7 +41,6 @@
     return [a autorelease];
 
 }
-
 
 + (FJSpringBoardAction*)reloadActionWithIndexes:(NSIndexSet*)indexes animation:(FJSpringBoardCellAnimation)anim{
     

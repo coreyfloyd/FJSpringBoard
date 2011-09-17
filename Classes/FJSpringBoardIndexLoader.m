@@ -12,31 +12,36 @@
 #import "FJSpringBoardLayout.h"
 #import "FJSpringBoardUtilities.h"
 #import "FJSpringBoardCell.h"
-#import "FJSpringBoardAction.h"
-#import "FJSpringBoardActionIndexMap.h"
-#import "FJSpringBoardCellUpdate.h"
-#import "FJSpringBoardUpdate.h"
 
-#define MAX_PAGES 3
 
-NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIndexSet* indexes){
+@implementation NSIndexSet(intersection)
+
+- (NSIndexSet*)_intersectionWithIndexSet:(NSIndexSet*)otherIndexSet{
     
-    __block NSUInteger answer = start;
-    __block int largestDiff = 0;
-    
-    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-    
-        int diff = abs((int)((int)start - (int)idx));
+    return [self indexesWithOptions:0 passingTest:^BOOL(NSUInteger idx, BOOL *stop) {
         
-        if(diff > largestDiff){
-            largestDiff = diff;
-            answer = idx;
-        }
+        if([otherIndexSet containsIndex:idx])
+            return YES;
+        
+        return NO;
         
     }];
-    
-    return answer;
 }
+
+
+- (NSIndexSet*)intersectionWithIndexSet:(NSIndexSet*)otherIndexSet{
+    
+    if([self count] < [otherIndexSet count]){
+        
+        return [self _intersectionWithIndexSet:otherIndexSet];
+    }
+    
+    return [otherIndexSet _intersectionWithIndexSet:self];
+    
+}
+
+@end
+
 
 @interface FJSpringBoardIndexLoader()
 
@@ -48,8 +53,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 @property (nonatomic, retain) NSMutableIndexSet *mutableIndexesToUnload;
 
 @property (nonatomic, retain) NSIndexSet* visibleIndexes;
-
-@property (nonatomic, retain) NSMutableArray *actionQueue;
 
 
 @end
@@ -68,13 +71,9 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 
 @synthesize visibleIndexes;
 
-@synthesize actionQueue;
-
 
 - (void) dealloc
 {
-    [actionQueue release];
-    actionQueue = nil;
     [mutableIndexesToLoad release];
     mutableIndexesToLoad = nil;
     [mutableIndexesToUnload release];
@@ -86,25 +85,95 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     [super dealloc];
 }
 
-- (id)initWithCount:(NSUInteger)count{
+- (id)init{
     
     self = [super init];
     if (self != nil) {
         
-        self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];
+        self.mutableAllIndexes = [NSMutableIndexSet indexSet];    
         self.mutableLoadedIndexes = [NSMutableIndexSet indexSet];
         self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
-        
-        self.actionQueue = [NSMutableArray array];
-            
+                    
     }
     return self;
 }
 
+- (void)setLayout:(FJSpringBoardLayout *)aLayout
+{
+    if (layout != aLayout) {
+        [aLayout retain];
+        [layout release];
+        layout = aLayout;
+    }
+    
+    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [layout cellCount])];    
+}
+
+- (void)adjustLoadedIndexesByDeletingIndexes:(NSIndexSet*)deleted insertingIndexes:(NSIndexSet*)inserted{
+    
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    
+    NSMutableArray* loaded = [NSMutableArray arrayWithCapacity:self.allIndexes.count];
+    
+    NSNumber* no = [NSNumber numberWithBool:NO];
+    NSNumber* yes = [NSNumber numberWithBool:YES];
+    
+    [self.allIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+       
+        [loaded addObject:no];
+        
+    }];
+    
+    [self.loadedIndexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        [loaded replaceObjectAtIndex:idx withObject:yes];
+        
+    }];
+    
+    [loaded removeObjectsAtIndexes:deleted];
+
+    NSIndexSet* insertedVisible = [inserted intersectionWithIndexSet:self.visibleIndexes];
+    NSMutableIndexSet* insertedNotVisible = [NSMutableIndexSet indexSet];
+    [insertedNotVisible addIndexes:inserted];
+    [insertedNotVisible removeIndexes:insertedVisible];
+    
+    NSMutableArray* new = [NSMutableArray arrayWithCapacity:inserted.count];
+
+    [inserted enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+       
+        if([insertedVisible containsIndex:idx])
+            [new addObject:yes];
+        else
+            [new addObject:no];
+        
+    }];
+        
+    [loaded insertObjects:new atIndexes:inserted];
+    
+    NSIndexSet* newLoaded = [loaded indexesOfObjectsWithOptions:0 passingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+        
+        NSNumber* val = obj;
+        return [val boolValue];
+        
+    }];
+        
+    self.mutableLoadedIndexes = [newLoaded mutableCopy];
+    
+    [pool drain];
+}
+
+
+
 - (NSIndexSet*)allIndexes{
     
     return [[self.mutableAllIndexes copy] autorelease];
+
+}
+
+- (NSIndexSet*)visibleIndexesInIndexSet:(NSIndexSet*)someIndexes{
+        
+    return [self.visibleIndexes intersectionWithIndexSet:someIndexes];
 
 }
 
@@ -115,11 +184,14 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
     NSRange visRange = [self.layout visibleRangeForContentOffset:newOffset];
     
     NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:visRange];
-    
+        
     self.visibleIndexes = newIndexes;
     
-    NSIndexSet* added = indexesAdded(self.loadedIndexes, newIndexes);
-    NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newIndexes);
+    //visible indexes are "theoretical" lets only try to load indexes that are actually backed by data
+    NSIndexSet* newIndexesToLoad = [self.allIndexes intersectionWithIndexSet:newIndexes];
+    
+    NSIndexSet* added = indexesAdded(self.loadedIndexes, newIndexesToLoad);
+    NSIndexSet* removed = indexesRemoved(self.loadedIndexes, newIndexesToLoad);
     
     [self markIndexesForLoading:added];
     [self markIndexesForUnloading:removed];
@@ -168,63 +240,6 @@ NSUInteger indexWithLargestAbsoluteValueFromStartignIndex(NSUInteger start, NSIn
 - (NSIndexSet*)loadedIndexes{
     
     return [[self.mutableLoadedIndexes copy] autorelease];
-
-}
-
-- (void)enqueueAction:(FJSpringBoardAction*)action{
-    
-    [self.actionQueue enqueue:action];
-    
-}
-- (FJSpringBoardAction*)dequeueNextAction{
-    
-    if([self.actionQueue count] == 0)
-        return nil;
-    
-    FJSpringBoardAction* next = [self.actionQueue dequeue];
-    return next;
-    
-}
-
-
-
-- (void)queueActionByReloadingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    [self enqueueAction:[FJSpringBoardAction reloadActionWithIndexes:indexes animation:animation]];
-    
-}
-
-- (void)queueActionByInsertingCellsAtIndexes:(NSIndexSet*)indexes withAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    [self enqueueAction:[FJSpringBoardAction insertionActionWithIndexes:indexes animation:animation]];
-    
-}
-
-- (void)queueActionByDeletingCellsAtIndexes:(NSIndexSet*)indexes currentCellState:(NSArray*)cellState withAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    [self enqueueAction:[FJSpringBoardAction deletionActionWithIndexes:indexes currentCellState:cellState animation:animation]];
-    
-}
-
-- (FJSpringBoardUpdate*)processFirstActionInQueue{
-        
-    FJSpringBoardAction* action = [self dequeueNextAction];
-    
-    if(action == nil)
-        return nil;
-
-    ASSERT_TRUE(indexesAreContiguous(self.visibleIndexes));
-    NSRange range = rangeWithContiguousIndexes(self.visibleIndexes);
-    
-    extendedDebugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
-    
-    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.allIndexes count]  visibleIndexRange:range springBoardAction:action];
-    
-    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [update newCellCount])];    
-    //TODO: if we had any cells to reload we are fucked. we should go to a delegate pattern so the index loader can call the 
-       
-    return update;
-
 
 }
 

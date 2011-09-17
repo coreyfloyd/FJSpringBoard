@@ -13,7 +13,7 @@ NSNumber* DegreesToNumber(CGFloat degrees) {
 
 CAAnimation* wiggleAnimation() {
     CAKeyframeAnimation * animation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.z"]; 
-    [animation setDuration:0.2];
+    [animation setDuration:0.3];
     [animation setRepeatCount:10000];
     // Try to get the animation to begin to start with a small offset // that makes it shake out of sync with other layers. srand([[NSDate date] timeIntervalSince1970]); float rand = (float)random();
     [animation setBeginTime: CACurrentMediaTime() + rand() * .0000000001];

@@ -1,5 +1,5 @@
 test:
-	- move: begin update / delete / insert /end update
+	
  to implement:
 	- support animation types
 	- page insets (horizontal only)
@@ -13,10 +13,8 @@ test:
 			- drop in place
 			- drop on cell
 
-	- concatenate multiple actions into a single update
 fix:
 	- round frame calculations to the nearest pixel
-	- scroll to cell when switching scroll directions
 
 niceties:
 		- staggered move animation
