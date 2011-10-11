@@ -157,7 +157,7 @@ typedef enum  {
 
 
 //selection
-@property(nonatomic) BOOL allowsMultipleSelection; 
+@property(nonatomic) BOOL allowsMultipleSelection; //default  = NO
 
 - (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition;
 - (void)deselectCellAtIndex:(NSUInteger)index animated:(BOOL)animated;

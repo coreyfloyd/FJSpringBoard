@@ -1063,13 +1063,13 @@ typedef enum  {
 #pragma mark -
 #pragma mark Selections
 
-- (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition{
+- (void)_selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated{
     
     if(!allowsMultipleSelection && [self.selectedCellIndexes count] > 0){
         
         [self deselectCellsAtIndexes:self.selectedCellIndexes animated:YES];
     }
-        
+    
     
     [self.selectedIndexes addIndex:index];
     
@@ -1079,6 +1079,28 @@ typedef enum  {
         return;
     
     [cell setSelected:YES animated:animated];
+    
+    
+}
+
+
+- (void)selectCellAtIndex:(NSUInteger)index animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition{
+    
+    [self _selectCellAtIndex:index animated:animated];
+
+    [self scrollToCellAtIndex:index atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:YES];
+
+}
+
+- (void)selectCellsAAtIndexes:(NSIndexSet*)indexes animated:(BOOL)animated scrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition{
+    
+    [indexes enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+        
+        [self _selectCellAtIndex:idx animated:animated];
+        
+    }];
+    
+    [self scrollToCellAtIndex:[indexes firstIndex] atScrollPosition:FJSpringBoardCellScrollPositionTop animated:YES];
 
 }
 
