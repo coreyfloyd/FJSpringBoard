@@ -127,6 +127,8 @@
     
     CGRect frame = CGRectZero;
     frame.origin = [self _originForCellAtPosition:position];
+    frame.origin.x = roundf(frame.origin.x);
+    frame.origin.y = roundf(frame.origin.y);
     frame.size = self.cellSize;
     
     return frame;
@@ -194,10 +196,15 @@
     
 }
 
-- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+- (NSRange)visibleRangeWithPaddingForContentOffset:(CGPoint)offset{
     
     return NSMakeRange(0, 0);
     
+}
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+    
+    return NSMakeRange(0, 0);
+   
 }
 
 

@@ -181,7 +181,7 @@
     
     self.contentOffset = newOffset;
         
-    NSRange visRange = [self.layout visibleRangeForContentOffset:newOffset];
+    NSRange visRange = [self.layout visibleRangeWithPaddingForContentOffset:newOffset];
     
     NSMutableIndexSet* newIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:visRange];
         

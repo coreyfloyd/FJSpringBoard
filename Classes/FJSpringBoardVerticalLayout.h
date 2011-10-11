@@ -15,6 +15,7 @@
     
 }
 
+- (NSIndexSet*)visibleCellIndexesWithPaddingForContentOffset:(CGPoint)offset;
 - (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset;
 
 - (NSUInteger)rowForCellAtIndex:(NSUInteger)index;

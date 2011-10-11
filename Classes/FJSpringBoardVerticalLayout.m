@@ -106,7 +106,7 @@
     return origin;
 }
 
-- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset{
+- (NSIndexSet*)visibleCellIndexesWithPaddingForContentOffset:(CGPoint)offset{
     
     CGRect viewRect;
     viewRect.origin = offset;
@@ -147,6 +147,47 @@
     
 }
 
+- (NSIndexSet*)visibleCellIndexesForContentOffset:(CGPoint)offset{
+    
+    CGRect viewRect;
+    viewRect.origin = offset;
+    viewRect.size = self.springBoardBounds.size;
+    
+    NSMutableIndexSet* rowsInView = [NSMutableIndexSet indexSet];
+    
+    for(int row = 0; row < self.numberOfRows; row++){
+        
+        CGRect rowFrame = [self frameForRow:row];
+        
+        if(CGRectIntersectsRect
+           (viewRect, rowFrame)){
+            
+            [rowsInView addIndex:row];
+        }
+    }
+    
+    if([rowsInView count] == 0)
+        return nil;
+    
+    NSIndexSet* cellIndexes = [self _cellIndexesWithRowIndexes:rowsInView];
+    
+    return cellIndexes;
+    
+    
+}
+
+- (NSRange)visibleRangeWithPaddingForContentOffset:(CGPoint)offset{
+    
+    NSIndexSet* cellIndexes = [self visibleCellIndexesWithPaddingForContentOffset:offset];
+    
+    ASSERT_TRUE(indexesAreContiguous(cellIndexes));
+    
+    NSRange r = rangeWithContiguousIndexes(cellIndexes);
+    
+    return r;
+    
+}
+
 - (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
     
     NSIndexSet* cellIndexes = [self visibleCellIndexesForContentOffset:offset];
@@ -156,7 +197,6 @@
     NSRange r = rangeWithContiguousIndexes(cellIndexes);
     
     return r;
-    
 }
 
 - (NSUInteger)rowForCellAtIndex:(NSUInteger)index{

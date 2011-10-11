@@ -282,7 +282,7 @@
     return cellIndexes;
 }
 
-- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+- (NSRange)visibleRangeWithPaddingForContentOffset:(CGPoint)offset{
     
     NSUInteger page = [self pageForContentOffset:offset];
     
@@ -308,6 +308,27 @@
     NSRange r = rangeWithContiguousIndexes(set);
     
     return r;
+}
+
+- (NSRange)visibleRangeForContentOffset:(CGPoint)offset{
+    
+    NSUInteger page = [self pageForContentOffset:offset];
+        
+    NSMutableIndexSet* set = [NSMutableIndexSet indexSet];
+    [set addIndexes:[self cellIndexesForPage:page]];
+    
+#ifdef DEBUG
+    
+    if([set count] > 0)
+        ASSERT_TRUE(indexesAreContiguous(set));
+    
+#endif
+    
+    NSRange r = rangeWithContiguousIndexes(set);
+    
+    return r;
+
+    
 }
 
 
