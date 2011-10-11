@@ -690,7 +690,11 @@ typedef enum  {
 - (void)_calculateLayout{
     
     [self _clearLayoutCalculation];
-      
+    
+    NSRange visibleCellRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
+    
+    NSUInteger firstCell = visibleCellRange.location;
+
     if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         
         FJSpringBoardLayout* l = [[FJSpringBoardHorizontalLayout alloc] initWithSpringBoardBounds:self.bounds cellSize:self.cellSize cellCount:self.numberOfCells];
@@ -718,7 +722,19 @@ typedef enum  {
     self.contentView.frame = f; 
     
     //if(!self.layoutIsDirty)
-        [self setContentSize:self.layout.contentSize];
+    [self setContentSize:self.layout.contentSize];
+    
+    //we only 
+    if(self.layoutIsDirty){
+        
+        dispatchOnMainQueueAfterDelayInSeconds(MOVE_ANIMATION_DURATION, ^(void) {
+            
+            [self scrollToCellAtIndex:firstCell atScrollPosition:FJSpringBoardCellScrollPositionTop animated:YES];        
+            
+        });
+
+    }
+   
 
 }
 
@@ -765,41 +781,8 @@ typedef enum  {
     //recalculate layout
     if(self.shouldRecalculateLayout){
         
-        NSRange visibleCellRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
-        
-        NSUInteger middleVisibleCell = visibleCellRange.location + floorf(((float)visibleCellRange.length)/2.0);
-        
-        if(middleVisibleCell >= self.numberOfCells)
-            middleVisibleCell = self.numberOfCells-1;
-        
-        //CGSize currentContentSize = self.contentSize;
-        
         [self _calculateLayout];
         
-        /*
-        CGSize newContentSize = self.layout.contentSize;
-        
-        CGSize scrollableContentSize = CGSizeMake(MAX(currentContentSize.width, newContentSize.width), MAX(currentContentSize.height, newContentSize.height));
-        
-        self.contentSize = scrollableContentSize;
-        */
-         
-
-        dispatchOnMainQueueAfterDelayInSeconds(MOVE_ANIMATION_DURATION, ^(void) {
-            
-            [self scrollToCellAtIndex:middleVisibleCell atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:YES];        
-
-            /*
-            dispatchOnMainQueueAfterDelayInSeconds(2.0, ^(void) {
-                
-                self.contentSize = newContentSize; 
-                
-            });
-             */
-        });
-        
-        
-
     }
     
     //fix any loaded cells, with animation
