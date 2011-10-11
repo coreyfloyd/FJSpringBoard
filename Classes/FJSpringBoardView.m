@@ -699,14 +699,14 @@ typedef enum  {
         
         FJSpringBoardLayout* l = [[FJSpringBoardHorizontalLayout alloc] initWithSpringBoardBounds:self.bounds cellSize:self.cellSize cellCount:self.numberOfCells];
         self.layout = l;
-        self.pagingEnabled = YES;
+        //self.pagingEnabled = YES;
         [l release];
         
     }else{
         
         FJSpringBoardLayout* l = [[FJSpringBoardVerticalLayout alloc] initWithSpringBoardBounds:self.bounds cellSize:self.cellSize cellCount:self.numberOfCells];
         self.layout = l;
-        self.pagingEnabled = NO;
+        //self.pagingEnabled = NO;
         [l release];
     }
     

@@ -138,6 +138,7 @@
     //self.springBoardView.delegate = self;
     //self.springBoardView.dataSource = self;
     self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
+    self.springBoardView.pagingEnabled = YES;
     
     //[self.view addSubview:self.springBoardView];
     
