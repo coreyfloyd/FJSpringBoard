@@ -27,9 +27,12 @@
     NSMutableArray* cells;
         
 }
+- (id)initWithCellCount:(NSUInteger)count;
+
 
 //set the layout so we can determine the visible cells
 @property (nonatomic, retain) FJSpringBoardLayout *layout; 
+
 
 //all indexes (as determined by the datasource cell count)
 - (NSIndexSet*)allIndexes;
@@ -39,6 +42,9 @@
 
 //scrub a given index set leaving only the visible members
 - (NSIndexSet*)visibleIndexesInIndexSet:(NSIndexSet*)someIndexes;
+
+//check a single index
+- (BOOL)indexIsVisible:(NSUInteger)anIndex;
 
 
 //The methods below are used to process index changes due to movement.  

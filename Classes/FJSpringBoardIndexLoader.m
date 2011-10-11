@@ -85,29 +85,18 @@
     [super dealloc];
 }
 
-- (id)init{
+- (id)initWithCellCount:(NSUInteger)count{
     
     self = [super init];
     if (self != nil) {
         
-        self.mutableAllIndexes = [NSMutableIndexSet indexSet];    
+        self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];    
         self.mutableLoadedIndexes = [NSMutableIndexSet indexSet];
         self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
                     
     }
     return self;
-}
-
-- (void)setLayout:(FJSpringBoardLayout *)aLayout
-{
-    if (layout != aLayout) {
-        [aLayout retain];
-        [layout release];
-        layout = aLayout;
-    }
-    
-    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [layout cellCount])];    
 }
 
 - (void)adjustLoadedIndexesByDeletingIndexes:(NSIndexSet*)deleted insertingIndexes:(NSIndexSet*)inserted{
@@ -158,7 +147,10 @@
         
     }];
         
-    self.mutableLoadedIndexes = [newLoaded mutableCopy];
+    NSUInteger newCount = self.allIndexes.count + [inserted count] - [deleted count];
+    self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, newCount)];    
+    
+    self.mutableLoadedIndexes = [[newLoaded mutableCopy] autorelease];
     
     [pool drain];
 }
@@ -175,6 +167,12 @@
         
     return [self.visibleIndexes intersectionWithIndexSet:someIndexes];
 
+}
+
+- (BOOL)indexIsVisible:(NSUInteger)anIndex{
+    
+    return [self.visibleIndexes containsIndex:anIndex];
+    
 }
 
 - (void)updateIndexesWithContentOffest:(CGPoint)newOffset{
