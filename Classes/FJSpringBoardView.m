@@ -170,6 +170,8 @@ typedef enum  {
 - (NSUInteger)previousPage;
 - (void)_updatePageControl;
 
+@property (nonatomic, getter=isPaging) BOOL paging;
+
 @end
 
 @implementation FJSpringBoardView
@@ -212,6 +214,7 @@ typedef enum  {
 @synthesize layoutIsDirty;
 @synthesize allowsMultipleSelection;
 @synthesize pageControl;
+@synthesize paging;
 
 @synthesize actionGroupQueue;
 
@@ -2618,11 +2621,20 @@ typedef enum  {
 }
 - (IBAction)handlePageControlChange:(id<FJSpringBoardViewPageControl>)sender{
     
+    BOOL animate = !self.isPaging;
+    
+    self.paging = YES;
+    
     NSUInteger page = [sender currentPage];
     
-    [self scrollToPage:page animated:YES];
+    [self scrollToPage:page animated:animate];
     [sender updateCurrentPageDisplay];
     
+    dispatchOnMainQueueAfterDelayInSeconds(1.0, ^{
+        
+        self.paging = NO;
+        
+    });
 }
 
 - (void)_updatePageControl{

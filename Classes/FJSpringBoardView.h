@@ -105,6 +105,8 @@ typedef enum  {
 
     BOOL doubleTapped;
     BOOL longTapped;
+    
+    BOOL paging;
 
     FJSpringBoardCellAnimation layoutAnimation;
     
