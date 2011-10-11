@@ -77,6 +77,8 @@ static UIColor* _blueSelection = nil;
 
 @property(nonatomic,retain) UIView *selectionView;
 
+@property(nonatomic) BOOL allowsEditing; //this is for use by the sprinboard to control whether we expose editing. Should not be set by subclasses, see beginEditingOnTapAndHold
+
 @property (nonatomic, retain) UIButton *deleteButton;
 
 @property(nonatomic, readwrite) BOOL reordering;
@@ -131,6 +133,7 @@ static UIColor* _defaultBackgroundColor = nil;
 @synthesize selectedBackgroundView;
 @synthesize selectionStyle;
 @synthesize selectionView;
+@synthesize allowsEditing;
 
 - (void) dealloc
 {
@@ -266,6 +269,7 @@ static UIColor* _defaultBackgroundColor = nil;
         
         self.opaque = YES;
         self.reuseIdentifier = identifier;
+        self.allowsEditing = YES;
         
     }
     return self;
@@ -710,7 +714,14 @@ static UIColor* _defaultBackgroundColor = nil;
         
         [self setTappedAndHeld:YES];
         
-    }else if(g.state == UIGestureRecognizerStateEnded || g.state == UIGestureRecognizerStateCancelled || g.state == UIGestureRecognizerStateFailed){
+    }else if(g.state == UIGestureRecognizerStateEnded){
+        
+        if(!allowsEditing && !selected)
+            [self.springBoardView cellWasTapped:self];
+        
+        [self setTappedAndHeld:NO];
+        
+    }else if(g.state == UIGestureRecognizerStateCancelled || g.state == UIGestureRecognizerStateFailed){
         
         [self setTappedAndHeld:NO];
         
@@ -720,6 +731,9 @@ static UIColor* _defaultBackgroundColor = nil;
 
 
 - (void)editingLongTapRecieved:(UILongPressGestureRecognizer*)g{
+    
+    if(!self.allowsEditing)
+        return;
     
     [self setTappedAndHeld:NO];
     
