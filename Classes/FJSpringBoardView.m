@@ -880,6 +880,8 @@ typedef enum  {
 - (void)_loadCellAtIndex:(NSUInteger )index{
     
     FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:index];
+    if(!cell)
+        [NSException raise:NSInvalidArgumentException format:@"Must return a valid cell"];
     [cell retain];
     
     cell.index = index;
