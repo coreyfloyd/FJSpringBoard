@@ -32,12 +32,13 @@
     NSMutableSet* cellMovementUpdates;
     
     NSUInteger newCellCount;
-    
-    NSMutableArray* newCellState;
+
+    NSMutableArray* cellStatePriorToAction;
+    NSMutableArray* cellStateAfterAction;
     
 }
 
-- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range actionGroup:(FJSpringBoardActionGroup*)anActionGroup;
+- (id)initWithCellState:(NSArray*)cellState visibleIndexRange:(NSRange)range actionGroup:(FJSpringBoardActionGroup*)anActionGroup;
 
 
 //These should be processed in this order.
@@ -52,8 +53,8 @@
 - (NSArray*)reloadUpdates;
 - (NSIndexSet*)reloadIndexes;
 
-@property (nonatomic, readonly) NSArray *cellStatePriorToAction; //only used for deletes now
-@property (nonatomic, retain, readonly) NSMutableArray *newCellState; //cells after action is processed
+@property (nonatomic, readonly, copy) NSArray *cellStatePriorToAction; //only used for deletes now
+@property (nonatomic, retain, readonly) NSMutableArray *cellStateAfterAction; //cells after action is processed
 
 
 @property (nonatomic) NSUInteger newCellCount;

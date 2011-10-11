@@ -18,18 +18,22 @@
     NSMutableSet* deleteActions;
     NSMutableSet* insertActions;
     
+    BOOL autoLock;
     BOOL locked;
+    
+    BOOL validated;
 }
-@property (nonatomic, copy) NSArray *cellStateBeforeAction;
 @property (nonatomic, retain) NSMutableSet *reloadActions;
 @property (nonatomic, retain) NSMutableSet *deleteActions;
 @property (nonatomic, retain) NSMutableSet *insertActions;
+@property (nonatomic) BOOL autoLock; //default  = YES
 @property (nonatomic, getter=isLocked, readonly) BOOL locked;
+@property (nonatomic, getter=isValidated) BOOL validated;
 
+- (void)addActionWithType:(FJSpringBoardActionType)type indexes:(NSIndexSet*)indexSet animation:(FJSpringBoardCellAnimation)animation; //will auto lock unless autoLock == NO
 
-- (id)initWithBeginningCellState:(NSArray*)cellState;
-
-- (void)addActionWithType:(FJSpringBoardActionType)type indexes:(NSIndexSet*)indexSet animation:(FJSpringBoardCellAnimation)animation;
+- (NSIndexSet*)indexesToInsert;
+- (NSIndexSet*)indexesToDelete;
 
 - (void)lock;
 

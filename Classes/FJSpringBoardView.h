@@ -8,6 +8,7 @@
 
 @class FJSpringBoardIndexLoader;
 @class FJSpringBoardLayout;
+@class FJSpringBoardUpdate;
 
 @class FJSpringBoardView;
 
@@ -96,8 +97,7 @@ typedef enum  {
       
     NSMutableArray *cells;
     
-    BOOL actionGroupOpen;
-    BOOL updateInProgress;
+    FJSpringBoardUpdate *updateInProgress;
     
     NSMutableSet *reusableCells; //reusable cells
     

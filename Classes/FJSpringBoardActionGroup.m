@@ -16,11 +16,12 @@
 
 @implementation FJSpringBoardActionGroup
 
-@synthesize cellStateBeforeAction;
 @synthesize reloadActions;
 @synthesize deleteActions;
 @synthesize insertActions;
 @synthesize locked;
+@synthesize autoLock;
+@synthesize validated;
 
 
 - (void)dealloc {
@@ -35,15 +36,16 @@
     [super dealloc];
 }
 
-- (id)initWithBeginningCellState:(NSArray*)cellState
-{
+- (id)init{
+    
     self = [super init];
     if (self) {
         // Initialization code here.
         self.reloadActions = [NSMutableSet set];
         self.insertActions = [NSMutableSet set];
         self.deleteActions = [NSMutableSet set];
-        self.cellStateBeforeAction = cellState;
+        self.locked = NO;
+        self.autoLock = YES;
     }
     
     return self;
@@ -86,6 +88,39 @@
         default:
             break;
     }
+    
+    if(self.autoLock)
+        [self lock];
+    
+}
+
+- (NSIndexSet*)indexesToInsert{
+    
+    NSMutableIndexSet* r = [NSMutableIndexSet indexSet];
+    
+    [self.insertActions enumerateObjectsWithOptions:0 usingBlock:^(id obj, BOOL *stop) {
+        
+        FJSpringBoardAction* a = obj;
+        
+        [r addIndexes:a.indexes];
+        
+    }];
+    
+    return r;
+}
+- (NSIndexSet*)indexesToDelete{
+    
+    NSMutableIndexSet* r = [NSMutableIndexSet indexSet];
+    
+    [self.deleteActions enumerateObjectsWithOptions:0 usingBlock:^(id obj, BOOL *stop) {
+        
+        FJSpringBoardAction* a = obj;
+        
+        [r addIndexes:a.indexes];
+        
+    }];
+    
+    return r;
 }
 
 - (NSString*)description{
@@ -137,7 +172,6 @@
 }
 
 - (void)lock{
-    
     self.locked = YES;
 }
 

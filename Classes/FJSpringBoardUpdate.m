@@ -28,7 +28,8 @@
 @property (nonatomic, copy) NSIndexSet *deleteIndexes;
 @property (nonatomic, copy) NSIndexSet *insertIndexes;
 
-@property (nonatomic, retain, readwrite) NSMutableArray *newCellState;
+@property (nonatomic, readwrite, copy) NSArray *cellStatePriorToAction; //only used for deletes now
+@property (nonatomic, retain, readwrite) NSMutableArray *cellStateAfterAction;
 
 - (void)createMovesWithDeletionIndexes;
 - (void)createMovesWithInsertionIndexes;
@@ -47,13 +48,16 @@
 @synthesize deleteIndexes;
 @synthesize insertIndexes;
 @synthesize moveUpdates;
-@synthesize newCellState;
+@synthesize cellStateAfterAction;
+@synthesize cellStatePriorToAction;
 
 
 
 - (void)dealloc {
-    [newCellState release];
-    newCellState = nil;
+    [cellStatePriorToAction release];
+    cellStatePriorToAction = nil;
+    [cellStateAfterAction release];
+    cellStateAfterAction = nil;
     [moveUpdates release];
     moveUpdates = nil;
     [reloadIndexes release];
@@ -73,12 +77,14 @@
     [super dealloc];
 }
 
-- (id)initWithCellCount:(NSUInteger)count visibleIndexRange:(NSRange)range actionGroup:(FJSpringBoardActionGroup*)anActionGroup{
+- (id)initWithCellState:(NSArray*)cellState visibleIndexRange:(NSRange)range actionGroup:(FJSpringBoardActionGroup*)anActionGroup{
     
     self = [super init];
     if (self) {
         
         self.actionGroup = anActionGroup;
+        self.cellStatePriorToAction = cellState;
+        NSUInteger count = [cellState count];
         
         NSRange newRange = range;
         
@@ -231,18 +237,18 @@
         self.reloadUpdates = [actions sortedArrayUsingSelector:@selector(compare:)];;
     
         
-        self.newCellState = [[self.cellStatePriorToAction mutableCopy] autorelease];
+        self.cellStateAfterAction = [[self.cellStatePriorToAction mutableCopy] autorelease];
         self.newCellCount = [self.cellStatePriorToAction count];
               
         [self createMovesWithDeletionIndexes];
                 
-        [self.newCellState removeObjectsAtIndexes:self.deleteIndexes];
+        [self.cellStateAfterAction removeObjectsAtIndexes:self.deleteIndexes];
         self.newCellCount -= [self.deleteIndexes count];
 
         
         [self createMovesWithInsertionIndexes];
         
-        [self.newCellState insertObjects:nullArrayOfSize([self.insertIndexes count]) atIndexes:self.insertIndexes];
+        [self.cellStateAfterAction insertObjects:nullArrayOfSize([self.insertIndexes count]) atIndexes:self.insertIndexes];
         self.newCellCount += [self.insertIndexes count];
 
     }
@@ -402,12 +408,5 @@
     
     
 }
-
-
-- (NSArray*)cellStatePriorToAction{
-    
-    return [[self actionGroup] cellStateBeforeAction];
-}
-
 
 @end

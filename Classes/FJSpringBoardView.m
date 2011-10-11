@@ -66,8 +66,6 @@ typedef enum  {
 
 @property(nonatomic, retain) NSMutableArray *cells; //has [NSNull null] for any unloaded cells
 
-@property (nonatomic) BOOL actionGroupOpen;
-
 //junk pile
 @property(nonatomic, retain) NSMutableSet *reusableCells;
 
@@ -106,14 +104,13 @@ typedef enum  {
 
 
 @property(nonatomic, retain) NSMutableArray *actionGroupQueue;
-@property (nonatomic) BOOL updateInProgress;
+@property(nonatomic, retain) FJSpringBoardUpdate *updateInProgress;
 
-- (void)_setupActionQueue;
+- (FJSpringBoardActionGroup*)_currentActionGroup;
 - (void)_processActionQueue;
 
 - (void)_processActionGroup:(FJSpringBoardActionGroup*)actionGroup;
 
-- (void)validateUpdate:(FJSpringBoardUpdate*)update;
 - (void)_processUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)completion;
 - (void)_processDeletionUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)block;
 - (void)_processInsertionUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)block;
@@ -209,7 +206,6 @@ typedef enum  {
 
 @synthesize suspendLayoutUpdates;
 
-@synthesize actionGroupOpen;
 @synthesize updateInProgress;
 @synthesize layoutIsDirty;
 @synthesize allowsMultipleSelection;
@@ -645,9 +641,14 @@ typedef enum  {
     
     self.contentOffset = CGPointZero;
     
+    //remove pending actions
+    [self.actionGroupQueue removeAllObjects];
+    self.updateInProgress = nil;
+    self.suspendLayoutUpdates = NO;
+
     //deselect
     [self deselectCellsAtIndexes:self.selectedCellIndexes animated:NO];
-    
+
     //unload all cells
     [self _removeCellsAtIndexes:self.indexLoader.allIndexes];
     [self _unloadCellsAtIndexes:self.indexLoader.allIndexes];
@@ -659,7 +660,9 @@ typedef enum  {
     
     self.cells = nullArrayOfSize(numOfCells);
     
-    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] init] autorelease];
+    self.layout = nil;
+    
+    self.indexLoader = [[[FJSpringBoardIndexLoader alloc] initWithCellCount:numOfCells] autorelease];
     
     [self _setNeedsLayoutCalculation];
     
@@ -743,7 +746,9 @@ typedef enum  {
     
     [self.indexLoader updateIndexesWithContentOffest:self.contentOffset]; //this causes the index loader to recalculate cells to load in case we changed scroll directions.
     
+    //[CATransaction setDisableActions:YES];
     [self _layoutCellsAtIndexes:[self.indexLoader loadedIndexes]]; //relayout loaded cells. 
+    //[CATransaction setDisableActions:NO];
         
 }
 
@@ -1030,7 +1035,7 @@ typedef enum  {
     
     [eachCell setFrame:CGRectMake(0, 0, self.cellSize.width, self.cellSize.height)];
     eachCell.mode = FJSpringBoardCellModeNormal;
-        
+
     [self.reusableCells addObject:eachCell];
     [self.cells replaceObjectAtIndex:index withObject:[NSNull null]];
     
@@ -1137,10 +1142,8 @@ typedef enum  {
 
 
 - (void)reloadCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation{
-    
-    [self _setupActionQueue];
-    
-    [[self.actionGroupQueue lastObject] addActionWithType:FJSpringBoardActionReload indexes:indexSet animation:animation];
+        
+    [[self _currentActionGroup] addActionWithType:FJSpringBoardActionReload indexes:indexSet animation:animation];
     
     [self _processActionQueue];
 
@@ -1152,14 +1155,12 @@ typedef enum  {
     
     if([indexSet count] == 0)
         return;
-    
-    [self _setupActionQueue];
-    
+        
     //NSArray* nulls = nullArrayOfSize([indexSet count]);
     
     //[self.cells insertObjects:nulls atIndexes:indexSet];
     
-    [[self.actionGroupQueue lastObject] addActionWithType:FJSpringBoardActionInsert indexes:indexSet animation:animation];
+    [[self _currentActionGroup] addActionWithType:FJSpringBoardActionInsert indexes:indexSet animation:animation];
     
     [self _processActionQueue];
    
@@ -1171,11 +1172,10 @@ typedef enum  {
     if([indexSet count] == 0)
         return;
     
-    [self _setupActionQueue];
 
     //[self.cells removeObjectsAtIndexes:indexSet];
     
-    [[self.actionGroupQueue lastObject] addActionWithType:FJSpringBoardActionDelete indexes:indexSet animation:animation];
+    [[self _currentActionGroup] addActionWithType:FJSpringBoardActionDelete indexes:indexSet animation:animation];
             
     [self _processActionQueue];
 
@@ -1184,8 +1184,9 @@ typedef enum  {
 
 - (void)_deleteCell:(FJSpringBoardCell*)cell{
     
-    //we are not doing internal deletes if you are in the middle of shuffling around other things
-    if(self.actionGroupOpen)
+    //we are not doing internal deletes if you are in the middle of shuffling around other things, this might be ok
+    FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
+    if(!actionGroup.autoLock)
         return;
     
     NSUInteger index = cell.index;
@@ -1209,70 +1210,125 @@ typedef enum  {
 
 - (void)beginUpdates{
     
-    self.actionGroupOpen = YES;
+    FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
+    ASSERT_TRUE(actionGroup.autoLock);
+    ASSERT_TRUE(!actionGroup.isLocked);
+    actionGroup.autoLock = NO;
 }
 
 
 - (void)endUpdates{
     
-    self.actionGroupOpen = NO;
-
+    FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
+    ASSERT_TRUE(!actionGroup.autoLock);
+    ASSERT_TRUE(!actionGroup.isLocked);
+    [actionGroup lock]; //must be explicitely locked since autolock is off
+    
     [self _processActionQueue];
     
 }
 
+- (FJSpringBoardActionGroup*)_currentActionGroup{
+    
+    FJSpringBoardActionGroup* group = [self.actionGroupQueue firstObjectSafe];
+    
 
-- (void)_setupActionQueue{
-    
-    FJSpringBoardActionGroup* group = [self.actionGroupQueue lastObject];
-    
+    //no current group, set it up
+    //or if current group IS locked, AND no action groups is supposed to be open, we can create a new action group
     if(!group || group.isLocked){
         
         NSArray* oldCells = [self.cells copy];
-        group = [[FJSpringBoardActionGroup alloc] initWithBeginningCellState:oldCells];
+        group = [[FJSpringBoardActionGroup alloc] init];
         
         [self.actionGroupQueue enqueue:group];
         
         [group release];
         [oldCells release];
-
-    }
-}
-
-
-
-- (void)_processActionQueue{
-    
-    if(actionGroupOpen == YES)
-        return;
-    
-    FJSpringBoardActionGroup* actionGroup = [self.actionGroupQueue lastObject];
-    
-    if(actionGroup == nil)
-        return;
         
-    [actionGroup lock];
-
-    if(self.updateInProgress)
-        return;
+    }
     
-    [self _processActionGroup:[self.actionGroupQueue dequeue]];
+    return group;
 }
 
-
-- (void)validateUpdate:(FJSpringBoardUpdate*)update{
+- (void)validateGroup:(FJSpringBoardActionGroup*)group{
     
     NSUInteger numOfCells = [self.dataSource numberOfCellsInSpringBoardView:self];
+    __block NSUInteger previousCount = [self.indexLoader.allIndexes count];
+
+    if(self.updateInProgress){
+        //ok we have anotehr update going on. This means the cell state prior to the action group might not be what the datasource thinks it shoud be.
+        previousCount = [self.updateInProgress.cellStatePriorToAction count];
+        
+        //lets add in the changes
+        NSUInteger cellsInserted = [[self.updateInProgress insertIndexes] count];
+        NSUInteger cellsDeleted = [[self.updateInProgress deleteIndexes] count];
+        
+        previousCount += cellsInserted;
+        previousCount -= cellsDeleted;
+        
+    }
     
-    NSUInteger previousCount = [self.indexLoader.allIndexes count];
-    NSUInteger cellsInserted = [[update insertIndexes] count];
-    NSUInteger cellsDeleted = [[update deleteIndexes] count];
+    if([self.actionGroupQueue count] > 1){
+        
+        //ok we have inserted several actions that have not processed yet. we need to take these into account as well
+        [self.actionGroupQueue enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            
+            if(obj == group)
+                return;
+            
+            FJSpringBoardActionGroup *aGroup = obj;
+            
+            NSUInteger cellsInserted = [[aGroup indexesToInsert] count];
+            NSUInteger cellsDeleted = [[aGroup indexesToDelete] count];
+            
+            previousCount += cellsInserted;
+            previousCount -= cellsDeleted;
+            
+        }];
+
+    }
+
+    //alrighty, at this point the "previous count" should be what the datsource thinks it is. So lets compare and make sure we are not idiots!
+    NSUInteger cellsInserted = [[group indexesToInsert] count];
+    NSUInteger cellsDeleted = [[group indexesToDelete] count];
     
     if(previousCount + cellsInserted - cellsDeleted != numOfCells){
         
         [NSException raise:NSInternalInconsistencyException format:@"new cells count %i should be equal to previous cell count %i plus cells inserted %1 minus cells deleted %i", numOfCells, previousCount, cellsInserted, cellsDeleted];
     } 
     
+    group.validated = YES;
+    
+}
+
+- (FJSpringBoardActionGroup*)_actionGroupToProcess{
+    
+    FJSpringBoardActionGroup* actionGroup = [self.actionGroupQueue lastObject];
+    
+    if(!actionGroup.isLocked)
+        return nil;
+    
+    return [self.actionGroupQueue dequeue];
+}
+
+
+
+- (void)_processActionQueue{
+        
+    FJSpringBoardActionGroup* group = [self.actionGroupQueue firstObjectSafe];
+    
+    if(!group.isValidated && group.isLocked){
+        
+        [self validateGroup:group];
+        
+    }
+    
+    if(self.updateInProgress)
+        return;
+    
+    FJSpringBoardActionGroup* actionGroup = [self _actionGroupToProcess];
+
+    [self _processActionGroup:actionGroup];
 }
 
 - (void)_processActionGroup:(FJSpringBoardActionGroup*)actionGroup{
@@ -1283,8 +1339,7 @@ typedef enum  {
         return;
     }
     
-    self.updateInProgress = YES;
-    self.suspendLayoutUpdates = YES;
+    //self.suspendLayoutUpdates = YES;
     //self.userInteractionEnabled = NO;
 
     //process any unloaded cells before we update the view
@@ -1297,14 +1352,13 @@ typedef enum  {
     
     extendedDebugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
     
-    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellCount:[self.indexLoader allIndexes].count visibleIndexRange:range actionGroup:actionGroup];
-    
-    [self validateUpdate:update];
-    
+    FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellState:self.cells visibleIndexRange:range actionGroup:actionGroup];
+    self.updateInProgress = update;
+
     [self _processUpdate:update completionBlock:^(void) {
         
-        self.updateInProgress = NO;
-        self.suspendLayoutUpdates = NO;
+        self.updateInProgress = nil;
+        //self.suspendLayoutUpdates = NO;
         //self.userInteractionEnabled = YES;
         
         //technically everything should be good to go, but since we have been ignoring layout upates and jiggled a lot of handles, we may have missed a layout due to user scrolling. lets make sure we get this done now.
@@ -1315,6 +1369,7 @@ typedef enum  {
         
     }];   
     
+    [update release];
 }
 
 
@@ -1353,15 +1408,16 @@ typedef enum  {
         //doing the completion block here because the reload animation is the longest
         
         extendedDebugLog([self.contentView recursiveDescription]);
+                
+        //update the index loaders list of loaded cells
+        [self.indexLoader adjustLoadedIndexesByDeletingIndexes:update.deleteIndexes insertingIndexes:update.insertIndexes];
         
         //update layout count, get the view resized
         //update the index loaders layout
         [self _calculateLayout];
-        
-        //update the index loaders list of loaded cells
-        [self.indexLoader adjustLoadedIndexesByDeletingIndexes:update.deleteIndexes insertingIndexes:update.insertIndexes];
-        
-               
+        //[self _setNeedsLayoutCalculation];
+        //[self setNeedsLayout];
+       
         if(completion)
             completion();
         
