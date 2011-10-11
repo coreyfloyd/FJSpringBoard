@@ -14,7 +14,6 @@ test:
 			- drop on cell
 
 fix:
-	- round frame calculations to the nearest pixel
 
 niceties:
 		- staggered move animation

@@ -156,6 +156,10 @@ typedef enum  {
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
 
 
+//editing behavior
+@property(nonatomic) BOOL beginEditingOnTapAndHold; //default = YES
+
+
 //selection
 @property(nonatomic) BOOL allowsMultipleSelection; //default  = NO
 

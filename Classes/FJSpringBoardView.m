@@ -45,6 +45,8 @@ typedef enum  {
 
 @property(nonatomic, readwrite) BOOL reordering;
 
+@property(nonatomic) BOOL allowsEditing; //this is for use by the sprinboard to control whether we expose editing. Should not be set by subclasses, see beginEditingOnTapAndHold
+
 //these are used to control what the cell will display in editing mode
 @property(nonatomic) BOOL draggable;
 @property(nonatomic) BOOL showsDeleteButton;
@@ -213,7 +215,7 @@ typedef enum  {
 @synthesize paging;
 
 @synthesize actionGroupQueue;
-
+@synthesize beginEditingOnTapAndHold;
 
 
 #pragma mark -
@@ -263,6 +265,7 @@ typedef enum  {
     self.reorderingIndex = NSNotFound;
     self.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
     self.mode = FJSpringBoardCellModeNormal;
+    self.beginEditingOnTapAndHold = YES;
     
     [self.pageControl addTarget:self action:@selector(handlePageControlChange:) forControlEvents:UIControlEventValueChanged];
 
@@ -331,6 +334,27 @@ typedef enum  {
         
     [self setNeedsLayout];
 
+}
+
+- (void)setBeginEditingOnTapAndHold:(BOOL)flag{
+    
+    beginEditingOnTapAndHold = flag;
+    
+    [self.cells enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        
+        FJSpringBoardCell* eachCell = [self.cells objectAtIndex:idx];
+        
+        if([eachCell isEqual:[NSNull null]]){
+            
+            return;
+        }
+        
+        eachCell.allowsEditing = beginEditingOnTapAndHold;
+
+    }];
+    
+    
+    
 }
 
 #pragma mark -
@@ -880,12 +904,15 @@ typedef enum  {
 - (void)_loadCellAtIndex:(NSUInteger )index{
     
     FJSpringBoardCell* cell = [self.dataSource springBoardView:self cellAtIndex:index];
+    
     if(!cell)
         [NSException raise:NSInvalidArgumentException format:@"Must return a valid cell"];
+    
     [cell retain];
     
     cell.index = index;
     cell.springBoardView = self;
+    cell.allowsEditing = self.beginEditingOnTapAndHold;
     
     if([self.selectedIndexes containsIndex:index])
         cell.selected = YES;
