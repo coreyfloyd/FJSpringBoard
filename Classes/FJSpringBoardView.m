@@ -1654,14 +1654,7 @@ typedef enum  {
 
 - (void)_processReloadUpdate:(FJSpringBoardUpdate*)update completionBlock:(dispatch_block_t)block{
     
-    //NSArray* reloadActions = [update reloadUpdates];
-    NSIndexSet* reloadIndexes = [update reloadIndexes];
-    
-    debugLog(@"reload indexes: %@", [reloadIndexes description]);
-
-    NSIndexSet* reloadIndexesToAnimate = [self.indexLoader visibleIndexesInIndexSet:reloadIndexes];
-    
-    debugLog(@"reload indexes to animate: %@", [reloadIndexesToAnimate description]);
+    NSArray* reloadUpdates = [update reloadUpdates];
 
     float delay = 0;
     if([update.deleteIndexes count] > 0)
@@ -1673,52 +1666,80 @@ typedef enum  {
     if([update.insertIndexes count] > 0)
         delay += INSERT_ANIMATION_DURATION; 
     
-    [UIView animateWithDuration:RELOAD_ANIMATION_DURATION/2
+    [UIView animateWithDuration:RELOAD_ANIMATION_DURATION/2-0.05
                           delay:delay 
                         options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut) 
                      animations:^(void) {
                          
-                         [reloadIndexesToAnimate enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                         [reloadUpdates enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                            
+                             FJSpringBoardCellUpdate* cellUpdate = obj;
+                             
+                             if(![self.indexLoader indexIsVisible:cellUpdate.newSpringBoardIndex])
+                                 return;
+                             
+                             FJSpringBoardCell* cell = [self cellAtIndex:cellUpdate.newSpringBoardIndex];
+                             
+                             if(cellUpdate.animation == FJSpringBoardCellAnimationFade){
+                                 
+                                 cell.alpha = 0.0;
 
-                             FJSpringBoardCell* cell = [self cellAtIndex:idx];
-                             cell.alpha = 0.0;
+                             }
                              
 #if DEBUG == 2
                              
                              extendedDebugLog(@"reload action - location: %i", action.newSpringBoardIndex);
 #endif
+
+                             
                          }];
                          
                          
                      } completion:^(BOOL finished) {
                          
-                         [reloadIndexesToAnimate enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                         
+                         [reloadUpdates enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                              
-                             [self _removeCellAtIndex:idx];
-                             [self _unloadCellAtIndex:idx];
-                             [self _loadCellAtIndex:idx];
+                             FJSpringBoardCellUpdate* cellUpdate = obj;
                              
-                             FJSpringBoardCell* cell = [self cellAtIndex:idx];
-                             [self _layoutCell:cell atIndex:idx];
-                             cell.alpha = 0.0;
+                             if(![self.indexLoader indexIsVisible:cellUpdate.newSpringBoardIndex])
+                                 return;
+                                                          
+                             [self _removeCellAtIndex:cellUpdate.newSpringBoardIndex];
+                             [self _unloadCellAtIndex:cellUpdate.newSpringBoardIndex];
+                             [self _loadCellAtIndex:cellUpdate.newSpringBoardIndex];
                              
+                             FJSpringBoardCell* cell = [self cellAtIndex:cellUpdate.newSpringBoardIndex];
+                             [self _layoutCell:cell atIndex:cellUpdate.newSpringBoardIndex];
+
+                             if(cellUpdate.animation == FJSpringBoardCellAnimationFade){
+                                 
+                                 cell.alpha = 0.0;
+                             }
                          }];
+
+                                                  
                          
-                         
-                         [UIView animateWithDuration:RELOAD_ANIMATION_DURATION/2
-                                               delay:0 
+                         [UIView animateWithDuration:RELOAD_ANIMATION_DURATION/2-0.05
+                                               delay:0.1 
                                              options:(UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionCurveEaseInOut) 
                                           animations:^(void) {
                                               
-                                              [reloadIndexesToAnimate enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+                                              [reloadUpdates enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
                                                   
-                                                  FJSpringBoardCell* cell = [self cellAtIndex:idx];
-                                                  cell.alpha = 1.0;
+                                                  FJSpringBoardCellUpdate* cellUpdate = obj;
                                                   
+                                                  if(![self.indexLoader indexIsVisible:cellUpdate.newSpringBoardIndex])
+                                                      return;
+                                            
+                                                  FJSpringBoardCell* cell = [self cellAtIndex:cellUpdate.newSpringBoardIndex];
+                                                  
+                                                  if(cellUpdate.animation == FJSpringBoardCellAnimationFade){
+                                                      
+                                                      cell.alpha = 1.0;
+                                                  }
                                               }];
-                                              
-                                              
-                                              
+                                                                                          
                                           } completion:^(BOOL finished) {
                                               
                                               if(block)
