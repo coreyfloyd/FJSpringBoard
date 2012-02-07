@@ -1,15 +1,29 @@
 
 #import <Foundation/Foundation.h>
 
-
 #pragma mark -
 #pragma mark paths
 
-NSString* documentsDirectory();
-NSString* cachesDirectory();
+static inline NSString* documentsDirectory(){
+    
+    return [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+    
+}
 
-NSString* fileNameBasedOnCurrentTime();
+static inline NSString* cachesDirectory(){
+    
+    return [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    
+}
 
+
+static inline NSString* fileNameBasedOnCurrentTime() {
+	NSString* fileName = [NSString stringWithFormat: @"%.0f.%@", [NSDate timeIntervalSinceReferenceDate] * 1000.0, @"png"];
+	return fileName;
+}
+
+
+BOOL addSkipBackupAttributeToItemAtURL(NSURL *URL);
 
 #pragma mark -
 #pragma mark size
@@ -24,7 +38,19 @@ double megaBytesWithBytes(long long bytes);
 float nanosecondsWithSeconds(float seconds);
 dispatch_time_t dispatchTimeFromNow(float seconds);
 
-NSString* timeZoneString();
+static inline NSString* timeZoneString(){
+    NSTimeZone* ltz = [NSTimeZone localTimeZone];
+    NSString* abbreviation = [ltz abbreviation];
+    return abbreviation;
+}
+
+
+#pragma mark -
+#pragma mark NSRange
+
+BOOL rangesAreContiguous(NSRange first, NSRange second);
+
+NSRange rangeWithFirstAndLastIndexes(NSUInteger first, NSUInteger last);
 
 
 #pragma mark -

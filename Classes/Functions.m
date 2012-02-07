@@ -1,25 +1,39 @@
 
 #import "Functions.h"
+#include <sys/xattr.h>
 
 
-NSString* documentsDirectory(){
+
+
+BOOL rangesAreContiguous(NSRange first, NSRange second){
     
-    return [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+    NSIndexSet* firstIndexes = [NSIndexSet indexSetWithIndexesInRange:first];
+    NSIndexSet* secondIndexes = [NSIndexSet indexSetWithIndexesInRange:second];
+    
+    NSUInteger endOfFirstRange = [firstIndexes lastIndex];
+    NSUInteger beginingOfSecondRange = [secondIndexes firstIndex];
+    
+    if(beginingOfSecondRange - endOfFirstRange == 1)
+        return YES;
+    
+    return NO;
     
 }
 
-NSString* cachesDirectory(){
+NSRange rangeWithFirstAndLastIndexes(NSUInteger first, NSUInteger last){
     
-    return [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    if(last < first)
+        return NSMakeRange(0, 0);
+    
+    if(first == NSNotFound || last == NSNotFound)
+        return NSMakeRange(0, 0);
+    
+    NSUInteger length = last-first + 1;
+    
+    NSRange r = NSMakeRange(first, length);
+    return r;
     
 }
-
-
-NSString* fileNameBasedOnCurrentTime() {
-	NSString* fileName = [NSString stringWithFormat: @"%.0f.%@", [NSDate timeIntervalSinceReferenceDate] * 1000.0, @"png"];
-	return fileName;
-}
-
 
 
 float nanosecondsWithSeconds(float seconds){
@@ -32,6 +46,17 @@ dispatch_time_t dispatchTimeFromNow(float seconds){
     
     return  dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(seconds));
     
+}
+
+BOOL addSkipBackupAttributeToItemAtURL(NSURL *URL){
+    
+    const char* filePath = [[URL path] fileSystemRepresentation];
+    
+    const char* attrName = "com.apple.MobileBackup";
+    u_int8_t attrValue = 1;
+    
+    int result = setxattr(filePath, attrName, &attrValue, sizeof(attrValue), 0, 0);
+    return result == 0;
 }
 
 NSUInteger sizeOfFolderContentsInBytes(NSString* folderPath){
@@ -80,12 +105,6 @@ double megaBytesWithBytes(long long bytes){
 }
 
 
-NSString* timeZoneString(){
-    
-    NSTimeZone* ltz = [NSTimeZone localTimeZone];
-    NSString* abbreviation = [ltz abbreviation];
-    return abbreviation;
-}
 
 void dispatchOnMainQueue(dispatch_block_t block){
     
@@ -102,6 +121,7 @@ void dispatchAfterDelayInSeconds(float delay, dispatch_queue_t queue, dispatch_b
     dispatch_after(dispatchTimeFromNow(delay), queue, block);
     
 }
+
 
 Progress progressMake(unsigned long long complete, unsigned long long total){
     
