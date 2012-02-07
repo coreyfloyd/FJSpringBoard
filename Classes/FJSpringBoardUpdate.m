@@ -307,7 +307,7 @@
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(idx+1, lastIndex);
         
         //now lets shift the affected cells (this uses the new to old map)
-        extendedDebugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
+        extendedDebugLog(@"range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
         
         affectedRangeThatNeedShifted = NSIntersectionRange(self.visibleIndexRange, affectedRangeThatNeedShifted);
         
@@ -339,7 +339,7 @@
 
     self.moveUpdates = [moves sortedArrayUsingSelector:@selector(compare:)];;
 
-    extendedDebugLog(@"updates after all shifts: %@",[self.moveUpdatesFromDeletions description]);
+    extendedDebugLog(@"updates after all shifts: %@",[self.moveUpdates description]);
     
 }
 
@@ -357,7 +357,7 @@
         NSRange affectedRangeThatNeedShifted = rangeWithFirstAndLastIndexes(idx, lastIndex);
         
         //now lets shift the affected cells (this uses the new to old map)
-        extendedDebugLog(@"range to shift: %i - %i", affectedRange.location, NSMaxRange(affectedRange));
+        extendedDebugLog(@"range to shift: %i - %i", affectedRangeThatNeedShifted.location, NSMaxRange(affectedRangeThatNeedShifted));
         
         affectedRangeThatNeedShifted = NSIntersectionRange(self.visibleIndexRange, affectedRangeThatNeedShifted);
         
@@ -403,7 +403,7 @@
     
     self.moveUpdates = [moves sortedArrayUsingSelector:@selector(compare:)];;
     
-    extendedDebugLog(@"updates after all shifts: %@",[self.moveUpdatesFromInsertions description]);
+    extendedDebugLog(@"updates after all shifts: %@",[self.moveUpdates description]);
 
     
     

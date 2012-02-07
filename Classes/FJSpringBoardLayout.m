@@ -118,7 +118,7 @@
     
     int column = index % self.cellsPerRow;
     pos.column = (NSUInteger)column;
-    
+        
     return pos;
 }
 

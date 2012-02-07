@@ -99,10 +99,12 @@
     if(self.springBoardView.scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         
         self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionVertical;
+        self.springBoardView.pagingEnabled = NO;
 
     }else{
         
         self.springBoardView.scrollDirection = FJSpringBoardViewScrollDirectionHorizontal;
+        self.springBoardView.pagingEnabled = YES;
 
     }
     

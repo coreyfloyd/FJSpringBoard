@@ -247,6 +247,8 @@ static UIColor* _defaultBackgroundColor = nil;
     self.draggingSelectionRecognizer = l;
     [l release];
     
+    self.draggingRecognizer.enabled = NO;
+    self.draggingSelectionRecognizer.enabled = NO;
     /*
      UIPanGestureRecognizer* p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(dragPanningGestureReceived:)];
      p.maximumNumberOfTouches = 1;
@@ -362,10 +364,8 @@ static UIColor* _defaultBackgroundColor = nil;
     
 }
 
-- (void)setMode:(FJSpringBoardCellMode)aMode{
+- (void)_updateCellForMode:(FJSpringBoardCellMode)aMode{
     
-    mode = aMode;
-
     if(aMode == FJSpringBoardCellModeNormal){
         
         self.singleTapRecognizer.enabled = YES;
@@ -389,8 +389,20 @@ static UIColor* _defaultBackgroundColor = nil;
         if(draggable)
             [self _startWiggle];
         
-       
+        
     }
+
+}
+
+
+- (void)setMode:(FJSpringBoardCellMode)aMode{
+    
+    if(mode == aMode)
+        return;
+    
+    mode = aMode;
+
+    [self _updateCellForMode:aMode];
 }
 
 

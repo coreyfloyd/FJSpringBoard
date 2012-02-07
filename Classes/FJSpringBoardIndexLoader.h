@@ -75,3 +75,8 @@
 
 
 @end
+
+@interface NSIndexSet(intersection)
+
+- (NSIndexSet*)intersectionWithIndexSet:(NSIndexSet*)otherIndexSet;
+@end

@@ -71,6 +71,7 @@ typedef enum  {
 //junk pile
 @property(nonatomic, retain) NSMutableSet *reusableCells;
 
+@property (nonatomic, copy) NSIndexSet *visibleCellsPriorToBoundsChange;
 
 //mark the layout for recalculation
 - (void)_setNeedsLayoutCalculation;
@@ -211,22 +212,24 @@ typedef enum  {
 @synthesize updateInProgress;
 @synthesize layoutIsDirty;
 @synthesize allowsMultipleSelection;
-@synthesize pageControl;
 @synthesize paging;
 
 @synthesize actionGroupQueue;
 @synthesize beginEditingOnTapAndHold;
 
+@synthesize animateContentsDuringBoundsChange;
+@synthesize visibleCellsPriorToBoundsChange;
 
 #pragma mark -
 #pragma mark NSObject
 
 - (void)dealloc {  
+    self.delegate = nil;
+    [visibleCellsPriorToBoundsChange release];
+    visibleCellsPriorToBoundsChange = nil;
     [actionGroupQueue release];
     actionGroupQueue = nil;
-    pageControl = nil;
     dataSource = nil;
-    delegate = nil;
     [cells release];
     cells = nil;
     [contentView release];
@@ -267,8 +270,6 @@ typedef enum  {
     self.mode = FJSpringBoardCellModeNormal;
     self.beginEditingOnTapAndHold = YES;
     
-    [self.pageControl addTarget:self action:@selector(handlePageControlChange:) forControlEvents:UIControlEventValueChanged];
-
 }
 
 
@@ -306,6 +307,19 @@ typedef enum  {
 
 }
 
+- (void)setBounds:(CGRect)b{
+    
+    [super setBounds:b];
+    
+    [self _setLayoutIsDirty];
+    
+    [self _setNeedsLayoutCalculation];
+    
+    [self setNeedsLayout];
+
+}
+
+
 #pragma mark - Accessors
 
 
@@ -316,11 +330,16 @@ typedef enum  {
     [self setNeedsLayout];
 }
 
+
 -(void)setCellSize:(CGSize)aSize{
     
     cellSize = aSize;
     
-    [self reloadData];
+    [self _setLayoutIsDirty];
+    
+    [self _setNeedsLayoutCalculation];
+    
+    [self setNeedsLayout];
         
 } 
 
@@ -467,9 +486,27 @@ typedef enum  {
 
 
 - (NSIndexSet*)visibleCellIndexes{
-    
-    return [[self.indexLoader.loadedIndexes copy] autorelease];
 
+    NSRange possibleVisibleRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
+    NSIndexSet* possibleVisibleIndexes = [NSIndexSet indexSetWithIndexesInRange:possibleVisibleRange];
+    return [possibleVisibleIndexes intersectionWithIndexSet:self.indexLoader.allIndexes];
+    
+}
+
+- (NSArray*)visibleCells{
+    
+    NSArray* c = [self.cells objectsAtIndexes:self.visibleCellIndexes];
+    
+    NSIndexSet* scrubbed = [c indexesOfObjectsPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+        
+        if([obj isKindOfClass:[FJSpringBoardCell class]])
+            return YES;
+        
+        return NO;
+        
+    }];
+    
+    return [c objectsAtIndexes:scrubbed];
 }
 
 
@@ -635,7 +672,10 @@ typedef enum  {
     self.draggableCellView.center = dragCenter;
     
     
-    CGPoint p = self.contentOffset;
+    //CGPoint p = self.contentOffset;
+    [self _updatePageControl];    
+
+    /*
     dispatchOnMainQueueAfterDelayInSeconds(0.1, ^(void) {
         
         if(p.x == self.contentOffset.x){
@@ -644,7 +684,7 @@ typedef enum  {
 
         }
     });
-    
+    */
 
 }
 
@@ -714,11 +754,7 @@ typedef enum  {
 - (void)_calculateLayout{
     
     [self _clearLayoutCalculation];
-    
-    NSRange visibleCellRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
-    
-    NSUInteger firstCell = visibleCellRange.location;
-
+        
     if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         
         FJSpringBoardLayout* l = [[FJSpringBoardHorizontalLayout alloc] initWithSpringBoardBounds:self.bounds cellSize:self.cellSize cellCount:self.numberOfCells];
@@ -748,17 +784,6 @@ typedef enum  {
     //if(!self.layoutIsDirty)
     [self setContentSize:self.layout.contentSize];
     
-    //we only 
-    if(self.layoutIsDirty){
-        
-        dispatchOnMainQueueAfterDelayInSeconds(MOVE_ANIMATION_DURATION, ^(void) {
-            
-            [self scrollToCellAtIndex:firstCell atScrollPosition:FJSpringBoardCellScrollPositionTop animated:YES];        
-            
-        });
-
-    }
-   
 
 }
 
@@ -769,6 +794,10 @@ typedef enum  {
 - (void)_setLayoutIsDirty{
     
     self.layoutIsDirty = YES;
+    
+    NSRange visibleCellRange = [self.layout visibleRangeForContentOffset:self.contentOffset];
+    
+    self.visibleCellsPriorToBoundsChange = [NSIndexSet indexSetWithIndexesInRange:visibleCellRange];
     
 }
 
@@ -786,9 +815,22 @@ typedef enum  {
     
     [self.indexLoader updateIndexesWithContentOffest:self.contentOffset]; //this causes the index loader to recalculate cells to load in case we changed scroll directions.
     
-    //[CATransaction setDisableActions:YES];
     [self _layoutCellsAtIndexes:[self.indexLoader loadedIndexes]]; //relayout loaded cells. 
-    //[CATransaction setDisableActions:NO];
+    
+    NSUInteger firstCell = [self.visibleCellsPriorToBoundsChange firstIndex];
+
+    //we only 
+    if(self.layoutIsDirty){
+        
+        dispatchOnMainQueueAfterDelayInSeconds(MOVE_ANIMATION_DURATION, ^(void) {
+            
+            [self scrollToCellAtIndex:firstCell atScrollPosition:FJSpringBoardCellScrollPositionTop animated:YES];        
+            
+        });
+        
+    }
+
+    self.visibleCellsPriorToBoundsChange = nil;
         
 }
 
@@ -809,6 +851,10 @@ typedef enum  {
         
     }
     
+    if(!self.animateContentsDuringBoundsChange)
+        [CATransaction setDisableActions:YES];
+
+    
     //fix any loaded cells, with animation
     //[UIView animateWithDuration:MOVE_ANIMATION_DURATION animations:^(void) {
         
@@ -816,12 +862,16 @@ typedef enum  {
         
     //}];
     
+        
     //unload cells that are no longer visible
     [self _cleanupCellsScrollingOutOfView];
     
     //load cells that are now visible
     [self _setupCellsScrollingIntoView];
     
+    if(!self.animateContentsDuringBoundsChange)
+        [CATransaction setDisableActions:NO];
+
     
     extendedDebugLog([self.contentView recursiveDescription]);
 
@@ -971,7 +1021,9 @@ typedef enum  {
     
     extendedDebugLog(@"layed out cell: %@", [cell description])
     
-    [self.contentView addSubview:cell];
+    //takes a lot of time, trying to optimize
+    if(![cell superview])
+        [self.contentView addSubview:cell];
     
 }
 
@@ -1117,7 +1169,7 @@ typedef enum  {
     
     [self _selectCellAtIndex:index animated:animated];
 
-    [self scrollToCellAtIndex:index atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:YES];
+    [self scrollToCellAtIndex:index atScrollPosition:FJSpringBoardCellScrollPositionMiddle animated:animated];
 
 }
 
@@ -1474,11 +1526,11 @@ typedef enum  {
     
     NSArray* cellsCopy = [self.cells copy];
     
-    debugLog(@"delete indexes: %@", [deletionIndexes description]);
+    extendedDebugLog(@"delete indexes: %@", [deletionIndexes description]);
 
     NSIndexSet* deletionIndexesToAnimate = [self.indexLoader visibleIndexesInIndexSet:deletionIndexes];
     
-    debugLog(@"delete indexes to animate: %@", [deletionIndexesToAnimate description]);
+    extendedDebugLog(@"delete indexes to animate: %@", [deletionIndexesToAnimate description]);
 
     
     [UIView animateWithDuration:DELETE_ANIMATION_DURATION 
@@ -1534,19 +1586,19 @@ typedef enum  {
     //NSArray* insertionUpdates = [update insertUpdates];    
     NSIndexSet* insertionIndexes = [update insertIndexes];
     
-    debugLog(@"insert indexes: %@", [insertionIndexes description]);
+    extendedDebugLog(@"insert indexes: %@", [insertionIndexes description]);
     
     [self.cells insertObjects:nullArrayOfSize([insertionIndexes count]) atIndexes:insertionIndexes];
     
     NSIndexSet* insertionIndexesToAnimate = [self.indexLoader visibleIndexesInIndexSet:insertionIndexes];
     
-    debugLog(@"insert indexes to animate: %@", [insertionIndexesToAnimate description]);
+    extendedDebugLog(@"insert indexes to animate: %@", [insertionIndexesToAnimate description]);
     
     [insertionIndexesToAnimate enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
         
 #if DEBUG == 2
         
-        extendedDebugLog(@"insert action - new location: %i", action.newSpringBoardIndex);
+        //extendedDebugLog(@"insert action - new location: %i", action.newSpringBoardIndex);
 #endif
         
         FJSpringBoardCell* cell = [self cellAtIndex:idx];
@@ -1722,7 +1774,7 @@ typedef enum  {
                              
 #if DEBUG == 2
                              
-                             extendedDebugLog(@"reload action - location: %i", action.newSpringBoardIndex);
+                             //extendedDebugLog(@"reload action - location: %i", action.newSpringBoardIndex);
 #endif
 
                              
@@ -1919,11 +1971,11 @@ typedef enum  {
     
     if(self.animatingContentOffset || self.animatingReorder){
         
-        debugLog(@"still animating");
+        extendedDebugLog(@"still animating");
         //[self performSelector:@selector(_processEditingLongTapWithRecognizer:) withObject:g afterDelay:0.1];
         return;
     }
-    debugLog(@"made it!");
+    extendedDebugLog(@"made it!");
     
     CGPoint p = [self convertPoint:newLocation fromView:cell];
     self.lastTouchPoint = p;
@@ -2056,7 +2108,7 @@ typedef enum  {
                     //hit edge, scroll
                     if([self _scrollSpringBoardInDirectionOfEdge:e]){
                         
-                        /*
+                        
                         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, nanosecondsWithSeconds(0.7)), dispatch_get_main_queue(), ^{
                             
                             //are we still on an edge? then scroll again!
@@ -2370,7 +2422,7 @@ typedef enum  {
 
 - (void)_completeDragAction{
     
-    debugLog(@"completing drag action...");
+    extendedDebugLog(@"completing drag action...");
 
     if(self.reorderingIndex == NSNotFound)
         return;
@@ -2633,7 +2685,7 @@ typedef enum  {
 
 - (BOOL)_scrollSpringBoardInDirectionOfEdge:(FJSpringBoardViewEdge)edge{
     
-    debugLog(@"edge!");
+    extendedDebugLog(@"edge!");
     
     if(edge == FJSpringBoardViewEdgeNone)
         return NO;
@@ -2720,33 +2772,7 @@ typedef enum  {
 #pragma mark -
 #pragma mark paging
 
-- (void)setPageControl:(id<FJSpringBoardViewPageControl>)aPageControl
-{
-    if (pageControl != aPageControl) {
-        [aPageControl retain];
-        [pageControl release];
-        pageControl = aPageControl;
-        
-        [self.pageControl addTarget:self action:@selector(handlePageControlChange:) forControlEvents:UIControlEventValueChanged];
-    }
-}
-- (IBAction)handlePageControlChange:(id<FJSpringBoardViewPageControl>)sender{
-    
-    BOOL animate = !self.isPaging;
-    
-    self.paging = YES;
-    
-    NSUInteger page = [sender currentPage];
-    
-    [self scrollToPage:page animated:animate];
-    [sender updateCurrentPageDisplay];
-    
-    dispatchOnMainQueueAfterDelayInSeconds(1.0, ^{
-        
-        self.paging = NO;
-        
-    });
-}
+
 
 - (void)_updatePageControl{
     
@@ -2756,13 +2782,12 @@ typedef enum  {
         return;
     
     NSUInteger num = [self numberOfPages];
-    
+
     if(num == NSNotFound)
         return;
     
-    [self.pageControl setCurrentPage:p];
-    [self.pageControl setNumberOfPages:num];
-    [self.pageControl updateCurrentPageDisplay];
+    if([self.delegate respondsToSelector:@selector(springBoardView:didUpdateCurrentPage:numberOfPages:)])
+        [self.delegate springBoardView:self didUpdateCurrentPage:p numberOfPages:num];
 
 }
 
@@ -2823,6 +2848,9 @@ typedef enum  {
 - (BOOL)scrollToPage:(NSUInteger)page animated:(BOOL)animated{
     
     if(self.scrollDirection != FJSpringBoardViewScrollDirectionHorizontal)
+        return NO;
+    
+    if(self.animatingContentOffset)
         return NO;
     
     FJSpringBoardHorizontalLayout* l = (FJSpringBoardHorizontalLayout*)self.layout;

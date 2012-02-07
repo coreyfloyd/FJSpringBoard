@@ -39,6 +39,8 @@ typedef enum  {
 - (void)springBoardView:(FJSpringBoardView *)springBoardView willDeselectCellAtIndex:(NSUInteger)index;
 - (void)springBoardView:(FJSpringBoardView *)springBoardView didDeselectCellAtIndex:(NSUInteger)index; 
 
+- (void)springBoardView:(FJSpringBoardView *)springBoardView didUpdateCurrentPage:(NSUInteger)page numberOfPages:(NSUInteger)totalPages;
+
 
 @end
 
@@ -68,20 +70,6 @@ typedef enum  {
 
 @end
 
-//Now you can use a custom page control such as ZZPageControl in addtion to UIPageControl
-@protocol FJSpringBoardViewPageControl <NSObject>
-
-@required
-
-@property(nonatomic) NSInteger numberOfPages;
-@property(nonatomic) NSInteger currentPage;
-
-- (void)updateCurrentPageDisplay;
-
-- (void)addTarget:(id)target action:(SEL)action forControlEvents:(UIControlEvents)controlEvents;
-
-@end
-
 @interface FJSpringBoardView : UIScrollView <UIGestureRecognizerDelegate> {
 
     UIView* contentView;
@@ -100,13 +88,17 @@ typedef enum  {
     FJSpringBoardUpdate *updateInProgress;
     
     NSMutableSet *reusableCells; //reusable cells
-    
+
+    BOOL animateContentsDuringBoundsChange;
+
     BOOL suspendLayoutUpdates;
 
     BOOL doubleTapped;
     BOOL longTapped;
     
     BOOL paging;
+    
+    NSIndexSet* visibleCellsPriorToBoundsChange;
 
     FJSpringBoardCellAnimation layoutAnimation;
     
@@ -121,19 +113,20 @@ typedef enum  {
     NSUInteger indexOfHighlightedCell;
     
     id<FJSpringBoardViewDataSource> dataSource;
-    id<FJSpringBoardViewDelegate> delegate;
-    id<FJSpringBoardViewPageControl> pageControl;
-    
+    //id<FJSpringBoardViewDelegate> delegate;
+        
 }
 //delegate and datasource like UITableView
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDataSource> dataSource;
 @property(nonatomic, assign) IBOutlet id<FJSpringBoardViewDelegate> delegate;
 
-@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful! setting triggers a reload
+@property(nonatomic) CGSize cellSize; //be sure your cells are the size you specify here. careful, you should reload after chenging this or hilarity will ensue.
 
 //smooth vertical scrolling or paginated horizontal
 @property(nonatomic) FJSpringBoardViewScrollDirection scrollDirection;
 
+//should the cells be visible when moving as a result of the springboard bounds changing?
+@property (nonatomic, assign) BOOL animateContentsDuringBoundsChange; //default = NO
 
 //reload data, like UITableView this only loads visible cells
 - (void)reloadData;
@@ -151,6 +144,7 @@ typedef enum  {
 - (NSUInteger)indexOfCellAtPoint:(CGPoint)point;
 
 @property(nonatomic, retain, readonly) NSIndexSet *visibleCellIndexes; 
+@property(nonatomic, retain, readonly) NSArray *visibleCells; 
 
 //scroll, note: position is ignored in horizontal scroll direction
 - (void)scrollToCellAtIndex:(NSUInteger)index atScrollPosition:(FJSpringBoardCellScrollPosition)scrollPosition animated:(BOOL)animated;
@@ -200,9 +194,6 @@ typedef enum  {
 
 
 //paging, only valid if scrollingDirection == horizontal
-
-//page control
-@property(nonatomic, assign) IBOutlet id<FJSpringBoardViewPageControl> pageControl;
 
 //these are in addition to the normal scroll view content insets
 @property(nonatomic) UIEdgeInsets pageInsets; //not implemented
