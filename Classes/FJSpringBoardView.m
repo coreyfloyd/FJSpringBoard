@@ -1272,7 +1272,7 @@ typedef enum  {
     
     //we are not doing internal deletes if you are in the middle of shuffling around other things, this might be ok
     FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
-    if(!actionGroup.autoLock)
+    if([actionGroup lockCount] > 0)
         return;
     
     NSUInteger index = cell.index;
@@ -1297,18 +1297,16 @@ typedef enum  {
 - (void)beginUpdates{
     
     FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
-    ASSERT_TRUE(actionGroup.autoLock);
     ASSERT_TRUE(!actionGroup.isLocked);
-    actionGroup.autoLock = NO;
+    [actionGroup beginUpdates];
 }
 
 
 - (void)endUpdates{
     
     FJSpringBoardActionGroup* actionGroup = [self _currentActionGroup];
-    ASSERT_TRUE(!actionGroup.autoLock);
     ASSERT_TRUE(!actionGroup.isLocked);
-    [actionGroup lock]; //must be explicitely locked since autolock is off
+    [actionGroup endUpdates]; //locks
     
     [self _processActionQueue];
     

@@ -171,7 +171,7 @@ typedef enum  {
 - (void)deleteCellsAtIndexes:(NSIndexSet *)indexSet withCellAnimation:(FJSpringBoardCellAnimation)animation;
 
 //use these to perform multiple updates at once
-- (void)beginUpdates;
+- (void)beginUpdates; //nestable
 - (void)endUpdates;
 
 

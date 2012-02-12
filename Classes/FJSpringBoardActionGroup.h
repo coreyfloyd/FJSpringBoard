@@ -18,17 +18,19 @@
     NSMutableSet* deleteActions;
     NSMutableSet* insertActions;
     
-    BOOL autoLock;
     BOOL locked;
+    NSUInteger lockCount;
     
     BOOL validated;
 }
 @property (nonatomic, retain) NSMutableSet *reloadActions;
 @property (nonatomic, retain) NSMutableSet *deleteActions;
 @property (nonatomic, retain) NSMutableSet *insertActions;
-@property (nonatomic) BOOL autoLock; //default  = YES
 @property (nonatomic, getter=isLocked, readonly) BOOL locked;
+@property (nonatomic, assign) NSUInteger lockCount;
 @property (nonatomic, getter=isValidated) BOOL validated;
+
+
 
 - (void)addActionWithType:(FJSpringBoardActionType)type indexes:(NSIndexSet*)indexSet animation:(FJSpringBoardCellAnimation)animation; //will auto lock unless autoLock == NO
 
@@ -36,5 +38,8 @@
 - (NSIndexSet*)indexesToDelete;
 
 - (void)lock;
+
+- (void)beginUpdates;
+- (void)endUpdates;
 
 @end

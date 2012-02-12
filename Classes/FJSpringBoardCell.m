@@ -3,15 +3,15 @@
 #import "FJSpringBoardView.h"
 #import <QuartzCore/QuartzCore.h>
 
-CGFloat DegreesToRadians(CGFloat degrees) {
+static inline CGFloat DegreesToRadians(CGFloat degrees) {
     return degrees * M_PI / 180;
 }
 
-NSNumber* DegreesToNumber(CGFloat degrees) {
+static inline NSNumber* DegreesToNumber(CGFloat degrees) {
     return [NSNumber numberWithFloat: DegreesToRadians(degrees)];
 }
 
-CAAnimation* wiggleAnimation() {
+static inline CAAnimation* wiggleAnimation() {
     CAKeyframeAnimation * animation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.z"]; 
     [animation setDuration:0.3];
     [animation setRepeatCount:10000];
@@ -29,7 +29,7 @@ CAAnimation* wiggleAnimation() {
     return animation;
 }
 
-void recursivelyApplyAnimationToAllSubviewLayers(UIView* view, CAAnimation* animation, NSString* keyPath){
+static inline void recursivelyApplyAnimationToAllSubviewLayers(UIView* view, CAAnimation* animation, NSString* keyPath){
     
     [view.layer addAnimation:animation forKey:keyPath];
 
@@ -40,7 +40,7 @@ void recursivelyApplyAnimationToAllSubviewLayers(UIView* view, CAAnimation* anim
     }
 }
 
-void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyPath){
+static inline void recursivelyRemoveAnimationFromAllSubviewLayers(UIView* view, NSString* keyPath){
     
     [view.layer removeAnimationForKey:keyPath];
 

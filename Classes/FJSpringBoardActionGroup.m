@@ -20,7 +20,7 @@
 @synthesize deleteActions;
 @synthesize insertActions;
 @synthesize locked;
-@synthesize autoLock;
+@synthesize lockCount;
 @synthesize validated;
 
 
@@ -44,8 +44,6 @@
         self.reloadActions = [NSMutableSet set];
         self.insertActions = [NSMutableSet set];
         self.deleteActions = [NSMutableSet set];
-        self.locked = NO;
-        self.autoLock = YES;
     }
     
     return self;
@@ -89,7 +87,7 @@
             break;
     }
     
-    if(self.autoLock)
+    if(self.lockCount == 0)
         [self lock];
     
 }
@@ -173,6 +171,21 @@
 
 - (void)lock{
     self.locked = YES;
+}
+
+- (void)beginUpdates{
+    
+    self.lockCount++;
+    
+}
+
+- (void)endUpdates{    
+    
+    self.lockCount--;
+    
+    if(self.lockCount == 0)
+        [self lock];
+
 }
 
 
