@@ -754,7 +754,7 @@ typedef enum  {
 - (void)_calculateLayout{
     
     [self _clearLayoutCalculation];
-        
+    
     if(scrollDirection == FJSpringBoardViewScrollDirectionHorizontal){
         
         FJSpringBoardLayout* l = [[FJSpringBoardHorizontalLayout alloc] initWithSpringBoardBounds:self.bounds cellSize:self.cellSize cellCount:self.numberOfCells];
@@ -842,6 +842,9 @@ typedef enum  {
 - (void)layoutSubviews{
     
     if(self.suspendLayoutUpdates)
+        return;
+    
+    if(self.bounds.size.width < self.cellSize.width + CELL_INVISIBLE_LEFT_MARGIN || self.bounds.size.height < self.cellSize.height + CELL_INVISIBLE_TOP_MARGIN)
         return;
     
     //recalculate layout
