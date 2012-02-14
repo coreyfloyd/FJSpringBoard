@@ -90,7 +90,11 @@
     self = [super init];
     if (self != nil) {
         
-        self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];    
+        if(count)
+            self.mutableAllIndexes = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)];    
+        else
+            self.mutableAllIndexes = [NSMutableIndexSet indexSet];    
+            
         self.mutableLoadedIndexes = [NSMutableIndexSet indexSet];
         self.mutableIndexesToLoad = [NSMutableIndexSet indexSet];
         self.mutableIndexesToUnload = [NSMutableIndexSet indexSet];
