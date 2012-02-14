@@ -841,7 +841,7 @@ typedef enum  {
 //called when changes occur affecting layout
 - (void)layoutSubviews{
     
-    if(self.suspendLayoutUpdates)
+    if(self.suspendLayoutUpdates) //we need to be more specific  about this because we DO want to layout cells that scroll onto screen
         return;
     
     if(self.bounds.size.width < self.cellSize.width + CELL_INVISIBLE_LEFT_MARGIN || self.bounds.size.height < self.cellSize.height + CELL_INVISIBLE_TOP_MARGIN)
@@ -865,12 +865,12 @@ typedef enum  {
         
     //}];
     
-        
+   
     //unload cells that are no longer visible
     [self _cleanupCellsScrollingOutOfView];
-    
+
     //load cells that are now visible
-    [self _setupCellsScrollingIntoView];
+    [self _setupCellsScrollingIntoView]; //if this is called during an update, we could layout cells that won't be adjusted with the layout
     
     if(!self.animateContentsDuringBoundsChange)
         [CATransaction setDisableActions:NO];
@@ -1426,7 +1426,6 @@ typedef enum  {
         return;
     }
     
-    //self.suspendLayoutUpdates = YES;
     //self.userInteractionEnabled = NO;
 
     //process any unloaded cells before we update the view
@@ -1439,13 +1438,14 @@ typedef enum  {
     
     extendedDebugLog(@"visible range: %i - %i", range.location, NSMaxRange(range));
     
+    self.suspendLayoutUpdates = YES;
     FJSpringBoardUpdate* update = [[FJSpringBoardUpdate alloc] initWithCellState:self.cells visibleIndexRange:range actionGroup:actionGroup];
     self.updateInProgress = update;
 
     [self _processUpdate:update completionBlock:^(void) {
         
         self.updateInProgress = nil;
-        //self.suspendLayoutUpdates = NO;
+        self.suspendLayoutUpdates = NO;
         //self.userInteractionEnabled = YES;
         
         //technically everything should be good to go, but since we have been ignoring layout upates and jiggled a lot of handles, we may have missed a layout due to user scrolling. lets make sure we get this done now.

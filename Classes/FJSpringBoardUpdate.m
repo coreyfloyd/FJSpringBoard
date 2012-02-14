@@ -240,13 +240,13 @@
         self.cellStateAfterAction = [[self.cellStatePriorToAction mutableCopy] autorelease];
         self.newCellCount = [self.cellStatePriorToAction count];
               
-        [self createMovesWithDeletionIndexes];
+        [self createMovesWithDeletionIndexes]; //we can make this lazy and calculate using what is on screen at the time of the animation
                 
         [self.cellStateAfterAction removeObjectsAtIndexes:self.deleteIndexes];
         self.newCellCount -= [self.deleteIndexes count];
 
         
-        [self createMovesWithInsertionIndexes];
+        [self createMovesWithInsertionIndexes]; //ditton
         
         [self.cellStateAfterAction insertObjects:nullArrayOfSize([self.insertIndexes count]) atIndexes:self.insertIndexes];
         self.newCellCount += [self.insertIndexes count];
