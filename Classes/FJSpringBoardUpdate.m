@@ -33,7 +33,7 @@
 
 - (void)createMovesWithDeletionIndexes;
 - (void)createMovesWithInsertionIndexes;
-
+- (void)removeDeletedIndexesFromMoves;
 @end
 
 @implementation FJSpringBoardUpdate
@@ -241,15 +241,18 @@
         self.newCellCount = [self.cellStatePriorToAction count];
               
         [self createMovesWithDeletionIndexes]; //we can make this lazy and calculate using what is on screen at the time of the animation
-                
+        
         [self.cellStateAfterAction removeObjectsAtIndexes:self.deleteIndexes];
         self.newCellCount -= [self.deleteIndexes count];
 
         
-        [self createMovesWithInsertionIndexes]; //ditton
+        [self createMovesWithInsertionIndexes]; //ditto
         
         [self.cellStateAfterAction insertObjects:nullArrayOfSize([self.insertIndexes count]) atIndexes:self.insertIndexes];
         self.newCellCount += [self.insertIndexes count];
+
+        
+        [self removeDeletedIndexesFromMoves];
 
     }
     
@@ -407,6 +410,24 @@
 
     
     
+}
+
+- (void)removeDeletedIndexesFromMoves{
+    
+    NSMutableIndexSet* indexesToRemove = [NSMutableIndexSet indexSet];
+
+    NSIndexSet* deleted = self.deleteIndexes;
+    
+    [self.moveUpdates enumerateObjectsUsingBlock:^(FJSpringBoardCellUpdate *obj, NSUInteger idx, BOOL *stop) {
+
+        if([deleted containsIndex:[obj oldSpringBoardIndex]])
+            [indexesToRemove addIndex:idx];
+        
+    }];
+    
+    NSMutableArray* a = [self.moveUpdates mutableCopy];
+    [a removeObjectsAtIndexes:indexesToRemove];
+    self.moveUpdates = a;
 }
 
 @end
