@@ -1057,6 +1057,10 @@ typedef enum  {
 
 - (void)_removeCellAtIndex:(NSUInteger)index{
     
+    //TODO: covers for  bug!!!
+    if(index >= [cells count])
+        return;
+    
     FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
     
     if([eachCell isKindOfClass:[NSNull class]])
@@ -1093,6 +1097,10 @@ typedef enum  {
 
 - (void)_unloadCellAtIndex:(NSUInteger )index{
     
+    //TODO: covers for  bug!!!
+    if(index >= [cells count])
+        return;
+
     FJSpringBoardCell* eachCell = [self.cells objectAtIndex:index];
     
     if(![eachCell isKindOfClass:[FJSpringBoardCell class]]){
