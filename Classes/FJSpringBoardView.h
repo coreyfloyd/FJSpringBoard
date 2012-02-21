@@ -138,7 +138,7 @@ typedef enum  {
 
 //cell info
 - (NSUInteger)numberOfCells;
-- (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index;
+- (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index; //returns nill if out of range or not visible
 - (NSUInteger)indexForCell:(FJSpringBoardCell *)cell;
 - (CGRect)frameForCellAtIndex:(NSUInteger)index;
 - (NSUInteger)indexOfCellAtPoint:(CGPoint)point;

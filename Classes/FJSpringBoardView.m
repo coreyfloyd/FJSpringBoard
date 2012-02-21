@@ -388,6 +388,9 @@ typedef enum  {
 
 - (FJSpringBoardCell *)cellAtIndex:(NSUInteger)index{
     
+    if (index >= [self.cells count]) 
+        return nil;
+    
     FJSpringBoardCell* cell = [self.cells objectAtIndex:index];
     
     if([[NSNull null] isEqual:(NSNull*)cell])
